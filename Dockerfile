@@ -46,6 +46,8 @@ USER pptruser
 
 RUN /app/node_modules/.bin/puppeteer browsers install chrome
 
+USER root
+
 EXPOSE 3000
 ENTRYPOINT [ "/app/entrypoint.sh" ]
 CMD ["pm2-runtime", "/app/dist/src/server.js"]

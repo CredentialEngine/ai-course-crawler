@@ -38,4 +38,7 @@ USER pptruser
 
 RUN /app/node_modules/.bin/puppeteer browsers install chrome
 
+USER root
+
+ENTRYPOINT [ "/app/entrypoint-worker.sh" ]
 CMD ["pm2-runtime", "/app/dist/src/worker.js"]

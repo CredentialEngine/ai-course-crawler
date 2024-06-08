@@ -8,4 +8,7 @@ fi
 echo "Running migrations"
 node dist/migrate.js
 
-exec "$@"
+chown -R pptruser:pptruser /app
+chown -R pptruser:pptruser /app/db
+
+exec runuser -u pptruser "$@"
