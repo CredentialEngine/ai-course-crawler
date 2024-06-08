@@ -1,0 +1,7 @@
+export enum AppErrors {
+  UNKNOWN,
+  PAGE_TYPE_INVALID,
+  NOT_FOUND,
+  RECIPE_NOT_CONFIGURED,
+  BAD_REQUEST,
+}
