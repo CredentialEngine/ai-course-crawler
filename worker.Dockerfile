@@ -1,11 +1,3 @@
-FROM node:20 AS builder
-WORKDIR /app
-COPY server/package.json /app/server/package.json
-RUN cd /app/server && npm install
-COPY server/ /app/server
-RUN cd /app/server && npm run build
-
-# Install chrome and copy app files
 # From https://github.com/puppeteer/puppeteer/blob/main/docker/Dockerfile
 FROM node:20
 
@@ -28,17 +20,20 @@ RUN apt-get update \
 # Install pm2 for running the app
 RUN npm install pm2 -g
 
-WORKDIR /app
-
-COPY --from=builder /app/server ./
-
-RUN chown -R pptruser:pptruser /app
+# Build the app
+COPY server/package.json /build/server/package.json
+RUN cd /build/server && npm install
 
 USER pptruser
-
-RUN /app/node_modules/.bin/puppeteer browsers install chrome
+RUN /build/server/node_modules/.bin/puppeteer browsers install chrome
 
 USER root
+COPY server/ /build/server
+RUN cd /build/server && npm run build
+
+RUN cp -R /build/server /app
+
+WORKDIR /app
 
 ENTRYPOINT [ "/app/entrypoint-worker.sh" ]
 CMD ["pm2-runtime", "/app/dist/src/worker.js"]
