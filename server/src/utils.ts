@@ -6,6 +6,32 @@ if (!process.env.ENCRYPTION_KEY)
   throw new Error("Please define an encryption key.");
 export const ENCRYPTION_KEY: string = process.env.ENCRYPTION_KEY;
 
+export async function exponentialRetry<T>(
+  fn: () => Promise<T>,
+  retries: number,
+  delay: number = 1000
+) {
+  let attempt = 0;
+  let retryErr: unknown;
+  while (attempt <= retries) {
+    try {
+      return await fn();
+    } catch (error) {
+      console.log(
+        `Exponential retries fn failed with error ${error}. Retrying`
+      );
+      retryErr = error;
+      if (attempt === retries) throw error;
+      await new Promise((resolve) =>
+        setTimeout(resolve, delay * Math.pow(2, attempt))
+      );
+      attempt++;
+    }
+  }
+  console.log("All retries failed");
+  throw retryErr;
+}
+
 export function encryptForDb(text: string) {
   const IV = randomBytes(16);
   let cipher = createCipheriv("aes-256-cbc", Buffer.from(ENCRYPTION_KEY), IV);

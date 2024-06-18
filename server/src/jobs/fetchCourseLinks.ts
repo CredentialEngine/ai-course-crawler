@@ -54,7 +54,7 @@ const fetchCourseLinks: Processor<
         beforeLoad: (url) => logAndNotify(job, `Fetching ${url}`),
         onLoad: (url, content) =>
           logAndNotify(job, `Successfully fetched ${url}`),
-        batchSize: 5,
+        batchSize: 2,
       };
       const detailPages = await loadAll(
         browser,

@@ -1,5 +1,5 @@
 import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import { assertNumber, assertString, simpleToolCompletion } from "../openai";
+import { assertString, simpleToolCompletion } from "../openai";
 import { simplifyHtml, toMarkdown } from "./browser";
 
 export async function extractCourseDataItem(
@@ -70,8 +70,8 @@ ${content}
   return {
     courseId: assertString(completion, "course_id"),
     courseName: assertString(completion, "course_name"),
-    courseDescription: assertString(completion, "course_description"),
-    courseCreditsMin: assertNumber(completion, "course_credits_min"),
-    courseCreditsMax: assertNumber(completion, "course_credits_max"),
+    courseDescription: completion["course_description"],
+    courseCreditsMin: completion["course_credits_min"],
+    courseCreditsMax: completion["course_credits_max"],
   };
 }

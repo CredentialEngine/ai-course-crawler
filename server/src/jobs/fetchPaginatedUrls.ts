@@ -1,3 +1,4 @@
+import { Browser } from "puppeteer";
 import {
   ExtractCourseCatalogueProgress,
   ExtractionStepJob,
@@ -17,13 +18,43 @@ import {
   LoadAllConfiguration,
   getBrowser,
   loadAll,
+  loadPage,
 } from "../extraction/browser";
 import extractDetailUrls from "../extraction/extractDetailUrls";
+import { exponentialRetry } from "../utils";
 import {
   assertStep,
   constructPaginatedUrls,
   logAndNotify,
 } from "./extractionUtils";
+
+const findRegexp = async (
+  browser: Browser,
+  dataType: PAGE_DATA_TYPE,
+  url: string
+) => {
+  const page = await loadPage(browser, url, true);
+  const detailUrlRegexp = await extractDetailUrls(
+    url,
+    page.content,
+    page.screenshot!,
+    dataType
+  );
+
+  if (!detailUrlRegexp) {
+    throw new Error(`Couldn't find detail regexp for ${url}.`);
+  }
+
+  const pageUrls = await detailUrlRegexp.extract(url, page.content);
+
+  if (!pageUrls?.length) {
+    throw new Error(
+      `Regexp for ${url} did not work: ${detailUrlRegexp.regexp}`
+    );
+  }
+
+  return detailUrlRegexp;
+};
 
 const fetchPaginatedUrls: Processor<
   ExtractionStepJob,
@@ -35,7 +66,12 @@ const fetchPaginatedUrls: Processor<
     step.configuration! as FetchPaginatedUrlsStepConfiguration;
   const urls = constructPaginatedUrls(configuration.pagination);
   const browser = await getBrowser();
+
   try {
+    const regexp = await exponentialRetry(
+      () => findRegexp(browser, configuration.dataType, urls[0]),
+      10
+    );
     const batchLoadConfig: LoadAllConfiguration = {
       beforeLoad: (url) => logAndNotify(job, `Fetching ${url}`),
       onLoad: (url, content) =>
@@ -51,12 +87,7 @@ const fetchPaginatedUrls: Processor<
         configuration.dataType == PAGE_DATA_TYPE.COURSE_LINKS_PAGE
       ) {
         await logAndNotify(job, `Extracting detail URLs for ${url}`);
-        detailUrls = await extractDetailUrls(
-          url,
-          content,
-          screenshot,
-          configuration.dataType
-        );
+        detailUrls = await regexp.extract(url, content);
       }
 
       await createStepItem(

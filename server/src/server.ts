@@ -76,7 +76,7 @@ server.register(async (instance) => {
     trpcOptions: {
       router: appRouter,
       createContext,
-      onError(opts) {
+      onError(opts: any) {
         console.log(opts);
       },
     } satisfies FastifyTRPCPluginOptions<AppRouter>["trpcOptions"],

@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 import puppeteer, { Browser } from "puppeteer";
 import TurndownService from "turndown";
+import { exponentialRetry } from "../utils";
 
 export async function getBrowser() {
   return puppeteer.launch({
@@ -57,7 +58,7 @@ export async function loadAll(
         if (config.beforeLoad) {
           config.beforeLoad(url);
         }
-        await page.goto(url);
+        await exponentialRetry(() => page.goto(url), 5);
         const content = await page.content();
         const screenshot = await page.screenshot({
           type: "webp",

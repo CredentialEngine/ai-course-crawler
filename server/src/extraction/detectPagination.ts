@@ -110,18 +110,12 @@ ${content}
     return undefined;
   }
   const hasPagination = assertBool(toolCall, "has_pagination");
-  if (!hasPagination) {
-    return undefined;
-  }
   const urlPatternType = assertStringEnum(toolCall, "url_pattern_type", [
     "page_num",
     "offset",
     "other",
     "unknown",
   ]) as UrlPatternType;
-  if (["other", "unknown"].includes(urlPatternType)) {
-    return undefined;
-  }
   const urlPattern = assertString(toolCall, "url_pattern");
   if (!urlPattern.startsWith("http")) {
     throw new BadToolCallResponseError(`Expected a URL pattern: ${urlPattern}`);

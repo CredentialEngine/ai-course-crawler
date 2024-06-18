@@ -49,17 +49,14 @@ const extractCourseCatalogue: Processor<
     const step = await createStep(extraction.id, STEPS.FETCH_SINGLE_URL);
     const browser = await getBrowser();
     try {
-      await logAndNotify(job, `Fetching URL (${extraction.recipe.url})`);
-      const { content, screenshot } = await loadPage(
-        browser,
-        extraction.recipe.url,
-        true
-      );
+      const url = extraction.recipe.url;
+      await logAndNotify(job, `Fetching URL (${url})`);
+      const { content, screenshot } = await loadPage(browser, url, true);
       const dataType = recipeConfiguration.rootPageType;
       if (dataType == PAGE_DATA_TYPE.COURSE_DETAIL_PAGE) {
         await createStepItem(
           step.id,
-          extraction.recipe.url,
+          url,
           content,
           dataType,
           undefined,
@@ -67,19 +64,24 @@ const extractCourseCatalogue: Processor<
         );
         await logAndNotify(job, "Course page - ready for parsing");
       } else {
-        await logAndNotify(
-          job,
-          `Extracting detail URLs (${extraction.recipe.url})`
-        );
-        const detailUrls = await extractDetailUrls(
-          extraction.recipe.url,
+        await logAndNotify(job, `Extracting detail URLs (${url})`);
+        const detailUrlRegexp = await extractDetailUrls(
+          url,
           content,
           screenshot!,
           dataType
         );
+
+        if (!detailUrlRegexp) {
+          await logAndNotify(job, `Couldn't find detail regexp for ${url}.`);
+          return;
+        }
+
+        const detailUrls = await detailUrlRegexp.extract(url, content);
+
         await createStepItem(
           step.id,
-          extraction.recipe.url,
+          url,
           content,
           dataType,
           undefined,

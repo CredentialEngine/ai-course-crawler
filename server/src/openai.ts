@@ -1,7 +1,7 @@
 import { OpenAI } from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import db from "./data";
-import { decryptFromDb } from "./utils";
+import { decryptFromDb, exponentialRetry } from "./utils";
 
 export class BadToolCallResponseError extends Error {}
 
@@ -27,32 +27,6 @@ export type ToolCallReturn<T extends ToolCallParameters> = {
   [key in keyof T]: unknown;
 };
 
-async function exponentialRetry<T>(
-  fn: () => Promise<T>,
-  retries: number,
-  delay: number = 1000
-) {
-  let attempt = 0;
-  let retryErr: unknown;
-  while (attempt <= retries) {
-    try {
-      return await fn();
-    } catch (error) {
-      console.log(
-        `Exponential retries fn failed with error ${error}. Retrying`
-      );
-      retryErr = error;
-      if (attempt === retries) throw error;
-      await new Promise((resolve) =>
-        setTimeout(resolve, delay * Math.pow(2, attempt))
-      );
-      attempt++;
-    }
-  }
-  console.log("All retries failed");
-  throw retryErr;
-}
-
 async function simpleToolCompletionImpl<T extends ToolCallParameters>(
   messages: Array<ChatCompletionMessageParam>,
   toolName: string,
@@ -77,6 +51,7 @@ async function simpleToolCompletionImpl<T extends ToolCallParameters>(
     ],
   });
   if (!chatCompletion.choices[0].message.tool_calls?.length) {
+    console.log(`full completion is ${chatCompletion}`);
     return null;
   }
   const toolArgs = JSON.parse(
