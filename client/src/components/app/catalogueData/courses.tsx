@@ -72,7 +72,10 @@ export default function CatalogueDataCourses() {
     setDownloadInProgress(true);
     e.preventDefault();
     fetch(
-      `${API_URL}/downloads/courses/bulk_upload_template/${catalogueDataId}`
+      `${API_URL}/downloads/courses/bulk_upload_template/${catalogueDataId}`,
+      {
+        credentials: "include",
+      }
     )
       .then((response) => {
         const disposition = response.headers.get("Content-Disposition");
