@@ -53,7 +53,7 @@ const OpenAIApiKeyForm = ({
             The API key that will used for OpenAI requests. <br />
             {currentApiKeyPreview ? (
               <>
-                "The key is currently set to "
+                The key is currently set to{" "}
                 <code className="font-bold">{currentApiKeyPreview}</code>.
               </>
             ) : null}
