@@ -1,6 +1,10 @@
-import { eq } from "drizzle-orm";
+import { InferSelectModel, eq } from "drizzle-orm";
 import db, { getSqliteTimestamp } from "../data";
 import { RecipeConfiguration, recipes } from "../data/schema";
+
+type Recipe = Omit<InferSelectModel<typeof recipes>, "configuration"> & {
+  configuration?: RecipeConfiguration;
+};
 
 export async function findRecipes() {
   return db.select().from(recipes);
@@ -39,10 +43,11 @@ export async function setDefault(recipeId: number) {
   return result[0];
 }
 
-export async function findRecipeById(id: number) {
-  return db.query.recipes.findFirst({
+export async function findRecipeById(id: number): Promise<undefined | Recipe> {
+  const recipe = await db.query.recipes.findFirst({
     where: (recipes, { eq }) => eq(recipes.id, id),
   });
+  return recipe as undefined | Recipe;
 }
 
 export async function startRecipe(

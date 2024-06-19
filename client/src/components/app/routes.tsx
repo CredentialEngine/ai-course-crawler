@@ -13,6 +13,7 @@ import ExtractionStepDetail from "./extractions/step";
 import ExtractionStepItemDetail from "./extractions/stepItem";
 import Logout from "./logout";
 import MyProfile from "./profile";
+import CreateRecipe from "./recipes/create";
 import EditRecipe from "./recipes/edit";
 import Settings from "./settings";
 import Users from "./users";
@@ -30,7 +31,7 @@ export default function Routes() {
         <Route path="/new" component={CreateCatalogue} />
         <Switch>
           <Route path="/:catalogueId" component={CatalogueDetail} />
-          <Route path="/:catalogueId/recipes/new" component={EditRecipe} />
+          <Route path="/:catalogueId/recipes/new" component={CreateRecipe} />
           <Route
             path="/:catalogueId/recipes/:recipeId"
             component={EditRecipe}

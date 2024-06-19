@@ -16,24 +16,28 @@ export async function loadPage(
 ) {
   let screenshot: string | undefined;
   const page = await browser.newPage();
-  await page.goto(url);
-  const content = await page.content();
 
-  if (captureScreenshot) {
-    screenshot = await page.screenshot({
-      type: "webp",
-      encoding: "base64",
-      fullPage: true,
-      quality: 60,
-    });
+  try {
+    await exponentialRetry(() => page.goto(url), 5);
+
+    const content = await page.content();
+
+    if (captureScreenshot) {
+      screenshot = await page.screenshot({
+        type: "webp",
+        encoding: "base64",
+        fullPage: true,
+        quality: 60,
+      });
+    }
+
+    return {
+      content,
+      screenshot,
+    };
+  } finally {
+    await page.close();
   }
-
-  await page.close();
-
-  return {
-    content,
-    screenshot,
-  };
 }
 
 export interface LoadAllConfiguration {
@@ -58,19 +62,22 @@ export async function loadAll(
         if (config.beforeLoad) {
           config.beforeLoad(url);
         }
-        await exponentialRetry(() => page.goto(url), 5);
-        const content = await page.content();
-        const screenshot = await page.screenshot({
-          type: "webp",
-          encoding: "base64",
-          fullPage: true,
-          quality: 60,
-        });
-        if (config.onLoad) {
-          config.onLoad(url, content);
+        try {
+          await exponentialRetry(() => page.goto(url), 5);
+          const content = await page.content();
+          const screenshot = await page.screenshot({
+            type: "webp",
+            encoding: "base64",
+            fullPage: true,
+            quality: 60,
+          });
+          if (config.onLoad) {
+            config.onLoad(url, content);
+          }
+          return { url, content, screenshot };
+        } finally {
+          await page.close();
         }
-        await page.close();
-        return { url, content, screenshot };
       })()
     );
     results.push(...(await Promise.all(promises)));

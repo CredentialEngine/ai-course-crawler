@@ -100,7 +100,6 @@ export const recipesRouter = router({
               ]),
               pagination: z
                 .object({
-                  hasPagination: z.boolean(),
                   urlPatternType: z.enum(["page_num", "offset"]),
                   urlPattern: z.string(),
                   totalPages: z.number().positive(),

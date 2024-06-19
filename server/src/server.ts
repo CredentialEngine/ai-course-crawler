@@ -7,10 +7,8 @@ import {
 } from "@trpc/server/adapters/fastify";
 import argon2 from "argon2";
 import "dotenv/config";
-import { on } from "events";
 import * as csv from "fast-csv";
 import fastify from "fastify";
-import { FastifySSEPlugin } from "fastify-sse-v2";
 import { Stream } from "stream";
 import { z } from "zod";
 import { appRouter, CourseStructuredData, type AppRouter } from "./appRouter";
@@ -19,11 +17,6 @@ import { findUserByEmail } from "./data/users";
 import fastifySessionAuth, {
   requireAuthentication,
 } from "./fastifySessionAuth";
-import {
-  DetectConfigurationProgress,
-  ExtractCourseCatalogueProgress,
-  Queues,
-} from "./jobs";
 import { createContext } from "./trpcContext";
 
 const server = fastify();
@@ -56,8 +49,6 @@ server.register(cors, {
   origin: ["http://localhost:5173"],
   credentials: true,
 });
-
-server.register(FastifySSEPlugin);
 
 server.register(fastifySecureSession, {
   key: Buffer.from(process.env.COOKIE_KEY as string, "hex"),
@@ -140,53 +131,6 @@ server.register(async (instance) => {
           `attachment; filename="AICourseMapping-BulkUploadTemplate-${catalogueDataId}.csv"`
         )
         .send(outputStream);
-    }
-  );
-
-  instance.get(
-    "/sse/recipes/configuration/:recipeId",
-    async (request, reply) => {
-      reply.sse(
-        (async function* () {
-          for await (const eventData of on(
-            Queues.DetectConfiguration,
-            "job progress"
-          )) {
-            const progress: DetectConfigurationProgress = eventData[1];
-            let urlId: string | undefined = (request.params as any)?.recipeId;
-            if (progress.recordId.toString() != urlId) {
-              return;
-            }
-            yield {
-              data: JSON.stringify(progress),
-            };
-          }
-        })()
-      );
-    }
-  );
-
-  instance.get(
-    "/sse/recipes/extractions/:extractionId",
-    async (request, reply) => {
-      reply.sse(
-        (async function* () {
-          for await (const eventData of on(
-            Queues.ExtractCourseCatalogue,
-            "job progress"
-          )) {
-            const progress: ExtractCourseCatalogueProgress = eventData[1];
-            let urlId: string | undefined = (request.params as any)
-              ?.extractionId;
-            if (progress.recordId.toString() != urlId) {
-              return;
-            }
-            yield {
-              data: JSON.stringify(progress),
-            };
-          }
-        })()
-      );
     }
   );
 });

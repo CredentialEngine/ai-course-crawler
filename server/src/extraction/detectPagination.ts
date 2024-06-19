@@ -31,43 +31,35 @@ export async function detectPagination(
   html: string,
   screenshot: string,
   rootPageType: PAGE_DATA_TYPE
-): Promise<PaginationConfiguration | undefined> {
+): Promise<PaginationConfiguration | null> {
   const content = await toMarkdown(await simplifyHtml(html));
   const prompt = `
 Your goal is to determine whether the given website has pagination, and how that pagination works.
 
-1) Determine if website has pagination.
-2) Determine if pagination follows a pattern (for example, a parameter for the page number or for the items offset).
-3) Determine the total number of pages for the content.
+You can say the website has pagination if there are links in it to pages like page 1, page 2, page 3 etc.
+If the listings aren't paginated, you should say has_pagination is false.
+However if it does have pagination, figure out the pattern (for example, a parameter for the page number or for the items offset).
+Also, if it does have pagination, determine the total number of pages for the content.
 
-Call the tool according to the specs:
-
-has_pagination: whether the website has pagination
-
-url_pattern_type:
+url_pattern_type: ONLY FILL THIS IN IF THE WEBSITE HAS PAGINATION
 - page_num: page number parameter
 - offset: offset parameter
 - other: other type of pattern
 - unknown: can't determine pattern
 
-url_pattern:
+url_pattern: ONLY FILL THIS IN IF THE WEBSITE HAS PAGINATION
 
-the URL for pages, with the parameter replaced by {page_num} or {offset} (plus {limit} if relevant)
+the URL for pages, with the parameter replaced by {page_num} or {offset} (plus {limit} if relevant).
 Example:
 https://www.example.com/courses.php?page={page_num}
 
-total_pages: total number of pages
+total_pages: ONLY FILL THIS IN IF THE WEBSITE HAS PAGINATION
 
-For context, this is a description of the website:
 
-The page is a course catalogue index.
+For context, the page is a course catalogue index.
 ${pageTypeDescriptions[rootPageType]}
 
-PAGE URL:
-
-${url}
-
-SIMPLIFIED PAGE CONTENT:
+WEBSITE CONTENT:
 
 ${content}
 `;
@@ -107,9 +99,13 @@ ${content}
     }
   );
   if (!toolCall) {
-    return undefined;
+    return null;
   }
   const hasPagination = assertBool(toolCall, "has_pagination");
+  if (!hasPagination) {
+    return null;
+  }
+
   const urlPatternType = assertStringEnum(toolCall, "url_pattern_type", [
     "page_num",
     "offset",
@@ -128,7 +124,6 @@ ${content}
   }
   const totalPages = assertNumber(toolCall, "total_pages");
   return {
-    hasPagination,
     urlPatternType,
     urlPattern,
     totalPages,

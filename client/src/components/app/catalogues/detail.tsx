@@ -160,7 +160,7 @@ export default function CatalogueDetail() {
                 </TableHeader>
                 <TableBody>
                   {query.data.extractions.map((extraction) => (
-                    <TableRow>
+                    <TableRow key={`extractions-${extraction.id}`}>
                       <TableCell>
                         <Link to={`~/extractions/${extraction.id}`}>
                           #{extraction.id}

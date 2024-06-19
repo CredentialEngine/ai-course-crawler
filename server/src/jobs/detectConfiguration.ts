@@ -48,20 +48,20 @@ const detectConfiguration: Processor<
     if (!pagination) {
       job.progress({
         recordId: recipe.id,
-        status: "failure",
+        status: "info",
         message: "Could not detect pagination",
       });
     } else {
       job.progress({
         recordId: recipe.id,
-        status: "success",
+        status: "info",
         message: "Configured pagination",
       });
     }
 
     await updateConfiguration(recipe.id, {
       ...configuration,
-      pagination,
+      pagination: pagination || undefined,
     });
 
     job.progress({

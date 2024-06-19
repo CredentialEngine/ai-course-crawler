@@ -15,7 +15,6 @@ export enum PAGE_DATA_TYPE {
 export type UrlPatternType = "page_num" | "offset";
 
 export interface PaginationConfiguration {
-  hasPagination: boolean;
   urlPatternType: UrlPatternType;
   urlPattern: string;
   totalPages: number;
