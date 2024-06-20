@@ -3,6 +3,7 @@ import {
   PaginationContent,
   PaginationEllipsis,
   PaginationItem,
+  PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from "../ui/pagination";
@@ -20,21 +21,45 @@ export default function buildPagination(
 ) {
   const firstPageItem = (page - 1) * 20 + 1;
   const lastPageItem =
-    page == output.totalPages ? output.totalItems : page * 20;
+    page === output.totalPages ? output.totalItems : page * 20;
   const totalItems = output.totalItems || 0;
 
-  const decreasePage: React.MouseEventHandler<HTMLAnchorElement> = (e) => {
-    e.preventDefault();
-    if (page > 1) {
-      pageSetter(page - 1);
+  const changePage = (newPage: number) => {
+    if (newPage >= 1 && newPage <= output.totalPages) {
+      pageSetter(newPage);
     }
   };
 
-  const increasePage: React.MouseEventHandler<HTMLAnchorElement> = (e) => {
-    e.preventDefault();
-    if (page + 1 <= output.totalPages) {
-      pageSetter(page + 1);
+  const renderPageNumbers = () => {
+    const pageNumbers = [];
+    const maxPagesToShow = 5;
+
+    let startPage = Math.max(1, page - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(output.totalPages, startPage + maxPagesToShow - 1);
+
+    if (endPage - startPage < maxPagesToShow) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
     }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(
+        <PaginationItem key={i}>
+          <PaginationLink
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              changePage(i);
+            }}
+            className={i === page ? "active" : ""}
+            isActive={page === i}
+          >
+            {i}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+
+    return pageNumbers;
   };
 
   const PaginationButtons = (
@@ -47,13 +72,66 @@ export default function buildPagination(
       <Pagination>
         <PaginationContent>
           <PaginationItem>
-            <PaginationPrevious href="#" onClick={decreasePage} />
+            <PaginationLink
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                changePage(1);
+              }}
+              className={page === 1 ? "disabled" : ""}
+            >
+              First
+            </PaginationLink>
           </PaginationItem>
           <PaginationItem>
+            <PaginationPrevious
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                changePage(page - 1);
+              }}
+              className={page === 1 ? "disabled" : ""}
+            />
+          </PaginationItem>
+          {renderPageNumbers()}
+          {output.totalPages > 5 && page + 3 < output.totalPages && (
             <PaginationEllipsis />
+          )}
+          {output.totalPages > 5 && page + 2 < output.totalPages && (
+            <PaginationItem>
+              <PaginationLink
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  changePage(output.totalPages);
+                }}
+                className={page === output.totalPages ? "disabled" : ""}
+              >
+                {output.totalPages}
+              </PaginationLink>
+            </PaginationItem>
+          )}
+          <PaginationItem>
+            <PaginationNext
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                changePage(page + 1);
+              }}
+              className={page === output.totalPages ? "disabled" : ""}
+            />
           </PaginationItem>
           <PaginationItem>
-            <PaginationNext href="#" onClick={increasePage} />
+            <PaginationLink
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                changePage(output.totalPages);
+              }}
+              className={page === output.totalPages ? "disabled" : ""}
+            >
+              Last
+            </PaginationLink>
           </PaginationItem>
         </PaginationContent>
       </Pagination>
