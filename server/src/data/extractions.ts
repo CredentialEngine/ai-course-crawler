@@ -145,6 +145,7 @@ export async function findStepItemsPaginated(
   const result = await db.query.extractionStepItems.findMany({
     columns: {
       content: false,
+      screenshot: false,
     },
     limit,
     offset,
