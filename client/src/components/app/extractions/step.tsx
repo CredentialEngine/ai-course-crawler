@@ -11,9 +11,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PAGE_DATA_TYPE, concisePrintDate, trpc } from "@/utils";
-import { useState } from "react";
 import { Link, useParams } from "wouter";
-import buildPagination from "../buildPagination";
+import usePagination from "../usePagination";
 import { displayStepType } from "./utils";
 
 function displayDataType(dataType: PAGE_DATA_TYPE) {
@@ -29,7 +28,7 @@ function displayDataType(dataType: PAGE_DATA_TYPE) {
 
 export default function ExtractionStepDetail() {
   let { extractionId, stepId } = useParams();
-  const [page, setPage] = useState(1);
+  const { page, PaginationButtons } = usePagination();
   const extractionQuery = trpc.extractions.detail.useQuery(
     { id: parseInt(extractionId || "") },
     { enabled: !!extractionId }
@@ -49,13 +48,7 @@ export default function ExtractionStepDetail() {
   ];
 
   const step = stepQuery.data.extractionStep;
-  const items = stepQuery.data.extractionStepItems.results;
-
-  const { PaginationButtons } = buildPagination(
-    page,
-    setPage,
-    stepQuery.data.extractionStepItems
-  );
+  const items = stepQuery.data.extractionStepItems;
 
   return (
     <>
@@ -84,7 +77,7 @@ export default function ExtractionStepDetail() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((item) => (
+              {items.results.map((item) => (
                 <TableRow key={`step-item-${item.id}`}>
                   <TableCell>{item.id}</TableCell>
                   <TableCell>
@@ -120,7 +113,14 @@ export default function ExtractionStepDetail() {
             </TableBody>
           </Table>
         </CardContent>
-        {items.length > 0 ? <CardFooter>{PaginationButtons}</CardFooter> : null}
+        {items.results.length > 0 ? (
+          <CardFooter>
+            <PaginationButtons
+              totalItems={items.totalItems}
+              totalPages={items.totalPages}
+            />
+          </CardFooter>
+        ) : null}
       </Card>
     </>
   );

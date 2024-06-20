@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Extraction, prettyPrintDate, trpc } from "@/utils";
 import { Earth } from "lucide-react";
-import { useState } from "react";
 import { Link } from "wouter";
 
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -13,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import buildPagination from "../buildPagination";
+import usePagination from "../usePagination";
 
 type ExtractionSummary = Omit<Extraction, "logs" | "extractionSteps"> &
   Partial<Pick<Extraction, "logs" | "extractionSteps">>;
@@ -43,7 +42,7 @@ const ExtractionListItem = (extraction: ExtractionSummary) => {
 };
 
 export default function Extractions() {
-  const [page, setPage] = useState(1);
+  const { page, PaginationButtons } = usePagination();
   const listQuery = trpc.extractions.list.useQuery({ page });
 
   if (!listQuery.data?.results.length) {
@@ -74,8 +73,6 @@ export default function Extractions() {
       </>
     );
   }
-
-  const { PaginationButtons } = buildPagination(page, setPage, listQuery.data!);
 
   return (
     <>
@@ -108,7 +105,12 @@ export default function Extractions() {
           </Table>
         </CardContent>
         {listQuery.data!.results.length > 0 ? (
-          <CardFooter>{PaginationButtons}</CardFooter>
+          <CardFooter>
+            <PaginationButtons
+              totalItems={listQuery.data.totalItems}
+              totalPages={listQuery.data.totalPages}
+            />
+          </CardFooter>
         ) : null}
       </Card>
     </>

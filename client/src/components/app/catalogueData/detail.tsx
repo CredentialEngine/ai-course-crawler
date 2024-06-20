@@ -10,13 +10,12 @@ import {
 } from "@/components/ui/table";
 import { prettyPrintDate, trpc } from "@/utils";
 import { Earth, List } from "lucide-react";
-import { useState } from "react";
 import { Link, useParams } from "wouter";
-import buildPagination from "../buildPagination";
+import usePagination from "../usePagination";
 
 export default function CatalogueDataDetail() {
   const { catalogueId } = useParams();
-  const [page, setPage] = useState(1);
+  const { page, PaginationButtons } = usePagination();
   const catalogueQuery = trpc.catalogues.detail.useQuery(
     { id: parseInt(catalogueId || "") },
     { enabled: !!catalogueId }
@@ -32,12 +31,6 @@ export default function CatalogueDataDetail() {
 
   const catalogue = catalogueQuery.data!;
   const datasets = datasetsQuery.data.results;
-
-  const { PaginationButtons } = buildPagination(
-    page,
-    setPage,
-    datasetsQuery.data
-  );
 
   return (
     <>
@@ -104,7 +97,14 @@ export default function CatalogueDataDetail() {
             </TableBody>
           </Table>
         </CardContent>
-        {datasets.length ? <CardFooter>{PaginationButtons}</CardFooter> : null}
+        {datasets.length ? (
+          <CardFooter>
+            <PaginationButtons
+              totalItems={datasetsQuery.data.totalItems}
+              totalPages={datasetsQuery.data.totalPages}
+            />
+          </CardFooter>
+        ) : null}
       </Card>
     </>
   );

@@ -14,7 +14,7 @@ import { CourseStructuredData, DataItem, trpc } from "@/utils";
 import { Download } from "lucide-react";
 import { useState } from "react";
 import { useParams } from "wouter";
-import buildPagination from "../buildPagination";
+import usePagination from "../usePagination";
 
 interface CourseDisplayItemProps {
   item: DataItem;
@@ -53,7 +53,7 @@ function CourseDisplayItem({ item }: CourseDisplayItemProps) {
 export default function CatalogueDataCourses() {
   const { catalogueDataId } = useParams();
   const [downloadInProgress, setDownloadInProgress] = useState(false);
-  const [page, setPage] = useState(1);
+  const { page, PaginationButtons } = usePagination();
 
   const datasetQuery = trpc.catalogueData.detail.useQuery(
     { catalogueDataId: parseInt(catalogueDataId || "") },
@@ -115,12 +115,6 @@ export default function CatalogueDataCourses() {
   const catalogue = extraction.recipe.catalogue;
   const items = coursesQuery.data.results;
 
-  const { PaginationButtons } = buildPagination(
-    page,
-    setPage,
-    coursesQuery.data
-  );
-
   const breadCrumbs = [
     { label: "Data Library", href: "/" },
     { label: `Catalogue #${catalogue.id}`, href: `/catalogue/${catalogue.id}` },
@@ -162,7 +156,14 @@ export default function CatalogueDataCourses() {
             </TableBody>
           </Table>
         </CardContent>
-        {items.length > 0 ? <CardFooter>{PaginationButtons}</CardFooter> : null}
+        {items.length > 0 ? (
+          <CardFooter>
+            <PaginationButtons
+              totalItems={coursesQuery.data.totalItems}
+              totalPages={coursesQuery.data.totalPages}
+            />
+          </CardFooter>
+        ) : null}
       </Card>
     </>
   );

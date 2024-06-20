@@ -11,8 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { trpc } from "@/utils";
-import { useState } from "react";
-import buildPagination from "../buildPagination";
+import usePagination from "../usePagination";
 
 const CatalogueListItem = (catalogue: {
   id: number;
@@ -37,7 +36,7 @@ const CatalogueListItem = (catalogue: {
 };
 
 export default function CatalogueDataList() {
-  const [page, setPage] = useState(1);
+  const { page, PaginationButtons } = usePagination();
   const listQuery = trpc.catalogueData.list.useQuery({ page });
 
   if (!listQuery.data?.results.length) {
@@ -65,8 +64,6 @@ export default function CatalogueDataList() {
       </>
     );
   }
-
-  const { PaginationButtons } = buildPagination(page, setPage, listQuery.data);
 
   const catalogues = listQuery.data.results;
 
@@ -101,7 +98,12 @@ export default function CatalogueDataList() {
           </Table>
         </CardContent>
         {catalogues.length ? (
-          <CardFooter>{PaginationButtons}</CardFooter>
+          <CardFooter>
+            <PaginationButtons
+              totalItems={listQuery.data.totalItems}
+              totalPages={listQuery.data.totalPages}
+            />
+          </CardFooter>
         ) : null}
       </Card>
     </>
