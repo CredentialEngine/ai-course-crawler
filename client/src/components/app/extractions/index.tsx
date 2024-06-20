@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import buildPagination from "../buildPagination";
 
 type ExtractionSummary = Omit<Extraction, "logs" | "extractionSteps"> &
   Partial<Pick<Extraction, "logs" | "extractionSteps">>;
@@ -42,10 +43,10 @@ const ExtractionListItem = (extraction: ExtractionSummary) => {
 };
 
 export default function Extractions() {
-  const [page, _setPage] = useState(1);
+  const [page, setPage] = useState(1);
   const listQuery = trpc.extractions.list.useQuery({ page });
 
-  if (listQuery.isFetched && !listQuery.data?.results.length) {
+  if (!listQuery.data?.results.length) {
     return (
       <>
         <div className="flex items-center">
@@ -74,9 +75,7 @@ export default function Extractions() {
     );
   }
 
-  const firstPageItem = (page - 1) * 20 + 1;
-  const lastPageItem = listQuery.data?.results.length;
-  const totalItems = listQuery.data?.totalItems || 0;
+  const { PaginationButtons } = buildPagination(page, setPage, listQuery.data!);
 
   return (
     <>
@@ -100,9 +99,7 @@ export default function Extractions() {
                 <TableRow>
                   <TableCell colSpan={3}>
                     <div className="flex items-center justify-center">
-                      <span className="text-muted-foreground">
-                        Loading extractions...
-                      </span>
+                      Loading extractions...
                     </div>
                   </TableCell>
                 </TableRow>
@@ -110,16 +107,8 @@ export default function Extractions() {
             </TableBody>
           </Table>
         </CardContent>
-        {totalItems > 0 ? (
-          <CardFooter>
-            <div className="text-xs text-muted-foreground">
-              Showing{" "}
-              <strong>
-                {firstPageItem}-{lastPageItem}
-              </strong>{" "}
-              of <strong>{totalItems}</strong> extractions
-            </div>
-          </CardFooter>
+        {listQuery.data!.results.length > 0 ? (
+          <CardFooter>{PaginationButtons}</CardFooter>
         ) : null}
       </Card>
     </>
