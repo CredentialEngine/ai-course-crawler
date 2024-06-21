@@ -26,7 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { PAGE_DATA_TYPE } from "@/utils";
-import { Pickaxe, Star } from "lucide-react";
+import { LoaderIcon, Pickaxe, Star } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Link } from "wouter";
 
@@ -191,7 +191,7 @@ export default function EditRecipe() {
               <div className="grid gap-2 md:grid-cols-[1fr_250px] lg:grid-cols-2 lg:gap-4">
                 <Card>
                   <CardHeader>
-                    <CardDescription>Page Type</CardDescription>
+                    <CardDescription>Root URL</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <FormField
@@ -408,23 +408,29 @@ export default function EditRecipe() {
                   </Card>
                 </div>
               ) : null}
-              {recipe.detectionStartedAt ? (
-                <div className="mt-4">Detecting configuration</div>
-              ) : null}
             </div>
             <div className="flex items-center">
-              <Button
-                disabled={
-                  recipeQuery.isLoading ||
-                  updateRecipe.isLoading ||
-                  reconfigureRecipe.isLoading ||
-                  !recipe.configuredAt ||
-                  !form.formState.isDirty
-                }
-                type="submit"
-              >
-                Save changes
-              </Button>
+              {recipe.detectionStartedAt ? (
+                <Button disabled={true} variant={"outline"}>
+                  <div className="flex text-sm items-center">
+                    <LoaderIcon className="animate-spin mr-2 w-3.5" />
+                    Detecting configuration{" "}
+                  </div>
+                </Button>
+              ) : (
+                <Button
+                  disabled={
+                    recipeQuery.isLoading ||
+                    updateRecipe.isLoading ||
+                    reconfigureRecipe.isLoading ||
+                    !recipe.configuredAt ||
+                    !form.formState.isDirty
+                  }
+                  type="submit"
+                >
+                  Save changes
+                </Button>
+              )}
               {recipe.configuredAt ? (
                 <Link
                   className="ml-4"

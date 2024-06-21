@@ -47,7 +47,12 @@ export default function CreateRecipe() {
   });
   const { toast } = useToast();
   const [_location, navigate] = useLocation();
-  useEffect(() => {}, [catalogueQuery.data?.url]);
+  useEffect(() => {
+    if (!catalogueQuery.data) {
+      return;
+    }
+    form.reset({ url: catalogueQuery.data.url });
+  }, [catalogueQuery.data]);
 
   if (!catalogueQuery.data) {
     return null;
