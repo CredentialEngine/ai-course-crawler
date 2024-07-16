@@ -1,4 +1,4 @@
-import { ChatCompletionContentPart } from "openai/resources";
+import { ChatCompletionContentPart } from "openai/resources/chat/completions";
 import { PAGE_DATA_TYPE } from "../data/schema";
 import { assertArray, assertString, simpleToolCompletion } from "../openai";
 import { resolveAbsoluteUrl } from "../utils";

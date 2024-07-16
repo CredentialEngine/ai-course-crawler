@@ -2,7 +2,7 @@
 FROM node:20
 
 # Configure default locale (important for chrome-headless-shell).
-ENV LANG en_US.UTF-8
+ENV LANG=en_US.UTF-8
 
 # Install latest chrome dev package and fonts to support major charsets (Chinese, Japanese, Arabic, Hebrew, Thai and a few others)
 # Note: this installs the necessary libs to make the bundled version of Chrome that Puppeteer
@@ -20,11 +20,14 @@ RUN apt-get update \
 # Install pm2 for running the app
 RUN npm install pm2 -g
 
+# Install pnpm
+RUN npm install pnpm -g
+
 # Build the app
 COPY client/package.json /build/client/package.json
 COPY server/package.json /build/server/package.json
-RUN (cd /build/client && npm install) & \
-  (cd /build/server && npm install) & \
+RUN (cd /build/client && pnpm install) & \
+  (cd /build/server && pnpm install) & \
   wait
 
 USER pptruser
@@ -33,8 +36,8 @@ RUN /build/server/node_modules/.bin/puppeteer browsers install chrome
 USER root
 COPY client/ /build/client
 COPY server/ /build/server
-RUN (cd /build/client && npm run build) & \
-  (cd /build/server && npm run build) & \
+RUN (cd /build/client && pnpm run build) & \
+  (cd /build/server && pnpm run build) & \
   wait
 
 RUN cp -R /build/server /app
