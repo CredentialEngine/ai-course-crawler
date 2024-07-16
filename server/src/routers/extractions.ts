@@ -20,7 +20,7 @@ import {
 import { Recipe } from "../data/recipes";
 import { STEPS } from "../data/schema";
 import { simplifyHtml, toMarkdown } from "../extraction/browser";
-import { Queues, submitJob } from "../jobs";
+import { Queues, submitJob } from "../workers";
 
 async function startExtraction(recipe: Recipe) {
   const extraction = await createExtraction(recipe.id);

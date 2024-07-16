@@ -3,7 +3,6 @@ import {
   PAGE_DATA_TYPE,
   RecipeConfiguration,
 } from "./data/schema";
-import { DetectConfigurationProgress } from "./jobs";
 import { router } from "./routers";
 import { catalogueDataRouter } from "./routers/catalogueData";
 import { cataloguesRouter } from "./routers/catalogues";
@@ -11,6 +10,7 @@ import { extractionsRouter } from "./routers/extractions";
 import { recipesRouter } from "./routers/recipes";
 import { settingsRouter } from "./routers/settings";
 import { usersRouter } from "./routers/users";
+import { DetectConfigurationProgress } from "./workers";
 
 const appRouter = router({
   catalogues: cataloguesRouter,

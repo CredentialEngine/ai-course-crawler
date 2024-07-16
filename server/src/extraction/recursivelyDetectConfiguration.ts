@@ -7,8 +7,8 @@ import { detectPagination } from "../extraction/detectPagination";
 import detectUrlRegexp, {
   createUrlExtractor,
 } from "../extraction/detectUrlRegexp";
-import { bestOutOf } from "../jobs/utils";
 import { exponentialRetry, unique } from "../utils";
+import { bestOutOf } from "../workers/utils";
 
 const sample = <T>(arr: T[], sampleSize: number) =>
   arr.sort(() => 0.5 - Math.random()).slice(0, sampleSize);

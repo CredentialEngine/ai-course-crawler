@@ -11,8 +11,8 @@ import {
 import { PAGE_DATA_TYPE } from "../data/schema";
 import { getBrowser, loadPage } from "../extraction/browser";
 import { detectPageType } from "../extraction/detectPageType";
-import { Queues, submitJob } from "../jobs";
-import { bestOutOf } from "../jobs/utils";
+import { Queues, submitJob } from "../workers";
+import { bestOutOf } from "../workers/utils";
 
 enum UrlPatternType {
   page_num = "page_num",

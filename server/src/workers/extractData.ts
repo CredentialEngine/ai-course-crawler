@@ -1,4 +1,4 @@
-import { ExtractDataJob, Processor } from ".";
+import { ExtractDataJob, ExtractDataProgress, Processor } from ".";
 import {
   createDataItem,
   findOrCreateCatalogueData,
@@ -6,7 +6,9 @@ import {
 import { findStepItemForJob } from "../data/extractions";
 import { extractCourseDataItem } from "../extraction/extractCourseDataItem";
 
-const extractData: Processor<ExtractDataJob, ExtractDataJob> = async (job) => {
+const extractData: Processor<ExtractDataJob, ExtractDataProgress> = async (
+  job
+) => {
   const stepItem = await findStepItemForJob(job.data.stepItemId);
   const catalogueData = await findOrCreateCatalogueData(
     stepItem.extractionStep.extractionId
