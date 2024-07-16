@@ -1,12 +1,78 @@
 import * as cheerio from "cheerio";
-import puppeteer, { Browser } from "puppeteer";
+import { Cluster } from "puppeteer-cluster";
 import TurndownService from "turndown";
-import { exponentialRetry } from "../utils";
+import { exponentialRetry, resolveAbsoluteUrl } from "../utils";
 
-export interface Page {
+export interface BrowserTaskInput {
+  url: string;
+}
+
+export interface BrowserTaskResult {
   url: string;
   content: string;
   screenshot?: string;
+}
+
+let cluster: Cluster<BrowserTaskInput, BrowserTaskResult> | undefined;
+
+export async function getCluster() {
+  if (cluster) {
+    return cluster;
+  }
+  cluster = await Cluster.launch({
+    concurrency: Cluster.CONCURRENCY_CONTEXT,
+    maxConcurrency: 2,
+  });
+  cluster.task(async ({ page, data }) => {
+    const { url } = data;
+    let screenshot: string | undefined;
+    await page.goto(url);
+    const content = await exponentialRetry(() => page.content(), 3, 1000);
+    screenshot = await page.screenshot({
+      type: "webp",
+      encoding: "base64",
+      fullPage: true,
+      quality: 60,
+    });
+    if (!isValidBase64(screenshot)) {
+      console.log("Screenshot is not valid base 64");
+      screenshot = undefined;
+    }
+    return {
+      url,
+      content,
+      screenshot,
+    };
+  });
+  return cluster;
+}
+
+export async function closeCluster() {
+  if (!cluster) {
+    return;
+  }
+  cluster.idle();
+  cluster.close();
+}
+
+export async function fetchBrowserPage(url: string) {
+  const cluster = await getCluster();
+  return cluster.execute({ url });
+}
+
+export async function fetchPreview(url: string) {
+  const res = await fetch(url);
+  const text = await res.text();
+  const $ = cheerio.load(text);
+  const title = $('meta[name="og:title"]').attr("content") || $("title").text();
+  const description = $('meta[name="og:description"]').attr("content");
+  let thumbnailUrl =
+    $('meta[name="og:image"]').attr("content") || $("img").first().attr("src");
+  thumbnailUrl = thumbnailUrl
+    ? resolveAbsoluteUrl(url, thumbnailUrl)
+    : undefined;
+
+  return { title, thumbnailUrl, description };
 }
 
 function isValidBase64(str: string) {
@@ -20,94 +86,6 @@ function isValidBase64(str: string) {
   } catch (e) {
     return false;
   }
-}
-
-export async function getBrowser() {
-  return puppeteer.launch({
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
-}
-
-export async function loadPage(
-  browser: Browser,
-  url: string,
-  captureScreenshot: boolean = true
-): Promise<Page> {
-  let screenshot: string | undefined;
-  const page = await browser.newPage();
-
-  try {
-    await exponentialRetry(() => page.goto(url), 5);
-
-    const content = await page.content();
-
-    if (captureScreenshot) {
-      screenshot = await page.screenshot({
-        type: "webp",
-        encoding: "base64",
-        fullPage: true,
-        quality: 60,
-      });
-      if (!isValidBase64(screenshot)) {
-        console.log("Screenshot is not valid base 64");
-        screenshot = undefined;
-      }
-    }
-
-    return {
-      url,
-      content,
-      screenshot,
-    };
-  } finally {
-    await page.close();
-  }
-}
-
-export interface LoadAllConfiguration {
-  batchSize?: number;
-  beforeLoad?: (url: string) => Promise<void>;
-  onLoad?: (url: string, content: string) => Promise<void>;
-}
-
-export async function loadAll(
-  browser: Browser,
-  urls: string[],
-  config: LoadAllConfiguration = {}
-): Promise<Page[]> {
-  const batchSize = config.batchSize || 5;
-  const results = [];
-
-  for (let i = 0; i < urls.length; i += batchSize) {
-    const batch = urls.slice(i, i + batchSize);
-    const promises = batch.map((url) =>
-      (async () => {
-        const page = await browser.newPage();
-        if (config.beforeLoad) {
-          config.beforeLoad(url);
-        }
-        try {
-          await exponentialRetry(() => page.goto(url), 5);
-          const content = await page.content();
-          const screenshot = await page.screenshot({
-            type: "webp",
-            encoding: "base64",
-            fullPage: true,
-            quality: 60,
-          });
-          if (config.onLoad) {
-            config.onLoad(url, content);
-          }
-          return { url, content, screenshot };
-        } finally {
-          await page.close();
-        }
-      })()
-    );
-    results.push(...(await Promise.all(promises)));
-  }
-
-  return results;
 }
 
 export async function simplifyHtml(html: string) {

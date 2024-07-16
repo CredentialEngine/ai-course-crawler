@@ -5,6 +5,11 @@ import {
   sqliteTable,
   text,
 } from "drizzle-orm/sqlite-core";
+import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+
+if (!process.env.ENCRYPTION_KEY)
+  throw new Error("Please define an encryption key.");
+export const ENCRYPTION_KEY: string = process.env.ENCRYPTION_KEY;
 
 export enum PAGE_DATA_TYPE {
   COURSE_DETAIL_PAGE = "COURSE_DETAIL_PAGE",
@@ -296,6 +301,27 @@ const users = sqliteTable("users", {
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
 });
+
+export function encryptForDb(text: string) {
+  const IV = randomBytes(16);
+  let cipher = createCipheriv("aes-256-cbc", Buffer.from(ENCRYPTION_KEY), IV);
+  let encrypted = cipher.update(text);
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+  return `${encrypted.toString("hex")}:${IV.toString("hex")}`;
+}
+
+export function decryptFromDb(text: string) {
+  const [value, IV] = text.split(":");
+  let encryptedText = Buffer.from(value, "hex");
+  let decipher = createDecipheriv(
+    "aes-256-cbc",
+    Buffer.from(ENCRYPTION_KEY),
+    Buffer.from(IV, "hex")
+  );
+  let decrypted = decipher.update(encryptedText);
+  decrypted = Buffer.concat([decrypted, decipher.final()]);
+  return decrypted.toString();
+}
 
 export {
   catalogueData,

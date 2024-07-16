@@ -1,20 +1,18 @@
-import { Browser } from "puppeteer";
 import { inspect } from "util";
 import { PAGE_DATA_TYPE, RecipeConfiguration } from "../data/schema";
-import { loadPage } from "../extraction/browser";
 import { detectPageType } from "../extraction/detectPageType";
 import { detectPagination } from "../extraction/detectPagination";
 import detectUrlRegexp, {
   createUrlExtractor,
 } from "../extraction/detectUrlRegexp";
-import { exponentialRetry, unique } from "../utils";
-import { bestOutOf } from "../workers/utils";
+import { bestOutOf, exponentialRetry, unique } from "../utils";
+import { fetchBrowserPage } from "./browser";
 
 const sample = <T>(arr: T[], sampleSize: number) =>
   arr.sort(() => 0.5 - Math.random()).slice(0, sampleSize);
 
-const detectConfiguration = async (browser: Browser, url: string) => {
-  const { content, screenshot } = await loadPage(browser, url);
+const detectConfiguration = async (url: string) => {
+  const { content, screenshot } = await fetchBrowserPage(url);
   console.log(`Detecting page type for ${url}`);
   const pageType = await bestOutOf(
     5,
@@ -68,7 +66,6 @@ const detectConfiguration = async (browser: Browser, url: string) => {
 };
 
 const recursivelyDetectConfiguration = async (
-  browser: Browser,
   url: string,
   depth: number = 1
 ) => {
@@ -78,7 +75,7 @@ const recursivelyDetectConfiguration = async (
 
   console.log("Detecting configuration for root page");
   const { content, linkRegexp, pageType, pagination } =
-    await detectConfiguration(browser, url);
+    await detectConfiguration(url);
 
   const configuration: RecipeConfiguration = {
     pageType,
@@ -99,7 +96,7 @@ const recursivelyDetectConfiguration = async (
     console.log("Detecting configuration for sample child pages");
     console.log(`There are ${urls.length} URLs and we're sampling 5`);
     const samplePageConfigs = await Promise.all(
-      sample(urls, 5).map(async (url) => detectConfiguration(browser, url))
+      sample(urls, 5).map(async (url) => detectConfiguration(url))
     );
 
     const mixedContent =
@@ -136,7 +133,7 @@ const recursivelyDetectConfiguration = async (
 
     console.log("Detecting configuration for sample child > child pages");
     const sampleChildPageConfigs = await Promise.all(
-      sample(childUrls, 5).map(async (url) => detectConfiguration(browser, url))
+      sample(childUrls, 5).map(async (url) => detectConfiguration(url))
     );
 
     const mixedChildContent =
@@ -164,7 +161,6 @@ const recursivelyDetectConfiguration = async (
       return configuration;
     } else if (childPage.pageType == PAGE_DATA_TYPE.CATEGORY_LINKS_PAGE) {
       configuration.links.links.links = await recursivelyDetectConfiguration(
-        browser,
         childLinkPage.url,
         depth + 1
       );

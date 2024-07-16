@@ -1,11 +1,3 @@
-import * as cheerio from "cheerio";
-
-import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
-
-if (!process.env.ENCRYPTION_KEY)
-  throw new Error("Please define an encryption key.");
-export const ENCRYPTION_KEY: string = process.env.ENCRYPTION_KEY;
-
 export async function exponentialRetry<T>(
   fn: () => Promise<T>,
   retries: number,
@@ -32,40 +24,28 @@ export async function exponentialRetry<T>(
   throw retryErr;
 }
 
-export function encryptForDb(text: string) {
-  const IV = randomBytes(16);
-  let cipher = createCipheriv("aes-256-cbc", Buffer.from(ENCRYPTION_KEY), IV);
-  let encrypted = cipher.update(text);
-  encrypted = Buffer.concat([encrypted, cipher.final()]);
-  return `${encrypted.toString("hex")}:${IV.toString("hex")}`;
-}
+export async function bestOutOf<T>(
+  times: number,
+  fn: () => Promise<T>,
+  compareWithFn: (result: T) => string
+) {
+  const results = new Map<string, { count: number; result: T }>();
+  let bestResult: T | undefined;
+  let maxCount = 0;
 
-export function decryptFromDb(text: string) {
-  const [value, IV] = text.split(":");
-  let encryptedText = Buffer.from(value, "hex");
-  let decipher = createDecipheriv(
-    "aes-256-cbc",
-    Buffer.from(ENCRYPTION_KEY),
-    Buffer.from(IV, "hex")
-  );
-  let decrypted = decipher.update(encryptedText);
-  decrypted = Buffer.concat([decrypted, decipher.final()]);
-  return decrypted.toString();
-}
+  for (let i = 0; i < times; i++) {
+    const result = await fn();
+    const compareResult = compareWithFn(result);
+    const resultCount = (results.get(compareResult)?.count || 0) + 1;
+    results.set(compareResult, { count: resultCount + 1, result });
 
-export async function fetchPreview(url: string) {
-  const res = await fetch(url);
-  const text = await res.text();
-  const $ = cheerio.load(text);
-  const title = $('meta[name="og:title"]').attr("content") || $("title").text();
-  const description = $('meta[name="og:description"]').attr("content");
-  let thumbnailUrl =
-    $('meta[name="og:image"]').attr("content") || $("img").first().attr("src");
-  thumbnailUrl = thumbnailUrl
-    ? resolveAbsoluteUrl(url, thumbnailUrl)
-    : undefined;
+    if (resultCount > maxCount) {
+      maxCount = resultCount;
+      bestResult = result;
+    }
+  }
 
-  return { title, thumbnailUrl, description };
+  return bestResult as T;
 }
 
 export function unique<T>(array: T[]): T[] {

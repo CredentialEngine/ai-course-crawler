@@ -14,18 +14,29 @@ import {
 } from "../data/extractions";
 import {
   PAGE_DATA_TYPE,
+  PaginationConfiguration,
   RecipeConfiguration,
   STEP_ITEM_STATUSES,
   STEPS,
 } from "../data/schema";
-import { getBrowser, loadPage } from "../extraction/browser";
+import { fetchBrowserPage } from "../extraction/browser";
 import { detectPageCount } from "../extraction/detectPageCount";
 import { createUrlExtractor } from "../extraction/detectUrlRegexp";
-import { constructPaginatedUrls } from "./utils";
 
-export interface NextStep {
-  step: STEPS;
-}
+const constructPaginatedUrls = (configuration: PaginationConfiguration) => {
+  const urls = [];
+  if (configuration.urlPatternType == "offset") {
+    // TODO: implement offset logic
+    return [];
+  } else if (configuration.urlPatternType == "page_num") {
+    for (let i = 1; i <= configuration.totalPages; i++) {
+      urls.push(configuration.urlPattern.replace("{page_num}", i.toString()));
+    }
+    return urls;
+  } else {
+    throw new Error("Unknown pagination pattern type");
+  }
+};
 
 async function enqueueExtraction(
   stepItem: Awaited<ReturnType<typeof findStepItemForJob>>
@@ -129,11 +140,10 @@ const processNextStep = async (
 const fetchPage: Processor<FetchPageJob, FetchPageProgress> = async (job) => {
   const stepItem = await findStepItemForJob(job.data.stepItemId);
 
-  const browser = await getBrowser();
   try {
     console.log(`Loading ${stepItem.url} for step item ${stepItem.id}`);
     await updateStepItemStatus(stepItem.id, STEP_ITEM_STATUSES.IN_PROGRESS);
-    const page = await loadPage(browser, stepItem.url);
+    const page = await fetchBrowserPage(stepItem.url);
     await updateStepItem(
       stepItem.id,
       STEP_ITEM_STATUSES.SUCCESS,
@@ -146,8 +156,6 @@ const fetchPage: Processor<FetchPageJob, FetchPageProgress> = async (job) => {
   } catch (err) {
     await updateStepItemStatus(stepItem.id, STEP_ITEM_STATUSES.ERROR);
     throw err;
-  } finally {
-    await browser.close();
   }
 };
 

@@ -9,7 +9,7 @@ import {
   findLatestExtractionsForCatalogue,
   getCatalogueCount,
 } from "../data/catalogues";
-import { fetchPreview } from "../utils";
+import { fetchPreview } from "../extraction/browser";
 
 export const cataloguesRouter = router({
   preview: publicProcedure

@@ -1,7 +1,8 @@
 import { OpenAI } from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import db from "./data";
-import { decryptFromDb, exponentialRetry } from "./utils";
+import { decryptFromDb } from "./data/schema";
+import { exponentialRetry } from "./utils";
 
 export class BadToolCallResponseError extends Error {}
 

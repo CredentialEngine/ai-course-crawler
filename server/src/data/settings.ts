@@ -1,6 +1,5 @@
 import db from "../data";
-import { settings } from "../data/schema";
-import { encryptForDb } from "../utils";
+import { encryptForDb, settings } from "../data/schema";
 
 export async function findSettings() {
   return db.query.settings.findMany();
