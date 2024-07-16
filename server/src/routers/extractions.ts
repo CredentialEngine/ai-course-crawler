@@ -1,9 +1,12 @@
 import { z } from "zod";
 import { error, publicProcedure, router } from ".";
 import { AppErrors } from "../appErrors";
+import { findCatalogueForExtraction } from "../data/catalogueData";
 import { findCatalogueById } from "../data/catalogues";
 import {
   createExtraction,
+  createStep,
+  createStepItem,
   findExtractionById,
   findExtractions,
   findLogs,
@@ -14,8 +17,26 @@ import {
   getLogCount,
   getStepItemCount,
 } from "../data/extractions";
+import { Recipe } from "../data/recipes";
+import { STEPS } from "../data/schema";
 import { simplifyHtml, toMarkdown } from "../extraction/browser";
 import { Queues, submitJob } from "../jobs";
+
+async function startExtraction(recipe: Recipe) {
+  const extraction = await createExtraction(recipe.id);
+  const step = await createStep({
+    extractionId: extraction.id,
+    step: STEPS.FETCH_ROOT,
+    configuration: recipe.configuration!,
+  });
+  const stepItem = await createStepItem({
+    extractionStepId: step.id,
+    url: recipe.url,
+    dataType: recipe.configuration!.pageType,
+  });
+  submitJob(Queues.FetchPage, { stepItemId: stepItem.id });
+  return extraction;
+}
 
 export const extractionsRouter = router({
   create: publicProcedure
@@ -41,8 +62,7 @@ export const extractionsRouter = router({
           "Recipe hasn't been configured for extraction"
         );
       }
-      const extraction = await createExtraction(recipe.id);
-      submitJob(Queues.ExtractCourseCatalogue, { extractionId: extraction.id });
+      return startExtraction(recipe as Recipe);
     }),
   detail: publicProcedure
     .input(
@@ -51,11 +71,15 @@ export const extractionsRouter = router({
       })
     )
     .query(async (opts) => {
-      const result = findExtractionById(opts.input.id);
+      const result = await findExtractionById(opts.input.id);
       if (!result) {
         throw error("NOT_FOUND", AppErrors.NOT_FOUND, "Extraction not found");
       }
-      return result;
+      const withCatalogueData = {
+        ...result,
+        catalogueDataId: (await findCatalogueForExtraction(result.id))?.id,
+      };
+      return withCatalogueData;
     }),
 
   logs: publicProcedure
@@ -122,9 +146,9 @@ export const extractionsRouter = router({
       }
       return {
         ...stepItem,
-        simplifiedContent: await toMarkdown(
-          await simplifyHtml(stepItem.content)
-        ),
+        simplifiedContent: stepItem.content
+          ? await toMarkdown(await simplifyHtml(stepItem.content))
+          : null,
       };
     }),
   list: publicProcedure

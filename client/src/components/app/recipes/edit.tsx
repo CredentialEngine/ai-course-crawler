@@ -13,7 +13,6 @@ import {
   CardDescription,
   CardHeader,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -24,11 +23,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { PAGE_DATA_TYPE } from "@/utils";
 import { LoaderIcon, Pickaxe, Star } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Link } from "wouter";
+import { displayRecipeDetails } from "./util";
 
 const FormSchema = z.object({
   url: z
@@ -38,7 +37,7 @@ const FormSchema = z.object({
     rootPageType: z.enum([
       PAGE_DATA_TYPE.COURSE_LINKS_PAGE,
       PAGE_DATA_TYPE.COURSE_DETAIL_PAGE,
-      PAGE_DATA_TYPE.CATEGORY_PAGE,
+      PAGE_DATA_TYPE.CATEGORY_LINKS_PAGE,
     ]),
     pagination: z
       .object({
@@ -82,7 +81,6 @@ export default function EditRecipe() {
   useEffect(() => {
     const pollQuery = () => {
       if (recipeQuery.data?.configuredAt) {
-        console.log("Clearing interval");
         window.clearInterval(intervalRef.current!);
         intervalRef.current = null;
         return;
@@ -148,12 +146,12 @@ export default function EditRecipe() {
   const catalogue = catalogueQuery.data;
   const recipe = recipeQuery.data;
 
-  async function onSubmit(data: z.infer<typeof FormSchema>) {
+  async function onSubmit(_data: z.infer<typeof FormSchema>) {
     if (recipe.configuredAt) {
-      await updateRecipe.mutateAsync({
-        id: recipe.id,
-        update: data,
-      });
+      // await updateRecipe.mutateAsync({
+      //   id: recipe.id,
+      //   update: data,
+      // });
       recipeQuery.refetch();
     } else {
       await reconfigureRecipe.mutateAsync({ id: recipe.id });
@@ -210,166 +208,20 @@ export default function EditRecipe() {
                         </FormItem>
                       )}
                     />
-                    {recipe.configuredAt ? (
-                      <FormField
-                        control={form.control}
-                        name="configuration.rootPageType"
-                        render={({ field }) => (
-                          <FormItem className="space-y-3 mt-4">
-                            <FormLabel>Type</FormLabel>
-                            <FormControl>
-                              <RadioGroup
-                                onValueChange={field.onChange}
-                                className="flex flex-col space-y-1"
-                              >
-                                <FormItem className="flex items-center space-x-3 space-y-0">
-                                  <FormControl>
-                                    <RadioGroupItem
-                                      value={PAGE_DATA_TYPE.COURSE_LINKS_PAGE}
-                                      checked={
-                                        field.value ==
-                                        PAGE_DATA_TYPE.COURSE_LINKS_PAGE
-                                      }
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="font-normal">
-                                    Course Links
-                                  </FormLabel>
-                                </FormItem>
-                                <FormItem className="flex items-center space-x-3 space-y-0">
-                                  <FormControl>
-                                    <RadioGroupItem
-                                      value={PAGE_DATA_TYPE.CATEGORY_PAGE}
-                                      checked={
-                                        field.value ==
-                                        PAGE_DATA_TYPE.CATEGORY_PAGE
-                                      }
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="font-normal">
-                                    Category Links
-                                  </FormLabel>
-                                </FormItem>
-                                <FormItem className="flex items-center space-x-3 space-y-0">
-                                  <FormControl>
-                                    <RadioGroupItem
-                                      value={PAGE_DATA_TYPE.COURSE_DETAIL_PAGE}
-                                      checked={
-                                        field.value ==
-                                        PAGE_DATA_TYPE.COURSE_DETAIL_PAGE
-                                      }
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="font-normal">
-                                    Course Details
-                                  </FormLabel>
-                                </FormItem>
-                              </RadioGroup>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    ) : null}
                   </CardContent>
                 </Card>
                 {recipe.configuredAt ? (
                   <Card>
                     <CardHeader>
-                      <CardDescription>Pagination</CardDescription>
+                      <CardDescription>Configuration</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={!!hasPagination}
-                            onCheckedChange={onForceSetPagination}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Has Pagination </FormLabel>
-                        </div>
-                      </FormItem>
-                      {hasPagination ? (
-                        <>
-                          <FormField
-                            control={form.control}
-                            name="configuration.pagination.urlPatternType"
-                            render={({ field }) => (
-                              <FormItem className="space-y-3 mt-4">
-                                <FormLabel>Pattern Type</FormLabel>
-                                <FormControl>
-                                  <RadioGroup
-                                    onValueChange={field.onChange}
-                                    className="flex flex-col space-y-1"
-                                  >
-                                    <FormItem className="flex items-center space-x-3 space-y-0">
-                                      <FormControl>
-                                        <RadioGroupItem
-                                          value="page_num"
-                                          checked={field.value == "page_num"}
-                                        />
-                                      </FormControl>
-                                      <FormLabel className="font-normal">
-                                        Page Number
-                                      </FormLabel>
-                                    </FormItem>
-                                    <FormItem className="flex items-center space-x-3 space-y-0">
-                                      <FormControl>
-                                        <RadioGroupItem
-                                          value="offset"
-                                          checked={field.value == "offset"}
-                                        />
-                                      </FormControl>
-                                      <FormLabel className="font-normal">
-                                        Offset
-                                      </FormLabel>
-                                    </FormItem>
-                                  </RadioGroup>
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="configuration.pagination.urlPattern"
-                            render={({ field }) => (
-                              <FormItem className="mt-4">
-                                <FormLabel>URL Pattern</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="URL Pattern" {...field} />
-                                </FormControl>
-                                <FormDescription>
-                                  The pattern where page information should be
-                                  replaced
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="configuration.pagination.totalPages"
-                            render={({ field }) => (
-                              <FormItem className="mt-4">
-                                <FormLabel>Total Pages</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="number"
-                                    placeholder="1"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormDescription>
-                                  The total number of pages
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </>
-                      ) : null}
+                      <div className="text-xs">
+                        {displayRecipeDetails(recipe)}
+                      </div>
+                      <pre className="mt-4 text-xs overflow-x-auto">
+                        {JSON.stringify(recipe.configuration, null, 2)}
+                      </pre>
                     </CardContent>
                   </Card>
                 ) : null}
@@ -410,7 +262,7 @@ export default function EditRecipe() {
               ) : null}
             </div>
             <div className="flex items-center">
-              {recipe.detectionStartedAt ? (
+              {recipe.detectionStartedAt && !recipe.configuredAt ? (
                 <Button disabled={true} variant={"outline"}>
                   <div className="flex text-sm items-center">
                     <LoaderIcon className="animate-spin mr-2 w-3.5" />

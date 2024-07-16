@@ -18,6 +18,7 @@ import {
 } from "@/utils";
 import { CookingPot, LibraryBig, List } from "lucide-react";
 import { Link, useParams } from "wouter";
+import { displayRecipeDetails } from "../recipes/util";
 import { displayStepType } from "./utils";
 
 function displayStepParent(steps: ExtractionStep[], parentId: number) {
@@ -60,15 +61,24 @@ export default function ExtractionDetail() {
             </div>
             <div className="flex gap-4">
               <div className="rounded-md border p-4 mt-2 flex items-center">
-                <Link
-                  to={`~/data/extraction/${extraction.id}`}
-                  className="flex items-center gap-4"
-                >
+                {extraction.catalogueDataId ? (
+                  <Link
+                    to={`~/data/courses/${extraction.catalogueDataId}`}
+                    className="flex items-center gap-4"
+                  >
+                    <div>
+                      <LibraryBig className="w-4 h-4" />
+                    </div>
+                    <div>View Data</div>
+                  </Link>
+                ) : (
                   <div>
-                    <LibraryBig className="w-4 h-4" />
+                    <p>No data</p>
+                    <div className="text-sm text-muted-foreground">
+                      Check again later
+                    </div>
                   </div>
-                  <div>View Data</div>
-                </Link>
+                )}
               </div>
               <div className="rounded-md border p-4 mt-2">
                 <Link
@@ -81,11 +91,11 @@ export default function ExtractionDetail() {
                   <div>
                     Recipe #{extraction.recipe.id}{" "}
                     {extraction.recipe.configuredAt ? null : "— Draft"}
-                    <div className="flex gap-4 text-sm">
-                      <div>Root URL</div>
-                      <div className="text-sm">
-                        {extraction.recipe.url.substring(0, 200)}...
-                      </div>
+                    <div className="text-xs">
+                      {displayRecipeDetails(extraction.recipe)}
+                    </div>
+                    <div className="text-xs">
+                      {extraction.recipe.url.substring(0, 200)}...
                     </div>
                   </div>
                 </Link>

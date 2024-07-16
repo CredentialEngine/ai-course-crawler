@@ -10,7 +10,7 @@ if (!sqliteUrl) {
 export default {
   schema: "./src/data/schema.ts",
   out: "./migrations",
-  driver: "better-sqlite",
+  dialect: "sqlite",
   dbCredentials: {
     url: sqliteUrl,
   },

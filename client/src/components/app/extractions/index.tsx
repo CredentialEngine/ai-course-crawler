@@ -62,7 +62,7 @@ export default function Extractions() {
             <p className="text-sm text-muted-foreground">
               Select a catalogue to start an extraction.
             </p>
-            <Link to="/catalogues">
+            <Link to="~/catalogues">
               <Button className="mt-4">
                 <Earth className="h-5 w-5 mr-2" />
                 Catalogues

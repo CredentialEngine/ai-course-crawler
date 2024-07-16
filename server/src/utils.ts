@@ -59,8 +59,21 @@ export async function fetchPreview(url: string) {
   const $ = cheerio.load(text);
   const title = $('meta[name="og:title"]').attr("content") || $("title").text();
   const description = $('meta[name="og:description"]').attr("content");
-  const thumbnailUrl =
+  let thumbnailUrl =
     $('meta[name="og:image"]').attr("content") || $("img").first().attr("src");
+  thumbnailUrl = thumbnailUrl
+    ? resolveAbsoluteUrl(url, thumbnailUrl)
+    : undefined;
 
   return { title, thumbnailUrl, description };
+}
+
+export function unique<T>(array: T[]): T[] {
+  return Array.from(new Set(array));
+}
+
+export function resolveAbsoluteUrl(base: string, relative: string): string {
+  const baseUrl = new URL(base);
+  const absoluteUrl = new URL(relative, baseUrl);
+  return absoluteUrl.href;
 }

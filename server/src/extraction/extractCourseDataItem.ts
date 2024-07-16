@@ -1,6 +1,18 @@
-import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import { assertString, simpleToolCompletion } from "../openai";
+import {
+  ChatCompletionContentPart,
+  ChatCompletionMessageParam,
+} from "openai/resources/chat/completions";
+import { assertArray, simpleToolCompletion } from "../openai";
 import { simplifyHtml, toMarkdown } from "./browser";
+
+export interface CourseResponse {
+  course_id: string;
+  course_name: string;
+  course_description: string;
+  course_credits_min?: string;
+  course_credits_max?: string;
+  requirements?: string[];
+}
 
 export async function extractCourseDataItem(
   url: string,
@@ -28,50 +40,68 @@ SIMPLIFIED PAGE CONTENT:
 ${content}
 `;
 
+  const completionContent: ChatCompletionContentPart[] = [
+    {
+      type: "text",
+      text: prompt,
+    },
+  ];
+
+  if (screenshot) {
+    completionContent.push({
+      type: "image_url",
+      image_url: { url: `data:image/webp;base64,${screenshot}` },
+    });
+  }
+
   const messages: ChatCompletionMessageParam[] = [
     {
       role: "user",
-      content: [
-        {
-          type: "text",
-          text: prompt,
-        },
-        {
-          type: "image_url",
-          image_url: { url: `data:image/webp;base64,${screenshot}` },
-        },
-      ],
+      content: completionContent,
     },
   ];
   const completion = await simpleToolCompletion(
     messages,
-    "submit_course_data",
+    "course_data",
     {
-      course_id: {
-        type: "string",
+      courses: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            course_id: {
+              type: "string",
+            },
+            course_name: {
+              type: "string",
+            },
+            course_description: {
+              type: "string",
+            },
+            course_credits_min: {
+              type: "string",
+            },
+            course_credits_max: {
+              type: "string",
+            },
+            requirements: {
+              type: "array",
+              items: {
+                type: "string",
+              },
+            },
+          },
+          required: ["course_id", "course_name", "course_description"],
+        },
       },
-      course_name: {
-        type: "string",
-      },
-      course_description: {
-        type: "string",
-      },
-      course_credits_min: {
-        type: "number",
-      },
-      course_credits_max: {
-        type: "number",
-      },
-    }
+    },
+    ["courses"]
   );
   if (!completion) {
-    return null;
+    return [];
   }
-  return {
-    courseId: assertString(completion, "course_id"),
-    courseName: assertString(completion, "course_name"),
-    courseDescription: completion["course_description"],
-    courseCreditsMin: completion["course_credits_min"],
-    courseCreditsMax: completion["course_credits_max"],
-  };
+  const courses = assertArray<CourseResponse>(completion, "courses");
+  return courses.filter(
+    (c) => c.course_id && c.course_name && c.course_description
+  );
 }

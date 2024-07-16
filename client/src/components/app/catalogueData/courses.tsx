@@ -36,15 +36,15 @@ function CourseDisplayItem({ item }: CourseDisplayItemProps) {
   return (
     <TableRow>
       <TableCell className="text-sm">{item.id}</TableCell>
-      <TableCell className="text-sm">{structuredData.courseId}</TableCell>
+      <TableCell className="text-sm">{structuredData.course_id}</TableCell>
       <TableCell className="text-sm max-w-40">
-        {structuredData.courseName}
+        {structuredData.course_name}
       </TableCell>
       <TableCell className="text-sm max-w-80">
-        {structuredData.courseDescription}
+        {structuredData.course_description}
       </TableCell>
       <TableCell className="text-sm">
-        {structuredData.courseCreditsMin}-{structuredData.courseCreditsMax}
+        {structuredData.course_credits_min}-{structuredData.course_credits_max}
       </TableCell>
     </TableRow>
   );

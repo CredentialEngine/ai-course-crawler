@@ -12,6 +12,24 @@ import { PAGE_DATA_TYPE } from "../data/schema";
 import { getBrowser, loadPage } from "../extraction/browser";
 import { detectPageType } from "../extraction/detectPageType";
 import { Queues, submitJob } from "../jobs";
+import { bestOutOf } from "../jobs/utils";
+
+enum UrlPatternType {
+  page_num = "page_num",
+}
+
+const PaginationConfigurationSchema = z.object({
+  urlPatternType: z.nativeEnum(UrlPatternType),
+  urlPattern: z.string(),
+  totalPages: z.number(),
+});
+
+const RecipeConfigurationSchema = z.object({
+  pageType: z.nativeEnum(PAGE_DATA_TYPE),
+  linkRegexp: z.string().optional(),
+  pagination: PaginationConfigurationSchema.optional(),
+  links: z.lazy((): z.ZodSchema => RecipeConfigurationSchema).optional(),
+});
 
 export const recipesRouter = router({
   detail: publicProcedure
@@ -33,26 +51,33 @@ export const recipesRouter = router({
     .mutation(async (opts) => {
       const browser = await getBrowser();
       try {
+        console.log(`Fetching ${opts.input.url}`);
         const { content, screenshot } = await loadPage(
           browser,
           opts.input.url,
           true
         );
-        const pageType = await detectPageType(
-          opts.input.url,
-          content,
-          screenshot!
+        console.log(`Downloaded ${opts.input.url}.`);
+        console.log(`Detecting page type`);
+        let pageType = await bestOutOf(
+          5,
+          () => detectPageType(opts.input.url, content, screenshot!),
+          (p) => p as string
         );
+        console.log(`Detected page type: ${pageType}`);
         let message: string | null = null;
         if (!pageType) {
           message =
             "Page was not detected as a course catalogue index. Defaulting to home page type: course links.";
+          pageType = PAGE_DATA_TYPE.COURSE_LINKS_PAGE;
         }
+        console.log(`Creating recipe`);
         const result = await startRecipe(
           opts.input.catalogueId,
           opts.input.url,
-          PAGE_DATA_TYPE.COURSE_LINKS_PAGE
+          pageType
         );
+        console.log(`Created recipe ${result.id}`);
         if (result) {
           const id = result.id;
           submitJob(Queues.DetectConfiguration, { recipeId: id });
@@ -91,22 +116,7 @@ export const recipesRouter = router({
         id: z.number().int().positive(),
         update: z.object({
           url: z.string(),
-          configuration: z
-            .object({
-              rootPageType: z.enum([
-                PAGE_DATA_TYPE.COURSE_LINKS_PAGE,
-                PAGE_DATA_TYPE.COURSE_DETAIL_PAGE,
-                PAGE_DATA_TYPE.CATEGORY_PAGE,
-              ]),
-              pagination: z
-                .object({
-                  urlPatternType: z.enum(["page_num", "offset"]),
-                  urlPattern: z.string(),
-                  totalPages: z.number().positive(),
-                })
-                .optional(),
-            })
-            .optional(),
+          configuration: RecipeConfigurationSchema,
         }),
       })
     )

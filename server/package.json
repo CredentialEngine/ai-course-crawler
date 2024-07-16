@@ -3,8 +3,8 @@
     "dev": "nodemon src/server.ts",
     "dev:worker": "node dist/src/worker.js",
     "build": "tsc",
-    "db:generate": "drizzle-kit generate:sqlite",
-    "db:migrate": "ts-node migrate.ts"
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit up && drizzle-kit migrate"
   },
   "dependencies": {
     "@fastify/cors": "^9.0.1",
@@ -17,7 +17,7 @@
     "bull": "^4.12.6",
     "cheerio": "1.0.0-rc.12",
     "dotenv": "^16.4.5",
-    "drizzle-orm": "^0.30.8",
+    "drizzle-orm": "^0.31.2",
     "fast-csv": "^5.0.1",
     "fastify": "^4.26.2",
     "fastify-plugin": "^4.5.1",
@@ -31,7 +31,7 @@
     "@types/better-sqlite3": "^7.6.9",
     "@types/node": "^20.12.7",
     "@types/turndown": "^5.0.4",
-    "drizzle-kit": "^0.20.14",
+    "drizzle-kit": "^0.22.7",
     "nodemon": "^3.1.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"

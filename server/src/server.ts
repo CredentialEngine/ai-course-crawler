@@ -108,16 +108,16 @@ server.register(async (instance) => {
         }
         const structuredData = item.structuredData as CourseStructuredData;
         csvStream.write([
-          structuredData.courseId,
+          structuredData.course_id,
           "Course",
-          structuredData.courseName,
-          structuredData.courseDescription,
+          structuredData.course_name,
+          structuredData.course_description,
           item.extractionStepItem!.url,
           "Active",
           "English",
           item.extractionStepItem!.url,
-          structuredData.courseCreditsMin,
-          structuredData.courseCreditsMax,
+          structuredData.course_credits_min,
+          structuredData.course_credits_max,
           "",
         ]);
       }

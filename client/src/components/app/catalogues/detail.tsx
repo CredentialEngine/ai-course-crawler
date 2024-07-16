@@ -24,6 +24,7 @@ import { Catalogue, prettyPrintDate, trpc } from "@/utils";
 import { CookingPot, Star } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation, useParams } from "wouter";
+import { displayRecipeDetails } from "../recipes/util";
 
 interface RecipeListProps {
   catalogue: Catalogue;
@@ -54,8 +55,8 @@ const RecipeList = ({ catalogue }: RecipeListProps) => {
                   <div>
                     Recipe #{recipe.id} {recipe.configuredAt ? null : "— Draft"}
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    {prettyPrintDate(recipe.createdAt)}
+                  <div className="text-xs text-muted-foreground">
+                    {displayRecipeDetails(recipe)}
                   </div>
                 </div>
                 {recipe.isDefault ? (
@@ -140,9 +141,12 @@ export default function CatalogueDetail() {
                   </div>
                 ) : null}
               </div>
+              {/*
+TODO: add save
               <Button variant="outline" type="submit" className="mt-4">
                 Save
               </Button>
+              */}
             </CardContent>
           </Card>
           <Card>

@@ -1,19 +1,27 @@
 import { ChatCompletionContentPart } from "openai/resources";
 import { PAGE_DATA_TYPE } from "../data/schema";
 import { assertArray, assertString, simpleToolCompletion } from "../openai";
+import { resolveAbsoluteUrl } from "../utils";
 import { simplifyHtml, toMarkdown } from "./browser";
 
-function resolveAbsoluteUrl(base: string, relative: string): string {
-  const baseUrl = new URL(base);
-  const absoluteUrl = new URL(relative, baseUrl);
-  return absoluteUrl.href;
+export function createUrlExtractor(regexp: RegExp) {
+  return async (baseUrl: string, html: string) => {
+    const processedContent = await toMarkdown(await simplifyHtml(html));
+    const urls = processedContent.match(regexp) || [];
+    return [
+      ...new Set(
+        urls.map((foundUrl) => {
+          return resolveAbsoluteUrl(baseUrl, foundUrl);
+        })
+      ),
+    ];
+  };
 }
 
-export default async function extractDetailUrls(
-  url: string,
+export default async function detectUrlRegexp(
+  dataType: PAGE_DATA_TYPE,
   html: string,
-  screenshot: string,
-  dataType: PAGE_DATA_TYPE
+  screenshot?: string
 ) {
   if (dataType == PAGE_DATA_TYPE.COURSE_DETAIL_PAGE) {
     throw new Error("Invalid page data type.");
@@ -129,7 +137,7 @@ export default async function extractDetailUrls(
   );
 
   if (!completion) {
-    return null;
+    throw new Error("Couldn't detect regexp");
   }
 
   let regexpStr = assertString(completion, "regexp");
@@ -137,23 +145,10 @@ export default async function extractDetailUrls(
   console.log(`Raw regexp is ${regexpStr}`);
   console.log(`Example matches is ${exampleMatches}`);
   const regexp = new RegExp(regexpStr, "g");
-  const extract = async (baseUrl: string, rawContent: string) => {
-    const processedContent = await toMarkdown(await simplifyHtml(rawContent));
-    const urls = processedContent.match(regexp) || [];
-    return [
-      ...new Set(
-        urls.map((foundUrl) => {
-          return resolveAbsoluteUrl(baseUrl, foundUrl);
-        })
-      ),
-    ];
-  };
+
   const urls = content.match(regexp) || [];
   if (!exampleMatches.every((u) => urls.find((u2) => u2 == u))) {
     throw new Error("Could not find every example");
   }
-  return {
-    regexp,
-    extract,
-  };
+  return regexp;
 }

@@ -1,6 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
+  "id": "edcbce53-06ca-4dee-ad32-4c2dc6a52ec2",
+  "prevId": "ffbf7c31-a09d-4dda-b65f-d7e6bc8f52fe",
   "tables": {
     "catalogue_data": {
       "name": "catalogue_data",
@@ -33,15 +35,15 @@
         "catalogue_data_extraction_id_extractions_id_fk": {
           "name": "catalogue_data_extraction_id_extractions_id_fk",
           "tableFrom": "catalogue_data",
+          "tableTo": "extractions",
           "columnsFrom": [
             "extraction_id"
           ],
-          "tableTo": "extractions",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -137,28 +139,28 @@
         "data_items_catalogue_data_id_catalogue_data_id_fk": {
           "name": "data_items_catalogue_data_id_catalogue_data_id_fk",
           "tableFrom": "data_items",
+          "tableTo": "catalogue_data",
           "columnsFrom": [
             "catalogue_data_id"
           ],
-          "tableTo": "catalogue_data",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "data_items_extraction_step_item_id_extraction_step_items_id_fk": {
           "name": "data_items_extraction_step_item_id_extraction_step_items_id_fk",
           "tableFrom": "data_items",
+          "tableTo": "extraction_step_items",
           "columnsFrom": [
             "extraction_step_item_id"
           ],
-          "tableTo": "extraction_step_items",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -210,15 +212,15 @@
         "extraction_logs_extraction_id_extractions_id_fk": {
           "name": "extraction_logs_extraction_id_extractions_id_fk",
           "tableFrom": "extraction_logs",
+          "tableTo": "extractions",
           "columnsFrom": [
             "extraction_id"
           ],
-          "tableTo": "extractions",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -259,7 +261,7 @@
           "name": "content",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "screenshot": {
@@ -269,25 +271,11 @@
           "notNull": false,
           "autoincrement": false
         },
-        "metadata": {
-          "name": "metadata",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "navigation_data": {
-          "name": "navigation_data",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "data_type": {
           "name": "data_type",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "created_at": {
@@ -304,15 +292,15 @@
         "extraction_step_items_extraction_step_id_extraction_steps_id_fk": {
           "name": "extraction_step_items_extraction_step_id_extraction_steps_id_fk",
           "tableFrom": "extraction_step_items",
+          "tableTo": "extraction_steps",
           "columnsFrom": [
             "extraction_step_id"
           ],
-          "tableTo": "extraction_steps",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -377,28 +365,28 @@
         "extraction_steps_extraction_id_extractions_id_fk": {
           "name": "extraction_steps_extraction_id_extractions_id_fk",
           "tableFrom": "extraction_steps",
+          "tableTo": "extractions",
           "columnsFrom": [
             "extraction_id"
           ],
-          "tableTo": "extractions",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "extraction_steps_parent_step_id_extraction_steps_id_fk": {
           "name": "extraction_steps_parent_step_id_extraction_steps_id_fk",
           "tableFrom": "extraction_steps",
+          "tableTo": "extraction_steps",
           "columnsFrom": [
             "parent_step_id"
           ],
-          "tableTo": "extraction_steps",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -442,15 +430,15 @@
         "extractions_recipe_id_recipes_id_fk": {
           "name": "extractions_recipe_id_recipes_id_fk",
           "tableFrom": "extractions",
+          "tableTo": "recipes",
           "columnsFrom": [
             "recipe_id"
           ],
-          "tableTo": "recipes",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -523,15 +511,15 @@
         "recipes_catalogue_id_catalogues_id_fk": {
           "name": "recipes_catalogue_id_catalogues_id_fk",
           "tableFrom": "recipes",
+          "tableTo": "catalogues",
           "columnsFrom": [
             "catalogue_id"
           ],
-          "tableTo": "catalogues",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -639,9 +627,11 @@
   },
   "enums": {},
   "_meta": {
+    "schemas": {},
     "tables": {},
     "columns": {}
   },
-  "id": "ffbf7c31-a09d-4dda-b65f-d7e6bc8f52fe",
-  "prevId": "00000000-0000-0000-0000-000000000000"
+  "internal": {
+    "indexes": {}
+  }
 }

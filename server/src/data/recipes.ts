@@ -1,8 +1,8 @@
 import { InferSelectModel, eq } from "drizzle-orm";
 import db, { getSqliteTimestamp } from "../data";
-import { RecipeConfiguration, recipes } from "../data/schema";
+import { PAGE_DATA_TYPE, RecipeConfiguration, recipes } from "../data/schema";
 
-type Recipe = Omit<InferSelectModel<typeof recipes>, "configuration"> & {
+export type Recipe = Omit<InferSelectModel<typeof recipes>, "configuration"> & {
   configuration?: RecipeConfiguration;
 };
 
@@ -53,7 +53,7 @@ export async function findRecipeById(id: number): Promise<undefined | Recipe> {
 export async function startRecipe(
   catalogueId: number,
   url: string,
-  rootPageType: string
+  rootPageType: PAGE_DATA_TYPE
 ) {
   const result = await db
     .insert(recipes)
@@ -62,7 +62,7 @@ export async function startRecipe(
       url,
       isDefault: false,
       configuration: {
-        rootPageType,
+        pageType: rootPageType,
       },
       detectionStartedAt: getSqliteTimestamp(),
     })
@@ -88,12 +88,14 @@ export async function updateRecipe(
 
 export async function updateConfiguration(
   recipeId: number,
-  configuration: RecipeConfiguration
+  configuration: RecipeConfiguration,
+  setConfigured: boolean = true
 ) {
   const result = await db
     .update(recipes)
     .set({
       configuration,
+      configuredAt: setConfigured ? getSqliteTimestamp() : undefined,
     })
     .where(eq(recipes.id, recipeId))
     .returning();

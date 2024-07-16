@@ -15,21 +15,17 @@ export interface DetectConfigurationJob {
 
 export interface DetectConfigurationProgress extends BaseProgress {}
 
-export interface BaseExtractionJob {
-  extractionId: number;
-}
-
-export interface ExtractionStepJob extends BaseExtractionJob {
-  stepId: number;
-}
-
-export interface DataItemExtractionJob extends BaseExtractionJob {
+export interface FetchPageJob {
   stepItemId: number;
 }
 
-export interface ExtractCourseCatalogueProgress extends BaseProgress {}
+export interface FetchPageProgress extends BaseProgress {}
 
-export interface DataExtractionProgress extends BaseProgress {}
+export interface ExtractDataJob {
+  stepItemId: number;
+}
+
+export interface ExtractDataProgress extends BaseProgress {}
 
 export interface JobWithProgress<T, K> extends Bull.Job<T> {
   progress(): any;
@@ -41,27 +37,11 @@ export const Queues = {
     "recipes.detectConfiguration",
     REDIS_URL
   ),
-  ExtractCourseCatalogue: new Bull<BaseExtractionJob>(
-    "extractions.extractCourseCatalogue",
-    REDIS_URL
-  ),
-  FetchPaginatedUrls: new Bull<ExtractionStepJob>(
-    "extractions.fetchPaginatedUrls",
-    REDIS_URL
-  ),
-  FetchCategoryLinks: new Bull<ExtractionStepJob>(
-    "extractions.fetchCategoryLinks",
-    REDIS_URL
-  ),
-  FetchCourseLinks: new Bull<ExtractionStepJob>(
-    "extractions.fetchCourseLinks",
-    REDIS_URL
-  ),
-  ExtractDataItem: new Bull<DataItemExtractionJob>(
-    "extractions.extractDataItem",
-    REDIS_URL
-  ),
+  FetchPage: new Bull<FetchPageJob>("extractions.fetchPage", REDIS_URL),
+  ExtractData: new Bull<ExtractDataJob>("extractions.extractData", REDIS_URL),
 };
+
+export interface GenericProgress {}
 
 export type Processor<T, K> = (job: JobWithProgress<T, K>) => Promise<void>;
 

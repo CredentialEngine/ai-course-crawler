@@ -8,7 +8,7 @@ import {
 
 export enum PAGE_DATA_TYPE {
   COURSE_DETAIL_PAGE = "COURSE_DETAIL_PAGE",
-  CATEGORY_PAGE = "CATEGORY_PAGE",
+  CATEGORY_LINKS_PAGE = "CATEGORY_LINKS_PAGE",
   COURSE_LINKS_PAGE = "COURSE_LINKS_PAGE",
 }
 
@@ -21,8 +21,10 @@ export interface PaginationConfiguration {
 }
 
 export interface RecipeConfiguration {
-  rootPageType: PAGE_DATA_TYPE;
+  pageType: PAGE_DATA_TYPE;
+  linkRegexp?: string;
   pagination?: PaginationConfiguration;
+  links?: RecipeConfiguration;
 }
 
 export interface FetchPaginatedUrlsStepConfiguration {
@@ -63,17 +65,16 @@ export enum STEP_STATUSES {
 }
 
 export enum STEP_ITEM_STATUSES {
+  WAITING = "WAITING",
   IN_PROGRESS = "IN_PROGRESS",
   SUCCESS = "SUCCESS",
   ERROR = "ERROR",
 }
 
 export enum STEPS {
-  FETCH_COURSE_LINKS = "FETCH_COURSE_LINKS",
-  FETCH_COURSE_DETAILS = "FETCH_COURSE_DETAILS",
-  FETCH_COURSE_CATEGORY_LINKS = "FETCH_COURSE_CATEGORY_LINKS",
-  FETCH_PAGINATED_URLS = "FETCH_PAGINATED_URLS",
-  FETCH_SINGLE_URL = "FETCH_SINGLE_URL",
+  FETCH_ROOT = "FETCH_ROOT",
+  FETCH_PAGINATED = "FETCH_PAGINATED",
+  FETCH_LINKS = "FETCH_LINKS",
 }
 
 export interface NavigationData {
@@ -81,11 +82,11 @@ export interface NavigationData {
 }
 
 export interface CourseStructuredData {
-  courseId: string;
-  courseName: string;
-  courseDescription: string;
-  courseCreditsMin: number;
-  courseCreditsMax: number;
+  course_id: string;
+  course_name: string;
+  course_description: string;
+  course_credits_min: number;
+  course_credits_max: number;
 }
 
 const catalogues = sqliteTable("catalogues", {
@@ -111,7 +112,9 @@ const recipes = sqliteTable("recipes", {
     .notNull()
     .references(() => catalogues.id, { onDelete: "cascade" }),
   url: text("url").notNull(),
-  configuration: text("configuration", { mode: "json" }).notNull(),
+  configuration: text("configuration", { mode: "json" })
+    .$type<RecipeConfiguration>()
+    .notNull(),
   createdAt: text("created_at")
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
@@ -209,11 +212,9 @@ const extractionStepItems = sqliteTable("extraction_step_items", {
     .references(() => extractionSteps.id, { onDelete: "cascade" }),
   status: text("status").notNull(),
   url: text("url").notNull(),
-  content: text("content").notNull(),
+  content: text("content"),
   screenshot: text("screenshot"),
-  metadata: text("metadata", { mode: "json" }),
-  navigationData: text("navigation_data", { mode: "json" }),
-  dataType: text("data_type").notNull(),
+  dataType: text("data_type"),
   createdAt: text("created_at")
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
@@ -305,12 +306,12 @@ export {
   dataItemsRelations,
   extractionLogs,
   extractionLogsRelations,
+  extractions,
+  extractionsRelations,
   extractionStepItems,
   extractionStepItemsRelations,
   extractionSteps,
   extractionStepsRelations,
-  extractions,
-  extractionsRelations,
   recipes,
   recipesRelations,
   settings,

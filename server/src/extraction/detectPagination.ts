@@ -1,4 +1,7 @@
-import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import {
+  ChatCompletionContentPart,
+  ChatCompletionMessageParam,
+} from "openai/resources/chat/completions";
 import {
   PAGE_DATA_TYPE,
   PaginationConfiguration,
@@ -17,7 +20,7 @@ import { simplifyHtml, toMarkdown } from "./browser";
 const pageTypeDescriptions = {
   [PAGE_DATA_TYPE.COURSE_LINKS_PAGE]:
     "It has links to ALL the courses for an institution. Pagination is for pages of links to courses.",
-  [PAGE_DATA_TYPE.CATEGORY_PAGE]:
+  [PAGE_DATA_TYPE.CATEGORY_LINKS_PAGE]:
     "It has links to program or degree pages that presumably have links/descriptions for the courses. " +
     "Those links are presumably extensive for ALL the programs/degrees in the institution." +
     "Pagination is for pages of program/degree links.",
@@ -29,9 +32,9 @@ const pageTypeDescriptions = {
 export async function detectPagination(
   url: string,
   html: string,
-  screenshot: string,
-  rootPageType: PAGE_DATA_TYPE
-): Promise<PaginationConfiguration | null> {
+  rootPageType: PAGE_DATA_TYPE,
+  screenshot?: string
+): Promise<PaginationConfiguration | undefined> {
   const content = await toMarkdown(await simplifyHtml(html));
   const prompt = `
 Your goal is to determine whether the given website has pagination, and how that pagination works.
@@ -42,6 +45,7 @@ However if it does have pagination, figure out the pattern (for example, a param
 Also, if it does have pagination, determine the total number of pages for the content.
 
 url_pattern_type: ONLY FILL THIS IN IF THE WEBSITE HAS PAGINATION
+
 - page_num: page number parameter
 - offset: offset parameter
 - other: other type of pattern
@@ -64,19 +68,24 @@ WEBSITE CONTENT:
 ${content}
 `;
 
+  const completionContent: ChatCompletionContentPart[] = [
+    {
+      type: "text",
+      text: prompt,
+    },
+  ];
+
+  if (screenshot) {
+    completionContent.push({
+      type: "image_url",
+      image_url: { url: `data:image/webp;base64,${screenshot}` },
+    });
+  }
+
   const messages: ChatCompletionMessageParam[] = [
     {
       role: "user",
-      content: [
-        {
-          type: "text",
-          text: prompt,
-        },
-        {
-          type: "image_url",
-          image_url: { url: `data:image/webp;base64,${screenshot}` },
-        },
-      ],
+      content: completionContent,
     },
   ];
   const toolCall = await simpleToolCompletion(
@@ -99,11 +108,11 @@ ${content}
     }
   );
   if (!toolCall) {
-    return null;
+    return undefined;
   }
   const hasPagination = assertBool(toolCall, "has_pagination");
   if (!hasPagination) {
-    return null;
+    return undefined;
   }
 
   const urlPatternType = assertStringEnum(toolCall, "url_pattern_type", [

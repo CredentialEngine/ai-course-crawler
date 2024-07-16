@@ -21,13 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Recipe, prettyPrintDate, trpc } from "@/utils";
+import { Recipe, trpc } from "@/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pickaxe } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useLocation, useParams } from "wouter";
 import { z } from "zod";
+import { displayRecipeDetails } from "../recipes/util";
 
 const FormSchema = z.object({
   recipeId: z.string(),
@@ -114,13 +115,14 @@ export default function CatalogueCreateExtraction() {
                               <SelectItem
                                 key={`option-${r.id}`}
                                 value={r.id.toString()}
+                                className="cursor-pointer"
                               >
                                 <div>
                                   Recipe #{r.id}{" "}
                                   {r.isDefault ? "(Default)" : null}
                                 </div>
-                                <div className="text-sm text-muted-foreground">
-                                  {prettyPrintDate(r.createdAt)}
+                                <div className="text-xs">
+                                  {displayRecipeDetails(r)}
                                 </div>
                               </SelectItem>
                             ))}

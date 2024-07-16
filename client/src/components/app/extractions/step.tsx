@@ -1,7 +1,6 @@
 import BreadcrumbTrail from "@/components/ui/breadcrumb-trail";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import JsonPopover from "@/components/ui/jsonPopover";
 import {
   Table,
   TableBody,
@@ -19,7 +18,7 @@ function displayDataType(dataType: PAGE_DATA_TYPE) {
   switch (dataType) {
     case PAGE_DATA_TYPE.COURSE_DETAIL_PAGE:
       return "Course Detail";
-    case PAGE_DATA_TYPE.CATEGORY_PAGE:
+    case PAGE_DATA_TYPE.CATEGORY_LINKS_PAGE:
       return "Category Page";
     case PAGE_DATA_TYPE.COURSE_LINKS_PAGE:
       return "Course Links";
@@ -72,8 +71,7 @@ export default function ExtractionStepDetail() {
                 <TableHead>Created At</TableHead>
                 <TableHead>URL</TableHead>
                 <TableHead>Content</TableHead>
-                <TableHead>Metadata</TableHead>
-                <TableHead>Navigation Data</TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -90,24 +88,17 @@ export default function ExtractionStepDetail() {
                     </a>
                   </TableCell>
                   <TableCell>
-                    <Button variant={"outline"} size={"sm"} asChild>
-                      <Link
-                        to={`/${extractionId}/steps/${stepId}/items/${item.id}`}
-                      >
-                        View
-                      </Link>
-                    </Button>
-                  </TableCell>
-                  <TableCell>
-                    {item.metadata ? (
-                      <JsonPopover jsonData={item.metadata} />
+                    {item.status == "SUCCESS" || item.status == "ERROR" ? (
+                      <Button variant={"outline"} size={"sm"} asChild>
+                        <Link
+                          to={`/${extractionId}/steps/${stepId}/items/${item.id}`}
+                        >
+                          View
+                        </Link>
+                      </Button>
                     ) : null}
                   </TableCell>
-                  <TableCell>
-                    {item.navigationData ? (
-                      <JsonPopover jsonData={item.navigationData} />
-                    ) : null}
-                  </TableCell>
+                  <TableCell>{item.status}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

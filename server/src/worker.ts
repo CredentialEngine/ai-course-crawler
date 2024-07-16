@@ -8,12 +8,9 @@ function processorPath(name: string) {
 }
 
 const processors: [Bull.Queue, string, number][] = [
-  [Queues.DetectConfiguration, processorPath("detectConfiguration"), 5],
-  [Queues.FetchCategoryLinks, processorPath("fetchCategoryLinks"), 5],
-  [Queues.FetchCourseLinks, processorPath("fetchCourseLinks"), 5],
-  [Queues.FetchPaginatedUrls, processorPath("fetchPaginatedUrls"), 5],
-  [Queues.ExtractCourseCatalogue, processorPath("extractCourseCatalogue"), 5],
-  [Queues.ExtractDataItem, processorPath("extractDataItem"), 5],
+  [Queues.DetectConfiguration, processorPath("detectConfiguration"), 2],
+  [Queues.FetchPage, processorPath("fetchPage"), 2],
+  [Queues.ExtractData, processorPath("extractData"), 2],
 ];
 
 for (const [queue, processor, concurrency] of processors) {

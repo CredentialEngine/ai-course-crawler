@@ -4,7 +4,7 @@ import db from "../data";
 import {
   EXTRACTION_LOG_LEVELS,
   EXTRACTION_STATUSES,
-  NavigationData,
+  RecipeConfiguration,
   STEPS,
   STEP_ITEM_STATUSES,
   STEP_STATUSES,
@@ -162,12 +162,40 @@ export async function findStepItem(stepItemId: number) {
   return result;
 }
 
-export async function createStep(
-  extractionId: number,
-  step: STEPS,
-  parentStepId?: number,
-  configuration?: Record<string, any>
-) {
+export async function findStepItemForJob(stepItemId: number) {
+  const result = await db.query.extractionStepItems.findFirst({
+    where: (stepItems, { eq }) => eq(stepItems.id, stepItemId),
+    with: {
+      extractionStep: {
+        with: {
+          extraction: {
+            with: {
+              recipe: true,
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!result) {
+    throw new Error(`Step item ${stepItemId} not found`);
+  }
+  return result;
+}
+
+export interface CreateStepOptions {
+  extractionId: number;
+  step: STEPS;
+  parentStepId?: number;
+  configuration: RecipeConfiguration;
+}
+
+export async function createStep({
+  extractionId,
+  step,
+  parentStepId,
+  configuration,
+}: CreateStepOptions) {
   const result = await db
     .insert(extractionSteps)
     .values({
@@ -181,16 +209,23 @@ export async function createStep(
   return result[0];
 }
 
-export async function createStepItem(
-  extractionStepId: number,
-  url: string,
-  content: string,
-  dataType: string,
-  status?: STEP_ITEM_STATUSES,
-  screenshot?: string,
-  metadata?: Record<string, any>,
-  navigationData?: NavigationData
-) {
+export interface CreateStepItemOptions {
+  extractionStepId: number;
+  url: string;
+  dataType: string;
+  content?: string;
+  screenshot?: string;
+  status?: STEP_ITEM_STATUSES;
+}
+
+export async function createStepItem({
+  extractionStepId,
+  url,
+  content,
+  dataType,
+  status,
+  screenshot,
+}: CreateStepItemOptions) {
   const result = await db
     .insert(extractionStepItems)
     .values({
@@ -199,10 +234,40 @@ export async function createStepItem(
       dataType,
       url,
       screenshot,
-      status: status || STEP_ITEM_STATUSES.SUCCESS,
-      metadata,
-      navigationData,
+      status: status || STEP_ITEM_STATUSES.WAITING,
     })
+    .returning();
+  return result[0];
+}
+
+export async function updateStepItem(
+  stepItemId: number,
+  status?: STEP_ITEM_STATUSES,
+  content?: string,
+  screenshot?: string
+) {
+  const result = await db
+    .update(extractionStepItems)
+    .set({
+      status,
+      content,
+      screenshot,
+    })
+    .where(eq(extractionStepItems.id, stepItemId))
+    .returning();
+  return result[0];
+}
+
+export async function updateStepItemStatus(
+  stepItemId: number,
+  status: STEP_ITEM_STATUSES
+) {
+  const result = await db
+    .update(extractionStepItems)
+    .set({
+      status,
+    })
+    .where(eq(extractionStepItems.id, stepItemId))
     .returning();
   return result[0];
 }

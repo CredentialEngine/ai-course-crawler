@@ -3,6 +3,25 @@ import puppeteer, { Browser } from "puppeteer";
 import TurndownService from "turndown";
 import { exponentialRetry } from "../utils";
 
+export interface Page {
+  url: string;
+  content: string;
+  screenshot?: string;
+}
+
+function isValidBase64(str: string) {
+  if (typeof str !== "string" || str.length === 0) {
+    return false;
+  }
+
+  try {
+    Buffer.from(str, "base64").toString("utf8");
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 export async function getBrowser() {
   return puppeteer.launch({
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -12,8 +31,8 @@ export async function getBrowser() {
 export async function loadPage(
   browser: Browser,
   url: string,
-  captureScreenshot: boolean = false
-) {
+  captureScreenshot: boolean = true
+): Promise<Page> {
   let screenshot: string | undefined;
   const page = await browser.newPage();
 
@@ -29,9 +48,14 @@ export async function loadPage(
         fullPage: true,
         quality: 60,
       });
+      if (!isValidBase64(screenshot)) {
+        console.log("Screenshot is not valid base 64");
+        screenshot = undefined;
+      }
     }
 
     return {
+      url,
       content,
       screenshot,
     };
@@ -50,7 +74,7 @@ export async function loadAll(
   browser: Browser,
   urls: string[],
   config: LoadAllConfiguration = {}
-) {
+): Promise<Page[]> {
   const batchSize = config.batchSize || 5;
   const results = [];
 

@@ -30,9 +30,9 @@ export type ToolCallReturn<T extends ToolCallParameters> = {
 async function simpleToolCompletionImpl<T extends ToolCallParameters>(
   messages: Array<ChatCompletionMessageParam>,
   toolName: string,
-  parameters: T
+  parameters: T,
+  requiredParameters?: Array<keyof T>
 ): Promise<ToolCallReturn<T> | null> {
-  console.log("Calling LLM");
   const openai = await getOpenAi();
   const chatCompletion = await openai.chat.completions.create({
     messages,
@@ -45,29 +45,41 @@ async function simpleToolCompletionImpl<T extends ToolCallParameters>(
           parameters: {
             type: "object",
             properties: parameters,
+            required: requiredParameters || undefined,
           },
         },
       },
     ],
+    tool_choice: {
+      type: "function",
+      function: {
+        name: toolName,
+      },
+    },
   });
   if (!chatCompletion.choices[0].message.tool_calls?.length) {
-    console.log(`full completion is ${chatCompletion}`);
     return null;
   }
   const toolArgs = JSON.parse(
     chatCompletion.choices[0].message.tool_calls[0].function.arguments
   );
-  console.log("Done calling LLM");
   return toolArgs;
 }
 
 export function simpleToolCompletion<T extends ToolCallParameters>(
   messages: Array<ChatCompletionMessageParam>,
   toolName: string,
-  parameters: T
+  parameters: T,
+  requiredParameters?: Array<keyof T>
 ): Promise<ToolCallReturn<T> | null> {
   return exponentialRetry(
-    () => simpleToolCompletionImpl(messages, toolName, parameters),
+    () =>
+      simpleToolCompletionImpl(
+        messages,
+        toolName,
+        parameters,
+        requiredParameters
+      ),
     10
   );
 }
