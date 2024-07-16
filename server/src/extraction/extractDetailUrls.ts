@@ -10,7 +10,7 @@ function resolveAbsoluteUrl(base: string, relative: string): string {
 }
 
 export default async function extractDetailUrls(
-  url: string,
+  _url: string,
   html: string,
   screenshot: string,
   dataType: PAGE_DATA_TYPE

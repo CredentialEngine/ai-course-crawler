@@ -56,6 +56,6 @@ export function startProcessor<T, _K>(
 ) {
   queue.process(concurrency, processor);
   queue.on("error", (err) => console.log(err));
-  queue.on("failed", (job, err) => console.log(err));
-  queue.on("progress", (job, progress) => console.log(progress));
+  queue.on("failed", (_job, err) => console.log(err));
+  queue.on("progress", (_job, progress) => console.log(progress));
 }

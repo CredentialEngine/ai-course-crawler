@@ -10,7 +10,6 @@ export async function detectPageType(
   url: string,
   html: string,
   screenshot?: string,
-  isCategory?: boolean
 ) {
   const content = await toMarkdown(await simplifyHtml(html));
   const prompt = `

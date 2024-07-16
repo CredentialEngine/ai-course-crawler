@@ -115,34 +115,6 @@ export default function EditRecipe() {
     return null;
   }
 
-  const hasPagination = form.watch("configuration.pagination");
-  const onForceSetPagination = (isChecked: boolean) => {
-    if (isChecked) {
-      form.setValue(
-        "configuration.pagination",
-        {
-          urlPatternType: "page_num",
-          urlPattern: "",
-          totalPages: 0,
-        },
-        { shouldDirty: true }
-      );
-    } else {
-      // For some reason, setting the value to undefined doesn't set the field as dirty.
-      // Reset it to blank values first, then set to undefined
-      form.setValue(
-        "configuration.pagination",
-        {
-          urlPatternType: "page_num",
-          urlPattern: "",
-          totalPages: 0,
-        },
-        { shouldDirty: true }
-      );
-      form.setValue("configuration.pagination", undefined);
-    }
-  };
-
   const catalogue = catalogueQuery.data;
   const recipe = recipeQuery.data;
 
