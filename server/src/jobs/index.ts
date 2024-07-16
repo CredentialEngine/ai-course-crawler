@@ -35,10 +35,23 @@ export interface JobWithProgress<T, K> extends Bull.Job<T> {
 export const Queues = {
   DetectConfiguration: new Bull<DetectConfigurationJob>(
     "recipes.detectConfiguration",
-    REDIS_URL
+    REDIS_URL,
+    {
+      defaultJobOptions: {
+        attempts: 3,
+      },
+    }
   ),
-  FetchPage: new Bull<FetchPageJob>("extractions.fetchPage", REDIS_URL),
-  ExtractData: new Bull<ExtractDataJob>("extractions.extractData", REDIS_URL),
+  FetchPage: new Bull<FetchPageJob>("extractions.fetchPage", REDIS_URL, {
+    defaultJobOptions: {
+      attempts: 3,
+    },
+  }),
+  ExtractData: new Bull<ExtractDataJob>("extractions.extractData", REDIS_URL, {
+    defaultJobOptions: {
+      attempts: 3,
+    },
+  }),
 };
 
 export interface GenericProgress {}
