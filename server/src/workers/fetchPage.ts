@@ -145,6 +145,7 @@ const fetchPage: Processor<FetchPageJob, FetchPageProgress> = async (job) => {
     await processNextStep(stepItem);
   } catch (err) {
     await updateStepItemStatus(stepItem.id, STEP_ITEM_STATUSES.ERROR);
+    throw err;
   } finally {
     await browser.close();
   }
