@@ -136,7 +136,7 @@ export default function CatalogueDetail() {
                   <div>
                     <img
                       src={query.data.thumbnailUrl}
-                      style={{ maxHeight: "50px" }}
+                      style={{ maxHeight: "30px" }}
                     />
                   </div>
                 ) : null}

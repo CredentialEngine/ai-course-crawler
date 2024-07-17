@@ -129,7 +129,7 @@ export default function CreateCatalogue() {
               <div className="flex gap-4 rounded-lg border border-dashed p-4">
                 <img
                   src={previewQuery.data.thumbnailUrl}
-                  style={{ maxWidth: "150px" }}
+                  style={{ maxHeight: "30px" }}
                 />
                 <div>
                   <h2 className="text-sm font-semibold">

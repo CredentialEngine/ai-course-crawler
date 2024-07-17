@@ -21,15 +21,15 @@ const CatalogueListItem = (catalogue: {
 }) => {
   return (
     <TableRow>
-      <TableCell className="hidden sm:table-cell">
-        {catalogue.thumbnailUrl ? (
-          <Link to={`/catalogue/${catalogue.id}`}>
-            <img src={catalogue.thumbnailUrl} style={{ maxWidth: "128px" }} />
-          </Link>
-        ) : null}
-      </TableCell>
       <TableCell className="font-medium">
-        <Link to={`/catalogue/${catalogue.id}`}>{catalogue.name}</Link>
+        <Link to={`/catalogue/${catalogue.id}`}>
+          <div className="flex items-center gap-4">
+            {catalogue.thumbnailUrl ? (
+              <img src={catalogue.thumbnailUrl} style={{ maxHeight: "30px" }} />
+            ) : null}
+            {catalogue.name}
+          </div>
+        </Link>
       </TableCell>
     </TableRow>
   );
@@ -77,7 +77,7 @@ export default function CatalogueDataList() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead colSpan={2}>Name</TableHead>
+                <TableHead>Catalogue</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

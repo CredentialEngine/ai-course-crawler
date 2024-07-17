@@ -25,7 +25,7 @@ const ExtractionListItem = (extraction: ExtractionSummary) => {
         <Link to={`/${extraction.id}`}>
           <div className="flex items-center gap-4">
             {catalogue.thumbnailUrl ? (
-              <img src={catalogue.thumbnailUrl} style={{ maxWidth: "128px" }} />
+              <img src={catalogue.thumbnailUrl} style={{ maxHeight: "30px" }} />
             ) : null}
             {catalogue.name}
           </div>
