@@ -140,15 +140,3 @@ export async function findDataItems(
   const totalItems = await getItemsCount(extractionId);
   return { totalItems, items };
 }
-
-export async function findAllDataItems(extractionId: number) {
-  const items = await db
-    .select()
-    .from(dataItems)
-    .innerJoin(crawlPages, eq(crawlPages.id, dataItems.crawlPageId))
-    .innerJoin(crawlSteps, eq(crawlSteps.id, crawlPages.crawlStepId))
-    .innerJoin(extractions, eq(extractions.id, crawlSteps.extractionId))
-    .where(eq(crawlSteps.extractionId, extractionId));
-
-  return items;
-}
