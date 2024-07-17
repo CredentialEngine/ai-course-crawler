@@ -6,6 +6,10 @@ import {
 import { findStepItemForJob } from "../data/extractions";
 import { extractCourseDataItem } from "../extraction/extractCourseDataItem";
 
+process.on("SIGTERM", () => {
+  console.log("Shutting down extractData");
+});
+
 const extractData: Processor<ExtractDataJob, ExtractDataProgress> = async (
   job
 ) => {

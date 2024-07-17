@@ -23,6 +23,10 @@ import { fetchBrowserPage } from "../extraction/browser";
 import { detectPageCount } from "../extraction/detectPageCount";
 import { createUrlExtractor } from "../extraction/detectUrlRegexp";
 
+process.on("SIGTERM", () => {
+  console.log("Shutting down fetchPage");
+});
+
 const constructPaginatedUrls = (configuration: PaginationConfiguration) => {
   const urls = [];
   if (configuration.urlPatternType == "offset") {

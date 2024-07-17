@@ -6,6 +6,10 @@ import {
 import { findRecipeById, updateConfiguration } from "../data/recipes";
 import recursivelyDetectConfiguration from "../extraction/recursivelyDetectConfiguration";
 
+process.on("SIGTERM", () => {
+  console.log("Shutting down detectConfiguration");
+});
+
 const detectConfiguration: Processor<
   DetectConfigurationJob,
   DetectConfigurationProgress

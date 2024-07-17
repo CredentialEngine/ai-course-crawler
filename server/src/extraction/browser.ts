@@ -1,7 +1,7 @@
 import * as cheerio from "cheerio";
 import { Cluster } from "puppeteer-cluster";
 import TurndownService from "turndown";
-import { exponentialRetry, resolveAbsoluteUrl } from "../utils";
+import { resolveAbsoluteUrl } from "../utils";
 
 export interface BrowserTaskInput {
   url: string;
@@ -23,11 +23,11 @@ export async function getCluster() {
     concurrency: Cluster.CONCURRENCY_CONTEXT,
     maxConcurrency: 2,
   });
-  cluster.task(async ({ page, data }) => {
+  await cluster.task(async ({ page, data }) => {
     const { url } = data;
     let screenshot: string | undefined;
     await page.goto(url);
-    const content = await exponentialRetry(() => page.content(), 3, 1000);
+    const content = await page.content();
     screenshot = await page.screenshot({
       type: "webp",
       encoding: "base64",
@@ -45,14 +45,6 @@ export async function getCluster() {
     };
   });
   return cluster;
-}
-
-export async function closeCluster() {
-  if (!cluster) {
-    return;
-  }
-  cluster.idle();
-  cluster.close();
 }
 
 export async function fetchBrowserPage(url: string) {

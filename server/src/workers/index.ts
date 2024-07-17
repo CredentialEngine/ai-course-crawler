@@ -1,19 +1,23 @@
-import { Job, Queue, QueueEvents, Worker } from "bullmq";
+import { Queue, SandboxedJob, Worker } from "bullmq";
 import { default as IORedis } from "ioredis";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 
-function getConnection() {
-  return new IORedis(REDIS_URL, { maxRetriesPerRequest: null });
+export function getRedisConnection() {
+  const connection = new IORedis(REDIS_URL, { maxRetriesPerRequest: null });
+  connection.setMaxListeners(30);
+  return connection;
 }
 
-export interface BaseProgress extends Object {
+export interface BaseProgress {
   status?: "info" | "success" | "failure";
   message: string;
 }
 
-export interface JobWithProgress<T, K extends BaseProgress> extends Job<T> {
-  updateProgress(progress: number | K): Promise<void>;
+export interface JobWithProgress<T, K extends BaseProgress>
+  extends SandboxedJob<T> {
+  updateProgress(value: object | number): Promise<void>;
+  updateProgress(value: K): Promise<void>;
 }
 
 export type Processor<T, K extends BaseProgress> = (
@@ -25,7 +29,7 @@ export async function submitJob<T, K extends T>(
   data: K,
   name?: string
 ) {
-  name = name || "default";
+  name = name || `${queue.name}.default`;
   queue.add(name, data);
 }
 
@@ -35,15 +39,11 @@ export function startProcessor<T>(
   localConcurrency: number = 1
 ) {
   const worker = new Worker(queue.name, processor, {
-    connection: getConnection(),
-    useWorkerThreads: true,
+    connection: getRedisConnection(),
+    useWorkerThreads: false,
     concurrency: localConcurrency,
   });
-  worker.on("error", (err) => console.log(err));
-  const queueEvents = new QueueEvents(queue.name);
-  queueEvents.on("error", (err) => console.log(err));
-  queueEvents.on("failed", (_job, err) => console.log(err));
-  queueEvents.on("progress", (_job, progress) => console.log(progress));
+  return worker;
 }
 
 export interface DetectConfigurationJob {
@@ -66,7 +66,7 @@ export const Queues = {
   DetectConfiguration: new Queue<DetectConfigurationJob>(
     "recipes.detectConfiguration",
     {
-      connection: getConnection(),
+      connection: getRedisConnection(),
       defaultJobOptions: {
         attempts: 3,
         backoff: {
@@ -77,7 +77,7 @@ export const Queues = {
     }
   ),
   FetchPage: new Queue<FetchPageJob>("extractions.fetchPage", {
-    connection: getConnection(),
+    connection: getRedisConnection(),
     defaultJobOptions: {
       attempts: 3,
       backoff: {
@@ -87,7 +87,7 @@ export const Queues = {
     },
   }),
   ExtractData: new Queue<ExtractDataJob>("extractions.extractData", {
-    connection: getConnection(),
+    connection: getRedisConnection(),
     defaultJobOptions: {
       attempts: 3,
       backoff: {

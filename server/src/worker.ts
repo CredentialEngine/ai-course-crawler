@@ -1,11 +1,21 @@
-import { Queue } from "bullmq";
+import { Queue, QueueEvents, Worker } from "bullmq";
 import "dotenv/config";
 import path from "path";
-import { closeCluster } from "./extraction/browser";
-import { Queues, startProcessor } from "./workers";
+import { getRedisConnection, Queues, startProcessor } from "./workers";
+
+const workers: Worker[] = [];
+
+let shuttingDown = false;
 
 async function handleShutdown() {
-  await closeCluster();
+  if (shuttingDown) {
+    return;
+  }
+  shuttingDown = true;
+  for (const worker of workers) {
+    console.log(`Shutting down worker ${worker.name}`);
+    await worker.close();
+  }
   process.exit(0);
 }
 
@@ -14,13 +24,20 @@ function processorPath(name: string) {
 }
 
 const processors: [Queue, string, number][] = [
-  [Queues.DetectConfiguration, processorPath("detectConfiguration"), 2],
+  [Queues.DetectConfiguration, processorPath("detectConfiguration"), 1],
   [Queues.FetchPage, processorPath("fetchPage"), 2],
-  [Queues.ExtractData, processorPath("extractData"), 100],
+  [Queues.ExtractData, processorPath("extractData"), 10],
 ];
 
 for (const [queue, processor, localConcurrency] of processors) {
-  startProcessor(queue, processor, localConcurrency);
+  const queueEvents = new QueueEvents(queue.name, {
+    connection: getRedisConnection(),
+  });
+  queueEvents.on("error", (err) => console.log(err));
+  queueEvents.on("failed", (_job, err) => console.log(err));
+  queueEvents.on("progress", (_job, progress) => console.log(progress));
+
+  workers.push(startProcessor(queue, processor, localConcurrency));
 }
 
 process.on("SIGINT", handleShutdown);
