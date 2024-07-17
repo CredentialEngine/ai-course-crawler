@@ -37,4 +37,5 @@ server/.vercel
 server/*.tsbuildinfo
 server/_scratchbook.md
 server/*.db
+server/*.db-*
 server/.env*

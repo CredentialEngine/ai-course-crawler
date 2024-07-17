@@ -35,5 +35,5 @@ yarn-error.log*
 _scratchbook.md
 
 *.db
-*.db-journal
+*.db-*
 .env*
