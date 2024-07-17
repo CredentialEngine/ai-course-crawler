@@ -117,10 +117,9 @@ export async function findDatasets(
 export async function findDataItems(
   extractionId: number,
   limit: number = 20,
-  offset: number = 0
+  offset: number = 0,
+  skipTotals = false
 ) {
-  const totalItems = await getItemsCount(extractionId);
-
   const items = await db
     .select({
       id: dataItems.id,
@@ -134,6 +133,11 @@ export async function findDataItems(
     .limit(limit)
     .offset(offset);
 
+  if (skipTotals) {
+    return { items };
+  }
+
+  const totalItems = await getItemsCount(extractionId);
   return { totalItems, items };
 }
 

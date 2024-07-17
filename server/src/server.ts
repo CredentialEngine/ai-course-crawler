@@ -7,12 +7,11 @@ import {
 } from "@trpc/server/adapters/fastify";
 import argon2 from "argon2";
 import "dotenv/config";
-import * as csv from "fast-csv";
 import fastify from "fastify";
-import { Stream } from "stream";
 import { z } from "zod";
-import { appRouter, CourseStructuredData, type AppRouter } from "./appRouter";
-import { findAllDataItems } from "./data/datasets";
+import { appRouter, type AppRouter } from "./appRouter";
+import { buildCsv } from "./csv";
+import { findExtractionById } from "./data/extractions";
 import { findUserByEmail } from "./data/users";
 import fastifySessionAuth, {
   requireAuthentication,
@@ -85,45 +84,13 @@ server.register(async (instance) => {
     "/downloads/courses/bulk_upload_template/:extractionId",
     async (request, reply) => {
       const { extractionId } = request.params as any;
-      const rows = await findAllDataItems(extractionId);
-      const csvStream = csv.format({ headers: false });
-      const outputStream = new Stream.PassThrough();
-      csvStream.pipe(outputStream);
-      csvStream.write([
-        "External Identifier",
-        "Learning Type",
-        "Learning Opportunity Name",
-        "Description",
-        "Subject Webpage",
-        "Life Cycle Status Type",
-        "Language",
-        "Available Online At",
-        "Credits (Min)",
-        "Credits (Max)",
-        "Prerequisites",
-      ]);
-      for (const row of rows) {
-        const item = row.data_items;
-        if (!item.structuredData) {
-          continue;
-        }
-        const structuredData = item.structuredData as CourseStructuredData;
-        csvStream.write([
-          structuredData.course_id,
-          "Course",
-          structuredData.course_name,
-          structuredData.course_description,
-          row.crawl_pages!.url,
-          "Active",
-          "English",
-          row.crawl_pages!.url,
-          structuredData.course_credits_min,
-          structuredData.course_credits_max,
-          "",
-        ]);
+
+      const extraction = await findExtractionById(extractionId);
+      if (!extraction) {
+        throw new Error("Not found");
       }
 
-      csvStream.end();
+      const csvStream = await buildCsv(extractionId);
 
       return reply
         .header("Content-Type", "text/csv")
@@ -131,7 +98,7 @@ server.register(async (instance) => {
           "Content-Disposition",
           `attachment; filename="AICourseMapping-BulkUploadTemplate-${extractionId}.csv"`
         )
-        .send(outputStream);
+        .send(csvStream);
     }
   );
 });

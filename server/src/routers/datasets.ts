@@ -36,9 +36,9 @@ export const datasetsRouter = router({
         20,
         opts.input.page * 20 - 20
       );
-      const totalPages = Math.ceil(totalItems / 20);
+      const totalPages = Math.ceil(totalItems! / 20);
       return {
-        totalItems,
+        totalItems: totalItems!,
         totalPages,
         results: items,
       };
