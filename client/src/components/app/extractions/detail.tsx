@@ -10,18 +10,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  ExtractionStep,
-  concisePrintDate,
-  prettyPrintDate,
-  trpc,
-} from "@/utils";
+import { CrawlStep, concisePrintDate, prettyPrintDate, trpc } from "@/utils";
 import { CookingPot, LibraryBig, List } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { displayRecipeDetails } from "../recipes/util";
 import { displayStepType } from "./utils";
 
-function displayStepParent(steps: ExtractionStep[], parentId: number) {
+function displayStepParent(steps: CrawlStep[], parentId: number) {
   const parent = steps.find((s) => s.id == parentId);
   if (!parent) {
     return parentId;
@@ -61,9 +56,9 @@ export default function ExtractionDetail() {
             </div>
             <div className="flex gap-4">
               <div className="rounded-md border p-4 mt-2 flex items-center">
-                {extraction.catalogueDataId ? (
+                {extraction.dataItemsCount ? (
                   <Link
-                    to={`~/data/courses/${extraction.catalogueDataId}`}
+                    to={`~/datasets/courses/${extraction.id}`}
                     className="flex items-center gap-4"
                   >
                     <div>
@@ -120,7 +115,7 @@ export default function ExtractionDetail() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {extraction.extractionSteps.map((step) => (
+                {extraction.crawlSteps.map((step) => (
                   <TableRow key={`steps-${step.id}`}>
                     <TableCell className="font-medium w-20">
                       {step.id}
@@ -129,7 +124,7 @@ export default function ExtractionDetail() {
                     <TableCell>
                       {step.parentStepId
                         ? displayStepParent(
-                            extraction.extractionSteps,
+                            extraction.crawlSteps,
                             step.parentStepId
                           )
                         : null}

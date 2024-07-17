@@ -35,13 +35,11 @@ export type Extraction = Exclude<
   RouterOutput["extractions"]["detail"],
   undefined
 >;
-export type ExtractionStep = ItemType<Extraction["extractionSteps"]>;
-export type ExtractionStepItem = ItemType<
-  RouterOutput["extractions"]["stepDetail"]["extractionStepItems"]["results"]
+export type CrawlStep = ItemType<Extraction["crawlSteps"]>;
+export type CrawlPage = ItemType<
+  RouterOutput["extractions"]["stepDetail"]["crawlPages"]["results"]
 >;
-export type DataItem = ItemType<
-  RouterOutput["catalogueData"]["courses"]["results"]
->;
+export type DataItem = ItemType<RouterOutput["datasets"]["courses"]["results"]>;
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -80,3 +78,11 @@ export function prettyPrintJson(json: Record<string, any>) {
 export async function copyToClipboard(text: string) {
   return navigator.clipboard.writeText(text);
 }
+
+export type IterableElement<TargetIterable> = TargetIterable extends Iterable<
+  infer ElementType
+>
+  ? ElementType
+  : TargetIterable extends AsyncIterable<infer ElementType>
+  ? ElementType
+  : never;

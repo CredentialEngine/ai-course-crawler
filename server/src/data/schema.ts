@@ -4,6 +4,7 @@ import {
   integer,
   sqliteTable,
   text,
+  unique,
 } from "drizzle-orm/sqlite-core";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
@@ -32,38 +33,20 @@ export interface RecipeConfiguration {
   links?: RecipeConfiguration;
 }
 
-export interface FetchPaginatedUrlsStepConfiguration {
-  dataType: PAGE_DATA_TYPE;
-  pagination: PaginationConfiguration;
-  categoryLevel?: number;
-}
-
-export interface FetchCategoryLinksStepConfiguration {
-  level: number;
-}
-
-export interface FetchCourseLinksStepConfiguration {}
-
-export interface FetchCourseDetailsStepConfiguration {}
-
-export interface CourseDetailMetadata {
-  url: string;
-  screenshot: string;
-  category?: string;
-}
-
 export enum EXTRACTION_LOG_LEVELS {
   INFO = "INFO",
   ERROR = "ERROR",
 }
 
 export enum EXTRACTION_STATUSES {
+  WAITING = "WAITING",
   IN_PROGRESS = "IN_PROGRESS",
   SUCCESS = "SUCCESS",
   ERROR = "ERROR",
 }
 
 export enum STEP_STATUSES {
+  WAITING = "WAITING",
   IN_PROGRESS = "IN_PROGRESS",
   SUCCESS = "SUCCESS",
   ERROR = "ERROR",
@@ -82,10 +65,6 @@ export enum STEPS {
   FETCH_LINKS = "FETCH_LINKS",
 }
 
-export interface NavigationData {
-  detailUrls?: string[];
-}
-
 export interface CourseStructuredData {
   course_id: string;
   course_name: string;
@@ -97,7 +76,7 @@ export interface CourseStructuredData {
 const catalogues = sqliteTable("catalogues", {
   id: integer("id").primaryKey(),
   name: text("name").notNull(),
-  url: text("url").notNull(),
+  url: text("url").notNull().unique(),
   thumbnailUrl: text("thumbnail_url"),
   createdAt: text("created_at")
     .notNull()
@@ -151,8 +130,8 @@ const extractionsRelations = relations(extractions, ({ one, many }) => ({
     fields: [extractions.recipeId],
     references: [recipes.id],
   }),
-  extractionSteps: many(extractionSteps),
-  catalogueData: many(catalogueData),
+  crawlSteps: many(crawlSteps),
+  dataset: many(datasets),
   logs: many(extractionLogs),
 }));
 
@@ -175,14 +154,14 @@ const extractionLogsRelations = relations(extractionLogs, ({ one }) => ({
   }),
 }));
 
-const extractionSteps = sqliteTable("extraction_steps", {
+const crawlSteps = sqliteTable("crawl_steps", {
   id: integer("id").primaryKey(),
   extractionId: integer("extraction_id")
     .notNull()
     .references(() => extractions.id, { onDelete: "cascade" }),
   step: text("step").notNull(),
   parentStepId: integer("parent_step_id").references(
-    (): AnySQLiteColumn => extractionSteps.id,
+    (): AnySQLiteColumn => crawlSteps.id,
     {
       onDelete: "cascade",
     }
@@ -194,61 +173,70 @@ const extractionSteps = sqliteTable("extraction_steps", {
     .default(sql`CURRENT_TIMESTAMP`),
 });
 
-const extractionStepsRelations = relations(
-  extractionSteps,
-  ({ one, many }) => ({
-    extraction: one(extractions, {
-      fields: [extractionSteps.extractionId],
-      references: [extractions.id],
-    }),
-    parentStep: one(extractionSteps, {
-      fields: [extractionSteps.parentStepId],
-      references: [extractionSteps.id],
-    }),
-    childSteps: many(extractionSteps),
-    extractionStepItems: many(extractionStepItems),
-  })
-);
-
-const extractionStepItems = sqliteTable("extraction_step_items", {
-  id: integer("id").primaryKey(),
-  extractionStepId: integer("extraction_step_id")
-    .notNull()
-    .references(() => extractionSteps.id, { onDelete: "cascade" }),
-  status: text("status").notNull(),
-  url: text("url").notNull(),
-  content: text("content"),
-  screenshot: text("screenshot"),
-  dataType: text("data_type"),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-});
-
-const extractionStepItemsRelations = relations(
-  extractionStepItems,
-  ({ one, many }) => ({
-    extractionStep: one(extractionSteps, {
-      fields: [extractionStepItems.extractionStepId],
-      references: [extractionSteps.id],
-    }),
-    dataItems: many(dataItems),
-  })
-);
-
-const catalogueData = sqliteTable("catalogue_data", {
-  id: integer("id").primaryKey(),
-  extractionId: integer("extraction_id")
-    .notNull()
-    .references(() => extractions.id, { onDelete: "cascade" }),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-});
-
-const catalogueDataRelations = relations(catalogueData, ({ one, many }) => ({
+const crawlStepsRelations = relations(crawlSteps, ({ one, many }) => ({
   extraction: one(extractions, {
-    fields: [catalogueData.extractionId],
+    fields: [crawlSteps.extractionId],
+    references: [extractions.id],
+  }),
+  parentStep: one(crawlSteps, {
+    fields: [crawlSteps.parentStepId],
+    references: [crawlSteps.id],
+  }),
+  childSteps: many(crawlSteps),
+  crawlPages: many(crawlPages),
+}));
+
+const crawlPages = sqliteTable(
+  "crawl_pages",
+  {
+    id: integer("id").primaryKey(),
+    crawlStepId: integer("crawl_step_id")
+      .notNull()
+      .references(() => crawlSteps.id, { onDelete: "cascade" }),
+    status: text("status").notNull(),
+    url: text("url").notNull(),
+    content: text("content"),
+    screenshot: text("screenshot"),
+    dataType: text("data_type"),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => ({
+    uniq: unique().on(t.crawlStepId, t.url),
+  })
+);
+
+const crawlPageRelations = relations(crawlPages, ({ one, many }) => ({
+  crawlStep: one(crawlSteps, {
+    fields: [crawlPages.crawlStepId],
+    references: [crawlSteps.id],
+  }),
+  dataItems: many(dataItems),
+}));
+
+const datasets = sqliteTable(
+  "datasets",
+  {
+    id: integer("id").primaryKey(),
+    catalogueId: integer("catalogue_id")
+      .notNull()
+      .references(() => catalogues.id, { onDelete: "cascade" }),
+    extractionId: integer("extraction_id")
+      .notNull()
+      .references(() => extractions.id, { onDelete: "cascade" }),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => ({
+    uniq: unique().on(t.catalogueId, t.extractionId),
+  })
+);
+
+const datasetsRelations = relations(datasets, ({ one, many }) => ({
+  extraction: one(extractions, {
+    fields: [datasets.extractionId],
     references: [extractions.id],
   }),
   dataItems: many(dataItems),
@@ -256,13 +244,12 @@ const catalogueDataRelations = relations(catalogueData, ({ one, many }) => ({
 
 const dataItems = sqliteTable("data_items", {
   id: integer("id").primaryKey(),
-  catalogueDataId: integer("catalogue_data_id")
+  datasetId: integer("dataset_id")
     .notNull()
-    .references(() => catalogueData.id, { onDelete: "cascade" }),
-  extractionStepItemId: integer("extraction_step_item_id").references(
-    () => extractionStepItems.id,
-    { onDelete: "cascade" }
-  ),
+    .references(() => datasets.id, { onDelete: "cascade" }),
+  crawlPageId: integer("crawl_page_id").references(() => crawlPages.id, {
+    onDelete: "cascade",
+  }),
   structuredData: text("structured_data", { mode: "json" }).notNull(),
   createdAt: text("created_at")
     .notNull()
@@ -270,18 +257,18 @@ const dataItems = sqliteTable("data_items", {
 });
 
 const dataItemsRelations = relations(dataItems, ({ one }) => ({
-  catalogueData: one(catalogueData, {
-    fields: [dataItems.catalogueDataId],
-    references: [catalogueData.id],
+  dataset: one(datasets, {
+    fields: [dataItems.datasetId],
+    references: [datasets.id],
   }),
-  extractionStepItem: one(extractionStepItems, {
-    fields: [dataItems.extractionStepItemId],
-    references: [extractionStepItems.id],
+  crawlPage: one(crawlPages, {
+    fields: [dataItems.crawlPageId],
+    references: [crawlPages.id],
   }),
 }));
 
 const settings = sqliteTable("settings", {
-  key: text("key").primaryKey().notNull(),
+  key: text("key").primaryKey().notNull().unique(),
   value: text("value").notNull(),
   isEncrypted: integer("is_encrypted", { mode: "boolean" })
     .default(false)
@@ -324,20 +311,20 @@ export function decryptFromDb(text: string) {
 }
 
 export {
-  catalogueData,
-  catalogueDataRelations,
   catalogues,
   cataloguesRelations,
+  crawlPageRelations,
+  crawlPages,
+  crawlSteps,
+  crawlStepsRelations,
   dataItems,
   dataItemsRelations,
+  datasets,
+  datasetsRelations,
   extractionLogs,
   extractionLogsRelations,
   extractions,
   extractionsRelations,
-  extractionStepItems,
-  extractionStepItemsRelations,
-  extractionSteps,
-  extractionStepsRelations,
   recipes,
   recipesRelations,
   settings,

@@ -1,21 +1,21 @@
 import { z } from "zod";
 import { error, publicProcedure, router } from ".";
 import { AppErrors } from "../appErrors";
-import { findCatalogueForExtraction } from "../data/catalogueData";
 import { findCatalogueById } from "../data/catalogues";
+import { getItemsCount } from "../data/datasets";
 import {
   createExtraction,
+  createPage,
   createStep,
-  createStepItem,
   findExtractionById,
   findExtractions,
   findLogs,
+  findPage,
+  findPagesPaginated,
   findStep,
-  findStepItem,
-  findStepItemsPaginated,
   getExtractionCount,
   getLogCount,
-  getStepItemCount,
+  getPageCount,
 } from "../data/extractions";
 import { Recipe } from "../data/recipes";
 import { STEPS } from "../data/schema";
@@ -29,12 +29,12 @@ async function startExtraction(recipe: Recipe) {
     step: STEPS.FETCH_ROOT,
     configuration: recipe.configuration!,
   });
-  const stepItem = await createStepItem({
-    extractionStepId: step.id,
+  const crawlPage = await createPage({
+    crawlStepId: step.id,
     url: recipe.url,
     dataType: recipe.configuration!.pageType,
   });
-  submitJob(Queues.FetchPage, { stepItemId: stepItem.id });
+  submitJob(Queues.FetchPage, { crawlPageId: crawlPage.id });
   return extraction;
 }
 
@@ -71,15 +71,14 @@ export const extractionsRouter = router({
       })
     )
     .query(async (opts) => {
-      const result = await findExtractionById(opts.input.id);
+      let result = await findExtractionById(opts.input.id);
       if (!result) {
         throw error("NOT_FOUND", AppErrors.NOT_FOUND, "Extraction not found");
       }
-      const withCatalogueData = {
+      return {
         ...result,
-        catalogueDataId: (await findCatalogueForExtraction(result.id))?.id,
+        dataItemsCount: await getItemsCount(opts.input.id),
       };
-      return withCatalogueData;
     }),
 
   logs: publicProcedure
@@ -112,42 +111,38 @@ export const extractionsRouter = router({
       })
     )
     .query(async (opts) => {
-      const extractionStep = await findStep(opts.input.stepId);
-      if (!extractionStep) {
+      const crawlStep = await findStep(opts.input.stepId);
+      if (!crawlStep) {
         throw error("NOT_FOUND", AppErrors.NOT_FOUND, "Step not found");
       }
-      const totalItems = await getStepItemCount(opts.input.stepId);
+      const totalItems = await getPageCount(opts.input.stepId);
       const totalPages = Math.ceil(totalItems / 20);
       const offset = opts.input.page * 20 - 20;
-      const stepItems = await findStepItemsPaginated(
-        extractionStep.id,
-        20,
-        offset
-      );
+      const crawlPages = await findPagesPaginated(crawlStep.id, 20, offset);
       return {
-        extractionStep,
-        extractionStepItems: {
+        crawlStep,
+        crawlPages: {
           totalItems,
           totalPages,
-          results: stepItems,
+          results: crawlPages,
         },
       };
     }),
-  stepItemDetail: publicProcedure
+  crawlPageDetail: publicProcedure
     .input(
       z.object({
-        stepItemId: z.number().int().positive(),
+        crawlPageId: z.number().int().positive(),
       })
     )
     .query(async (opts) => {
-      const stepItem = await findStepItem(opts.input.stepItemId);
-      if (!stepItem) {
+      const crawlPage = await findPage(opts.input.crawlPageId);
+      if (!crawlPage) {
         throw error("NOT_FOUND", AppErrors.NOT_FOUND, "Step item not found");
       }
       return {
-        ...stepItem,
-        simplifiedContent: stepItem.content
-          ? await toMarkdown(await simplifyHtml(stepItem.content))
+        ...crawlPage,
+        simplifiedContent: crawlPage.content
+          ? await toMarkdown(await simplifyHtml(crawlPage.content))
           : null,
       };
     }),

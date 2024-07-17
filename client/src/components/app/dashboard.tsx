@@ -46,7 +46,7 @@ export function Dashboard() {
                   <Pickaxe className="h-4 w-4" />
                   Extractions
                 </MenuLink>
-                <MenuLink to={"/data"} currentLocation={location}>
+                <MenuLink to={"/datasets"} currentLocation={location}>
                   <LibraryBig className="h-4 w-4" />
                   Data Library
                 </MenuLink>
@@ -98,7 +98,7 @@ export function Dashboard() {
                     Extractions
                   </MenuLink>
                   <MenuLink
-                    to={"/data"}
+                    to={"/datasets"}
                     currentLocation={location}
                     compact={true}
                   >

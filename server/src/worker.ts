@@ -1,7 +1,7 @@
-import { Queue, QueueEvents, Worker } from "bullmq";
+import { Queue, Worker } from "bullmq";
 import "dotenv/config";
 import path from "path";
-import { getRedisConnection, Queues, startProcessor } from "./workers";
+import { Queues, startProcessor } from "./workers";
 
 const workers: Worker[] = [];
 
@@ -30,14 +30,11 @@ const processors: [Queue, string, number][] = [
 ];
 
 for (const [queue, processor, localConcurrency] of processors) {
-  const queueEvents = new QueueEvents(queue.name, {
-    connection: getRedisConnection(),
-  });
-  queueEvents.on("error", (err) => console.log(err));
-  queueEvents.on("failed", (_job, err) => console.log(err));
-  queueEvents.on("progress", (_job, progress) => console.log(progress));
-
-  workers.push(startProcessor(queue, processor, localConcurrency));
+  const worker = startProcessor(queue, processor, localConcurrency);
+  worker.on("error", (err) => console.log(err));
+  worker.on("failed", (_job, err) => console.log(err));
+  worker.on("progress", (_job, progress) => console.log(progress));
+  workers.push(worker);
 }
 
 process.on("SIGINT", handleShutdown);

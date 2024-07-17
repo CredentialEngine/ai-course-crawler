@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { publicProcedure, router } from ".";
-import { findDatasetsForCatalogue } from "../data/catalogueData";
 import {
   createCatalogue,
   destroyCatalogue,
@@ -9,6 +8,7 @@ import {
   findLatestExtractionsForCatalogue,
   getCatalogueCount,
 } from "../data/catalogues";
+import { findDatasets } from "../data/datasets";
 import { fetchPreview } from "../extraction/browser";
 
 export const cataloguesRouter = router({
@@ -24,6 +24,7 @@ export const cataloguesRouter = router({
       z
         .object({
           page: z.number().int().positive().default(1),
+          withData: z.boolean().default(false),
         })
         .default({})
     )
@@ -68,13 +69,13 @@ export const cataloguesRouter = router({
   datasets: publicProcedure
     .input(
       z.object({
+        id: z.number().int().positive(),
         page: z.number().int().positive().default(1),
-        catalogueId: z.number().int().positive(),
       })
     )
     .query(async (opts) => {
-      const { totalItems, items } = await findDatasetsForCatalogue(
-        opts.input.catalogueId,
+      const { totalItems, items } = await findDatasets(
+        opts.input.id,
         20,
         opts.input.page * 20 - 20
       );

@@ -4,8 +4,8 @@ import {
   RecipeConfiguration,
 } from "./data/schema";
 import { router } from "./routers";
-import { catalogueDataRouter } from "./routers/catalogueData";
 import { cataloguesRouter } from "./routers/catalogues";
+import { datasetsRouter } from "./routers/datasets";
 import { extractionsRouter } from "./routers/extractions";
 import { recipesRouter } from "./routers/recipes";
 import { settingsRouter } from "./routers/settings";
@@ -14,7 +14,7 @@ import { DetectConfigurationProgress } from "./workers";
 
 const appRouter = router({
   catalogues: cataloguesRouter,
-  catalogueData: catalogueDataRouter,
+  datasets: datasetsRouter,
   settings: settingsRouter,
   recipes: recipesRouter,
   extractions: extractionsRouter,

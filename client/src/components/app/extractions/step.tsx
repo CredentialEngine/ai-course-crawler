@@ -25,7 +25,7 @@ function displayDataType(dataType: PAGE_DATA_TYPE) {
   }
 }
 
-export default function ExtractionStepDetail() {
+export default function CrawlStepDetail() {
   let { extractionId, stepId } = useParams();
   const { page, PaginationButtons } = usePagination();
   const extractionQuery = trpc.extractions.detail.useQuery(
@@ -46,8 +46,8 @@ export default function ExtractionStepDetail() {
     { label: `Extraction #${extractionId}`, href: `/${extractionId}` },
   ];
 
-  const step = stepQuery.data.extractionStep;
-  const items = stepQuery.data.extractionStepItems;
+  const step = stepQuery.data.crawlStep;
+  const items = stepQuery.data.crawlPages;
 
   return (
     <>

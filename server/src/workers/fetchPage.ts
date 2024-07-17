@@ -6,11 +6,11 @@ import {
   submitJob,
 } from ".";
 import {
+  createPage,
   createStep,
-  createStepItem,
-  findStepItemForJob,
-  updateStepItem,
-  updateStepItemStatus,
+  findPageForJob,
+  updatePage,
+  updatePageStatus,
 } from "../data/extractions";
 import {
   PAGE_DATA_TYPE,
@@ -19,12 +19,13 @@ import {
   STEP_ITEM_STATUSES,
   STEPS,
 } from "../data/schema";
-import { fetchBrowserPage } from "../extraction/browser";
+import { closeCluster, fetchBrowserPage } from "../extraction/browser";
 import { detectPageCount } from "../extraction/detectPageCount";
 import { createUrlExtractor } from "../extraction/detectUrlRegexp";
 
-process.on("SIGTERM", () => {
+process.on("SIGTERM", async () => {
   console.log("Shutting down fetchPage");
+  await closeCluster();
 });
 
 const constructPaginatedUrls = (configuration: PaginationConfiguration) => {
@@ -43,23 +44,23 @@ const constructPaginatedUrls = (configuration: PaginationConfiguration) => {
 };
 
 async function enqueueExtraction(
-  stepItem: Awaited<ReturnType<typeof findStepItemForJob>>
+  crawlPage: Awaited<ReturnType<typeof findPageForJob>>
 ) {
-  console.log(`Enqueuing extraction for step item ${stepItem.id}`);
-  return submitJob(Queues.ExtractData, { stepItemId: stepItem.id });
+  console.log(`Enqueuing extraction for page ${crawlPage.id}`);
+  return submitJob(Queues.ExtractData, { crawlPageId: crawlPage.id });
 }
 
 async function enqueuePages(
   configuration: RecipeConfiguration,
-  stepItem: Awaited<ReturnType<typeof findStepItemForJob>>
+  crawlPage: Awaited<ReturnType<typeof findPageForJob>>
 ) {
-  console.log(`Enqueuing page fetches for step item ${stepItem.id}`);
+  console.log(`Enqueuing page fetches for page ${crawlPage.id}`);
 
   const pageCount = await detectPageCount(
-    stepItem.content!,
+    crawlPage.content!,
     configuration.pagination!.urlPattern,
     configuration.pagination!.urlPatternType,
-    stepItem.screenshot!
+    crawlPage.screenshot!
   );
 
   if (!pageCount) {
@@ -74,62 +75,62 @@ async function enqueuePages(
   const pageUrls = constructPaginatedUrls(updatedPagination);
 
   const fetchPagesStep = await createStep({
-    extractionId: stepItem.extractionStep.extractionId,
+    extractionId: crawlPage.crawlStep.extractionId,
     step: STEPS.FETCH_PAGINATED,
-    parentStepId: stepItem.extractionStepId,
+    parentStepId: crawlPage.crawlStepId,
     configuration,
   });
 
   for (const url of pageUrls) {
-    const fetchPageItem = await createStepItem({
-      extractionStepId: fetchPagesStep.id,
+    const fetchPageItem = await createPage({
+      crawlStepId: fetchPagesStep.id,
       url,
       dataType: configuration.pageType,
     });
-    await submitJob(Queues.FetchPage, { stepItemId: fetchPageItem.id });
+    await submitJob(Queues.FetchPage, { crawlPageId: fetchPageItem.id });
   }
 }
 
 async function processLinks(
   configuration: RecipeConfiguration,
-  stepItem: Awaited<ReturnType<typeof findStepItemForJob>>
+  crawlPage: Awaited<ReturnType<typeof findPageForJob>>
 ) {
-  console.log(`Processing links for step item ${stepItem.id}`);
+  console.log(`Processing links for page ${crawlPage.id}`);
 
   const regexp = new RegExp(configuration.linkRegexp!, "g");
   const extractor = createUrlExtractor(regexp);
-  const urls = await extractor(stepItem.url, stepItem.content!);
+  const urls = await extractor(crawlPage.url, crawlPage.content!);
 
   const fetchLinksStep = await createStep({
-    extractionId: stepItem.extractionStep.extractionId,
+    extractionId: crawlPage.crawlStep.extractionId,
     step: STEPS.FETCH_LINKS,
-    parentStepId: stepItem.extractionStepId,
+    parentStepId: crawlPage.crawlStepId,
     configuration: configuration.links!,
   });
 
   for (const url of urls) {
-    const fetchLinkItem = await createStepItem({
-      extractionStepId: fetchLinksStep.id,
+    const fetchLinkItem = await createPage({
+      crawlStepId: fetchLinksStep.id,
       url,
       dataType: configuration.links!.pageType,
     });
-    await submitJob(Queues.FetchPage, { stepItemId: fetchLinkItem.id });
+    await submitJob(Queues.FetchPage, { crawlPageId: fetchLinkItem.id });
   }
 }
 
 const processNextStep = async (
-  stepItem: Awaited<ReturnType<typeof findStepItemForJob>>
+  crawlPage: Awaited<ReturnType<typeof findPageForJob>>
 ) => {
-  const configuration = stepItem.extractionStep
+  const configuration = crawlPage.crawlStep
     .configuration as RecipeConfiguration;
-  const currentStep = stepItem.extractionStep.step;
+  const currentStep = crawlPage.crawlStep.step;
 
   if (configuration.pagination && currentStep != STEPS.FETCH_PAGINATED) {
-    return enqueuePages(configuration, stepItem);
+    return enqueuePages(configuration, crawlPage);
   }
 
   if (configuration.pageType == PAGE_DATA_TYPE.COURSE_DETAIL_PAGE) {
-    return enqueueExtraction(stepItem);
+    return enqueueExtraction(crawlPage);
   }
 
   if (!configuration.links) {
@@ -138,27 +139,27 @@ const processNextStep = async (
     );
   }
 
-  processLinks(configuration, stepItem);
+  processLinks(configuration, crawlPage);
 };
 
 const fetchPage: Processor<FetchPageJob, FetchPageProgress> = async (job) => {
-  const stepItem = await findStepItemForJob(job.data.stepItemId);
+  const crawlPage = await findPageForJob(job.data.crawlPageId);
 
   try {
-    console.log(`Loading ${stepItem.url} for step item ${stepItem.id}`);
-    await updateStepItemStatus(stepItem.id, STEP_ITEM_STATUSES.IN_PROGRESS);
-    const page = await fetchBrowserPage(stepItem.url);
-    await updateStepItem(
-      stepItem.id,
+    console.log(`Loading ${crawlPage.url} for page ${crawlPage.id}`);
+    await updatePageStatus(crawlPage.id, STEP_ITEM_STATUSES.IN_PROGRESS);
+    const page = await fetchBrowserPage(crawlPage.url);
+    await updatePage(
+      crawlPage.id,
       STEP_ITEM_STATUSES.SUCCESS,
       page.content,
       page.screenshot
     );
-    stepItem.content = page.content;
-    stepItem.screenshot = page.screenshot || null;
-    await processNextStep(stepItem);
+    crawlPage.content = page.content;
+    crawlPage.screenshot = page.screenshot || null;
+    await processNextStep(crawlPage);
   } catch (err) {
-    await updateStepItemStatus(stepItem.id, STEP_ITEM_STATUSES.ERROR);
+    await updatePageStatus(crawlPage.id, STEP_ITEM_STATUSES.ERROR);
     throw err;
   }
 };

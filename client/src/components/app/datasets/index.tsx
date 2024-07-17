@@ -13,7 +13,7 @@ import {
 import { trpc } from "@/utils";
 import usePagination from "../usePagination";
 
-const CatalogueListItem = (catalogue: {
+const DatasetItem = (catalogue: {
   id: number;
   name: string;
   url: string;
@@ -35,9 +35,9 @@ const CatalogueListItem = (catalogue: {
   );
 };
 
-export default function CatalogueDataList() {
+export default function DatasetList() {
   const { page, PaginationButtons } = usePagination();
-  const listQuery = trpc.catalogueData.list.useQuery({ page });
+  const listQuery = trpc.datasets.list.useQuery({ page });
 
   if (!listQuery.data?.results.length) {
     return (
@@ -82,7 +82,7 @@ export default function CatalogueDataList() {
             </TableHeader>
             <TableBody>
               {listQuery.data?.results.map((catalogue) => (
-                <CatalogueListItem key={catalogue.url} {...catalogue} />
+                <DatasetItem key={catalogue.url} {...catalogue} />
               )) || (
                 <TableRow>
                   <TableCell colSpan={3}>

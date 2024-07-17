@@ -51,11 +51,11 @@ export interface DetectConfigurationJob {
 }
 
 export interface FetchPageJob {
-  stepItemId: number;
+  crawlPageId: number;
 }
 
 export interface ExtractDataJob {
-  stepItemId: number;
+  crawlPageId: number;
 }
 
 export interface DetectConfigurationProgress extends BaseProgress {}

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Extraction, prettyPrintDate, trpc } from "@/utils";
+import { IterableElement, prettyPrintDate, RouterOutput, trpc } from "@/utils";
 import { Earth } from "lucide-react";
 import { Link } from "wouter";
 
@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/table";
 import usePagination from "../usePagination";
 
-type ExtractionSummary = Omit<Extraction, "logs" | "extractionSteps"> &
-  Partial<Pick<Extraction, "logs" | "extractionSteps">>;
+type ExtractionSummary = IterableElement<
+  RouterOutput["extractions"]["list"]["results"]
+>;
 
 const ExtractionListItem = (extraction: ExtractionSummary) => {
   const catalogue = extraction.recipe.catalogue;

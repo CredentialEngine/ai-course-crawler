@@ -4,17 +4,17 @@ import { trpc } from "@/utils";
 import { useParams } from "wouter";
 import { base64Img } from "./utils";
 
-export default function ExtractionStepItemDetail() {
-  let { extractionId, stepId, stepItemId } = useParams();
-  const stepItemQuery = trpc.extractions.stepItemDetail.useQuery(
-    { stepItemId: parseInt(stepItemId || "") },
-    { enabled: !!stepItemId }
+export default function CrawlPageDetail() {
+  let { extractionId, stepId, crawlPageId } = useParams();
+  const crawlPageQuery = trpc.extractions.crawlPageDetail.useQuery(
+    { crawlPageId: parseInt(crawlPageId || "") },
+    { enabled: !!crawlPageId }
   );
-  if (!stepItemQuery.data) {
+  if (!crawlPageQuery.data) {
     return null;
   }
 
-  const item = stepItemQuery.data;
+  const item = crawlPageQuery.data;
 
   const breadCrumbs = [
     { label: "Extractions", href: "/" },
@@ -24,7 +24,7 @@ export default function ExtractionStepItemDetail() {
       href: `/${extractionId}/steps/${stepId}`,
     },
     {
-      label: `Step Item #${stepItemId}`,
+      label: `Step Item #${crawlPageId}`,
       href: `/${extractionId}/steps/${stepId}/items/${item.id}`,
     },
   ];
@@ -68,7 +68,7 @@ export default function ExtractionStepItemDetail() {
 
       <div className="flex items-center">
         <h1 className="text-lg font-semibold md:text-2xl">
-          Extraction Step Item #{stepItemId} - Content Preview
+          Extraction Step Item #{crawlPageId} - Content Preview
         </h1>
       </div>
       <Tabs defaultValue={defaultTab}>

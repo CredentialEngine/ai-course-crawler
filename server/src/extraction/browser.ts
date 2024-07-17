@@ -14,8 +14,12 @@ export interface BrowserTaskResult {
 }
 
 let cluster: Cluster<BrowserTaskInput, BrowserTaskResult> | undefined;
+let clusterClosed = false;
 
 export async function getCluster() {
+  if (clusterClosed) {
+    throw new Error("Cluster has been closed");
+  }
   if (cluster) {
     return cluster;
   }
@@ -45,6 +49,16 @@ export async function getCluster() {
     };
   });
   return cluster;
+}
+
+export async function closeCluster() {
+  if (!cluster) {
+    return;
+  }
+
+  clusterClosed = true;
+  await cluster.idle();
+  await cluster.close();
 }
 
 export async function fetchBrowserPage(url: string) {

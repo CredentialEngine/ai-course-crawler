@@ -13,7 +13,7 @@ import { Earth, List } from "lucide-react";
 import { Link, useParams } from "wouter";
 import usePagination from "../usePagination";
 
-export default function CatalogueDataDetail() {
+export default function DatasetDetail() {
   const { catalogueId } = useParams();
   const { page, PaginationButtons } = usePagination();
   const catalogueQuery = trpc.catalogues.detail.useQuery(
@@ -21,7 +21,7 @@ export default function CatalogueDataDetail() {
     { enabled: !!catalogueId }
   );
   const datasetsQuery = trpc.catalogues.datasets.useQuery(
-    { page, catalogueId: parseInt(catalogueId || "") },
+    { id: parseInt(catalogueId || ""), page },
     { enabled: !!catalogueId }
   );
 
@@ -67,7 +67,7 @@ export default function CatalogueDataDetail() {
             <TableBody>
               {datasets.map((dataset) => (
                 <TableRow key={`dataset-${dataset.id}`}>
-                  <TableCell>#{dataset.extractionId}</TableCell>
+                  <TableCell>#{dataset.id}</TableCell>
                   <TableCell>{prettyPrintDate(dataset.createdAt)}</TableCell>
                   <TableCell>
                     <Button

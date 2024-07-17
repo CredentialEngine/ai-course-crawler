@@ -1,12 +1,8 @@
 import { z } from "zod";
 import { publicProcedure, router } from ".";
-import {
-  findCatalogueData,
-  findCataloguesWithData,
-  findDataItems,
-} from "../data/catalogueData";
+import { findCataloguesWithData, findDataItems } from "../data/datasets";
 
-export const catalogueDataRouter = router({
+export const datasetsRouter = router({
   list: publicProcedure
     .input(
       z
@@ -27,25 +23,16 @@ export const catalogueDataRouter = router({
         results: items,
       };
     }),
-  detail: publicProcedure
-    .input(
-      z.object({
-        catalogueDataId: z.number().int().positive(),
-      })
-    )
-    .query(async (opts) => {
-      return findCatalogueData(opts.input.catalogueDataId);
-    }),
   courses: publicProcedure
     .input(
       z.object({
         page: z.number().int().positive().default(1),
-        catalogueDataId: z.number().int().positive(),
+        extractionId: z.number().int().positive(),
       })
     )
     .query(async (opts) => {
       const { totalItems, items } = await findDataItems(
-        opts.input.catalogueDataId,
+        opts.input.extractionId,
         20,
         opts.input.page * 20 - 20
       );

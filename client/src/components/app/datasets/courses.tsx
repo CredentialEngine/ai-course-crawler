@@ -50,36 +50,33 @@ function CourseDisplayItem({ item }: CourseDisplayItemProps) {
   );
 }
 
-export default function CatalogueDataCourses() {
-  const { catalogueDataId } = useParams();
+export default function DatasetCourses() {
+  const { extractionId } = useParams();
   const [downloadInProgress, setDownloadInProgress] = useState(false);
   const { page, PaginationButtons } = usePagination();
 
-  const datasetQuery = trpc.catalogueData.detail.useQuery(
-    { catalogueDataId: parseInt(catalogueDataId || "") },
-    { enabled: !!catalogueDataId }
+  const extractionQuery = trpc.extractions.detail.useQuery(
+    { id: parseInt(extractionId || "") },
+    { enabled: !!extractionId }
   );
 
-  const coursesQuery = trpc.catalogueData.courses.useQuery(
-    { catalogueDataId: parseInt(catalogueDataId || ""), page },
-    { enabled: !!catalogueDataId }
+  const coursesQuery = trpc.datasets.courses.useQuery(
+    { extractionId: parseInt(extractionId || ""), page },
+    { enabled: !!extractionId }
   );
 
-  if (!datasetQuery.data || !coursesQuery.data) {
+  if (!extractionQuery.data || !coursesQuery.data) {
     return null;
   }
   const handleDownload: React.MouseEventHandler<HTMLButtonElement> = (e) => {
     setDownloadInProgress(true);
     e.preventDefault();
-    fetch(
-      `${API_URL}/downloads/courses/bulk_upload_template/${catalogueDataId}`,
-      {
-        credentials: "include",
-      }
-    )
+    fetch(`${API_URL}/downloads/courses/bulk_upload_template/${extractionId}`, {
+      credentials: "include",
+    })
       .then((response) => {
         const disposition = response.headers.get("Content-Disposition");
-        let filename = `AICourseMapping-BulkUploadTemplate-${catalogueDataId}.csv`; // Fallback filename
+        let filename = `AICourseMapping-BulkUploadTemplate-${extractionId}.csv`; // Fallback filename
 
         if (disposition && disposition.includes("attachment")) {
           const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
@@ -111,7 +108,7 @@ export default function CatalogueDataCourses() {
       });
   };
 
-  const extraction = datasetQuery.data.extraction;
+  const extraction = extractionQuery.data;
   const catalogue = extraction.recipe.catalogue;
   const items = coursesQuery.data.results;
 

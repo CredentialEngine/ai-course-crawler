@@ -1,16 +1,15 @@
 import { Route, Switch } from "wouter";
-import CatalogueDataList from "./catalogueData";
-import CatalogueDataCourses from "./catalogueData/courses";
-import CatalogueDataDetail from "./catalogueData/detail";
-import { RedirectToCourses } from "./catalogueData/redirectToCourses";
 import Catalogues from "./catalogues";
 import CreateCatalogue from "./catalogues/create";
 import CatalogueDetail from "./catalogues/detail";
 import CatalogueCreateExtraction from "./catalogues/extract";
+import DatasetList from "./datasets";
+import DatasetCourses from "./datasets/courses";
+import DatasetDetail from "./datasets/detail";
 import Extractions from "./extractions";
 import ExtractionDetail from "./extractions/detail";
-import ExtractionStepDetail from "./extractions/step";
-import ExtractionStepItemDetail from "./extractions/stepItem";
+import CrawlPageDetail from "./extractions/page";
+import CrawlStepDetail from "./extractions/step";
 import Logout from "./logout";
 import MyProfile from "./profile";
 import CreateRecipe from "./recipes/create";
@@ -47,30 +46,20 @@ export default function Routes() {
         <Switch>
           <Route path="/:extractionId" component={ExtractionDetail} />
           <Route
-            path="/:extractionId/steps/:stepId/items/:stepItemId"
-            component={ExtractionStepItemDetail}
+            path="/:extractionId/steps/:stepId/items/:crawlPageId"
+            component={CrawlPageDetail}
           />
           <Route
             path="/:extractionId/steps/:stepId"
-            component={ExtractionStepDetail}
+            component={CrawlStepDetail}
           />
         </Switch>
       </Route>
-      <Route path="/data" nest>
-        <Route path="/" component={CatalogueDataList} />
+      <Route path="/datasets" nest>
+        <Route path="/" component={DatasetList} />
         <Switch>
-          <Route
-            path="/catalogue/:catalogueId"
-            component={CatalogueDataDetail}
-          />
-          <Route
-            path="/courses/:catalogueDataId"
-            component={CatalogueDataCourses}
-          />
-          <Route
-            path="/extraction/:extractionId"
-            component={RedirectToCourses}
-          />
+          <Route path="/catalogue/:catalogueId" component={DatasetDetail} />
+          <Route path="/courses/:extractionId" component={DatasetCourses} />
         </Switch>
       </Route>
       <Route path="/users" nest>

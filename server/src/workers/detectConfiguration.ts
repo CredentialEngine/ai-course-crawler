@@ -4,10 +4,12 @@ import {
   Processor,
 } from ".";
 import { findRecipeById, updateConfiguration } from "../data/recipes";
+import { closeCluster } from "../extraction/browser";
 import recursivelyDetectConfiguration from "../extraction/recursivelyDetectConfiguration";
 
-process.on("SIGTERM", () => {
+process.on("SIGTERM", async () => {
   console.log("Shutting down detectConfiguration");
+  closeCluster();
 });
 
 const detectConfiguration: Processor<

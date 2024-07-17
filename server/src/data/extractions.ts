@@ -8,9 +8,9 @@ import {
   STEPS,
   STEP_ITEM_STATUSES,
   STEP_STATUSES,
+  crawlPages,
+  crawlSteps,
   extractionLogs,
-  extractionStepItems,
-  extractionSteps,
   extractions,
 } from "../data/schema";
 
@@ -48,11 +48,11 @@ export async function getExtractionCount() {
   return result[0].count;
 }
 
-export async function getStepItemCount(stepId: number) {
+export async function getPageCount(stepId: number) {
   const result = await db
     .select({ count: sql<number>`count(*)` })
-    .from(extractionStepItems)
-    .where(eq(extractionStepItems.extractionStepId, stepId));
+    .from(crawlPages)
+    .where(eq(crawlPages.crawlStepId, stepId));
   return result[0].count;
 }
 
@@ -81,7 +81,7 @@ export async function findExtractionById(id: number) {
           catalogue: true,
         },
       },
-      extractionSteps: {
+      crawlSteps: {
         orderBy: (e) => e.createdAt,
         extras: {
           itemCount: sql<number>`0`.as("item_count"),
@@ -93,8 +93,8 @@ export async function findExtractionById(id: number) {
     },
   });
   if (result) {
-    for (const step of result.extractionSteps) {
-      step.itemCount = await getStepItemCount(step.id);
+    for (const step of result.crawlSteps) {
+      step.itemCount = await getPageCount(step.id);
     }
   }
   return result;
@@ -122,51 +122,51 @@ export async function getLogCount(extractionId: number) {
 }
 
 export async function findStep(stepId: number) {
-  const result = await db.query.extractionSteps.findFirst({
+  const result = await db.query.crawlSteps.findFirst({
     where: (steps, { eq }) => eq(steps.id, stepId),
   });
   return result;
 }
 
-export async function findStepItems(stepId: number) {
-  const result = await db.query.extractionStepItems.findMany({
-    where: (stepItems, { eq }) => eq(stepItems.extractionStepId, stepId),
-    orderBy: (stepItems) => stepItems.createdAt,
+export async function findPages(stepId: number) {
+  const result = await db.query.crawlPages.findMany({
+    where: (crawlPages, { eq }) => eq(crawlPages.crawlStepId, stepId),
+    orderBy: (crawlPages) => crawlPages.createdAt,
   });
   return result;
 }
 
-export async function findStepItemsPaginated(
+export async function findPagesPaginated(
   stepId: number,
   limit: number = 20,
   offset?: number
 ) {
   offset = offset || 0;
-  const result = await db.query.extractionStepItems.findMany({
+  const result = await db.query.crawlPages.findMany({
     columns: {
       content: false,
       screenshot: false,
     },
     limit,
     offset,
-    where: (stepItems, { eq }) => eq(stepItems.extractionStepId, stepId),
-    orderBy: (stepItems) => stepItems.createdAt,
+    where: (crawlPages, { eq }) => eq(crawlPages.crawlStepId, stepId),
+    orderBy: (crawlPages) => crawlPages.createdAt,
   });
   return result;
 }
 
-export async function findStepItem(stepItemId: number) {
-  const result = await db.query.extractionStepItems.findFirst({
-    where: (stepItems, { eq }) => eq(stepItems.id, stepItemId),
+export async function findPage(crawlPageId: number) {
+  const result = await db.query.crawlPages.findFirst({
+    where: (crawlPages, { eq }) => eq(crawlPages.id, crawlPageId),
   });
   return result;
 }
 
-export async function findStepItemForJob(stepItemId: number) {
-  const result = await db.query.extractionStepItems.findFirst({
-    where: (stepItems, { eq }) => eq(stepItems.id, stepItemId),
+export async function findPageForJob(crawlPageId: number) {
+  const result = await db.query.crawlPages.findFirst({
+    where: (crawlPages, { eq }) => eq(crawlPages.id, crawlPageId),
     with: {
-      extractionStep: {
+      crawlStep: {
         with: {
           extraction: {
             with: {
@@ -178,7 +178,7 @@ export async function findStepItemForJob(stepItemId: number) {
     },
   });
   if (!result) {
-    throw new Error(`Step item ${stepItemId} not found`);
+    throw new Error(`Step item ${crawlPageId} not found`);
   }
   return result;
 }
@@ -197,7 +197,7 @@ export async function createStep({
   configuration,
 }: CreateStepOptions) {
   const result = await db
-    .insert(extractionSteps)
+    .insert(crawlSteps)
     .values({
       extractionId,
       step,
@@ -209,8 +209,8 @@ export async function createStep({
   return result[0];
 }
 
-export interface CreateStepItemOptions {
-  extractionStepId: number;
+export interface CreatePageOptions {
+  crawlStepId: number;
   url: string;
   dataType: string;
   content?: string;
@@ -218,18 +218,18 @@ export interface CreateStepItemOptions {
   status?: STEP_ITEM_STATUSES;
 }
 
-export async function createStepItem({
-  extractionStepId,
+export async function createPage({
+  crawlStepId,
   url,
   content,
   dataType,
   status,
   screenshot,
-}: CreateStepItemOptions) {
+}: CreatePageOptions) {
   const result = await db
-    .insert(extractionStepItems)
+    .insert(crawlPages)
     .values({
-      extractionStepId,
+      crawlStepId,
       content,
       dataType,
       url,
@@ -240,34 +240,34 @@ export async function createStepItem({
   return result[0];
 }
 
-export async function updateStepItem(
-  stepItemId: number,
+export async function updatePage(
+  crawlPageId: number,
   status?: STEP_ITEM_STATUSES,
   content?: string,
   screenshot?: string
 ) {
   const result = await db
-    .update(extractionStepItems)
+    .update(crawlPages)
     .set({
       status,
       content,
       screenshot,
     })
-    .where(eq(extractionStepItems.id, stepItemId))
+    .where(eq(crawlPages.id, crawlPageId))
     .returning();
   return result[0];
 }
 
-export async function updateStepItemStatus(
-  stepItemId: number,
+export async function updatePageStatus(
+  crawlPageId: number,
   status: STEP_ITEM_STATUSES
 ) {
   const result = await db
-    .update(extractionStepItems)
+    .update(crawlPages)
     .set({
       status,
     })
-    .where(eq(extractionStepItems.id, stepItemId))
+    .where(eq(crawlPages.id, crawlPageId))
     .returning();
   return result[0];
 }

@@ -12,7 +12,7 @@ import fastify from "fastify";
 import { Stream } from "stream";
 import { z } from "zod";
 import { appRouter, CourseStructuredData, type AppRouter } from "./appRouter";
-import { findAllDataItems } from "./data/catalogueData";
+import { findAllDataItems } from "./data/datasets";
 import { findUserByEmail } from "./data/users";
 import fastifySessionAuth, {
   requireAuthentication,
@@ -82,10 +82,10 @@ server.register(async (instance) => {
   });
 
   instance.get(
-    "/downloads/courses/bulk_upload_template/:catalogueDataId",
+    "/downloads/courses/bulk_upload_template/:extractionId",
     async (request, reply) => {
-      const { catalogueDataId } = request.params as any;
-      const dataItems = await findAllDataItems(catalogueDataId);
+      const { extractionId } = request.params as any;
+      const rows = await findAllDataItems(extractionId);
       const csvStream = csv.format({ headers: false });
       const outputStream = new Stream.PassThrough();
       csvStream.pipe(outputStream);
@@ -102,7 +102,8 @@ server.register(async (instance) => {
         "Credits (Max)",
         "Prerequisites",
       ]);
-      for (const item of dataItems) {
+      for (const row of rows) {
+        const item = row.data_items;
         if (!item.structuredData) {
           continue;
         }
@@ -112,10 +113,10 @@ server.register(async (instance) => {
           "Course",
           structuredData.course_name,
           structuredData.course_description,
-          item.extractionStepItem!.url,
+          row.crawl_pages!.url,
           "Active",
           "English",
-          item.extractionStepItem!.url,
+          row.crawl_pages!.url,
           structuredData.course_credits_min,
           structuredData.course_credits_max,
           "",
@@ -128,7 +129,7 @@ server.register(async (instance) => {
         .header("Content-Type", "text/csv")
         .header(
           "Content-Disposition",
-          `attachment; filename="AICourseMapping-BulkUploadTemplate-${catalogueDataId}.csv"`
+          `attachment; filename="AICourseMapping-BulkUploadTemplate-${extractionId}.csv"`
         )
         .send(outputStream);
     }
