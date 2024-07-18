@@ -1,5 +1,5 @@
 import { format } from "fast-csv";
-import { PassThrough } from "stream";
+import { Transform } from "stream";
 import { findDataItems } from "./data/datasets";
 
 // csvStream.write([
@@ -16,39 +16,32 @@ import { findDataItems } from "./data/datasets";
 //   "Prerequisites",
 // ]);
 
-export async function buildCsv(extractionId: number) {
-  const stream = new PassThrough();
-  const csvStream = format({ headers: true });
-  csvStream.pipe(stream);
+async function buildCsv(csvStream: Transform, extractionId: number) {
+  try {
+    let offset = 0;
+    let limit = 100;
 
-  (async () => {
-    try {
-      let offset = 0;
-      let limit = 100;
-
-      while (true) {
-        const { items } = await findDataItems(
-          extractionId,
-          limit,
-          offset,
-          true
-        );
-        if (!items.length) {
-          break;
-        }
-        for (const item of items) {
-          csvStream.write(item.structuredData);
-        }
-        offset += limit;
+    while (true) {
+      const { items } = await findDataItems(extractionId, limit, offset, true);
+      if (!items.length) {
+        break;
       }
-
-      csvStream.end();
-    } catch (err) {
-      stream.emit("error", err);
-    } finally {
-      csvStream.end();
+      for (const item of items) {
+        csvStream.write(item.structuredData);
+      }
+      offset += limit;
     }
-  })();
 
-  return stream;
+    csvStream.end();
+  } catch (err) {
+    csvStream.emit("error", err);
+  } finally {
+    csvStream.end();
+  }
+}
+
+export function streamCsv(extractionId: number) {
+  const csvStream = format({ headers: true });
+  buildCsv(csvStream, extractionId);
+  return csvStream;
 }

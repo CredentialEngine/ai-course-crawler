@@ -10,8 +10,7 @@ import "dotenv/config";
 import fastify from "fastify";
 import { z } from "zod";
 import { appRouter, type AppRouter } from "./appRouter";
-import { buildCsv } from "./csv";
-import { findExtractionById } from "./data/extractions";
+import { streamCsv } from "./csv";
 import { findUserByEmail } from "./data/users";
 import fastifySessionAuth, {
   requireAuthentication,
@@ -85,20 +84,13 @@ server.register(async (instance) => {
     async (request, reply) => {
       const { extractionId } = request.params as any;
 
-      const extraction = await findExtractionById(extractionId);
-      if (!extraction) {
-        throw new Error("Not found");
-      }
-
-      const csvStream = await buildCsv(extractionId);
-
       return reply
-        .header("Content-Type", "text/csv")
+        .header("Content-Type", "application/octet-stream")
         .header(
           "Content-Disposition",
           `attachment; filename="AICourseMapping-BulkUploadTemplate-${extractionId}.csv"`
         )
-        .send(csvStream);
+        .send(streamCsv(extractionId));
     }
   );
 });
