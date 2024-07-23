@@ -15,7 +15,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Recipe, trpc } from "@/utils";
+import { Recipe, STATUS, trpc } from "@/utils";
 import { CookingPot, Pickaxe, Plus } from "lucide-react";
 import { useState } from "react";
 
@@ -26,7 +26,9 @@ const CatalogueListItem = (catalogue: {
   thumbnailUrl?: string | null;
   recipes: Recipe[];
 }) => {
-  const hasReadyRecipe = catalogue.recipes.some((r) => r.configuredAt);
+  const hasReadyRecipe = catalogue.recipes.some(
+    (r) => r.status == STATUS.SUCCESS
+  );
 
   return (
     <TableRow>

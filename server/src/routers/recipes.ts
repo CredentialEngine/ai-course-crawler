@@ -6,7 +6,6 @@ import {
   setDefault,
   startRecipe,
   updateRecipe,
-  updateStatus,
 } from "../data/recipes";
 import { PAGE_DATA_TYPE } from "../data/schema";
 import { fetchBrowserPage } from "../extraction/browser";
@@ -98,7 +97,6 @@ export const recipesRouter = router({
       if (!recipe) {
         throw error("NOT_FOUND", AppErrors.NOT_FOUND, "Recipe not found");
       }
-      await updateStatus(opts.input.id, "detecting");
       submitJob(Queues.DetectConfiguration, { recipeId: opts.input.id });
     }),
   update: publicProcedure
@@ -107,7 +105,6 @@ export const recipesRouter = router({
         id: z.number().int().positive(),
         update: z.object({
           url: z.string(),
-          configuration: RecipeConfigurationSchema,
         }),
       })
     )
@@ -116,11 +113,10 @@ export const recipesRouter = router({
       if (!recipe) {
         throw error("NOT_FOUND", AppErrors.NOT_FOUND, "Recipe not found");
       }
-      return updateRecipe(
-        recipe.id,
-        opts.input.update.url,
-        opts.input.update.configuration
-      );
+      submitJob(Queues.DetectConfiguration, { recipeId: recipe?.id });
+      return updateRecipe(recipe.id, {
+        url: opts.input.update.url,
+      });
     }),
   setDefault: publicProcedure
     .input(z.object({ id: z.number().int().positive() }))

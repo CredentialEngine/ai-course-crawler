@@ -7,7 +7,6 @@ const sqliteUrl = process.env.DATABASE_URL;
 if (!sqliteUrl) {
   throw new Error("DATABASE_URL is not set");
 }
-
 const sqlite = new Database(sqliteUrl);
 
 // Ref. https://twitter.com/meln1k/status/1813314113705062774

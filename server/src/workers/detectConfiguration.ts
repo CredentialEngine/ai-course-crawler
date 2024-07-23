@@ -3,7 +3,8 @@ import {
   DetectConfigurationProgress,
   Processor,
 } from ".";
-import { findRecipeById, updateConfiguration } from "../data/recipes";
+import { findRecipeById, updateRecipe } from "../data/recipes";
+import { RECIPE_DETECTION_STATUSES } from "../data/schema";
 import { closeCluster } from "../extraction/browser";
 import recursivelyDetectConfiguration from "../extraction/recursivelyDetectConfiguration";
 
@@ -20,8 +21,24 @@ const detectConfiguration: Processor<
   if (!recipe) {
     throw new Error(`Recipe with ID ${job.data.recipeId} not found`);
   }
-  const configuration = await recursivelyDetectConfiguration(recipe.url);
-  await updateConfiguration(recipe.id, configuration);
+  await updateRecipe(recipe.id, {
+    status: RECIPE_DETECTION_STATUSES.IN_PROGRESS,
+  });
+  try {
+    const configuration = await recursivelyDetectConfiguration(recipe.url);
+    await updateRecipe(recipe.id, {
+      configuration,
+      status: RECIPE_DETECTION_STATUSES.SUCCESS,
+    });
+  } catch (err: unknown) {
+    let detectionFailureReason =
+      err instanceof Error ? err.message : "Unknown error";
+    await updateRecipe(recipe.id, {
+      detectionFailureReason,
+      status: RECIPE_DETECTION_STATUSES.ERROR,
+    });
+    throw err;
+  }
 };
 
 export default detectConfiguration;

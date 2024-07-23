@@ -10,7 +10,15 @@ import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
 if (!process.env.ENCRYPTION_KEY)
   throw new Error("Please define an encryption key.");
+
 export const ENCRYPTION_KEY: string = process.env.ENCRYPTION_KEY;
+
+export function toDbEnum(myEnum: any): [string, ...string[]] {
+  return Object.values(myEnum).map((value: any) => `${value}`) as [
+    string,
+    ...string[]
+  ];
+}
 
 export enum PAGE_DATA_TYPE {
   COURSE_DETAIL_PAGE = "COURSE_DETAIL_PAGE",
@@ -53,6 +61,13 @@ export enum STEP_STATUSES {
 }
 
 export enum STEP_ITEM_STATUSES {
+  WAITING = "WAITING",
+  IN_PROGRESS = "IN_PROGRESS",
+  SUCCESS = "SUCCESS",
+  ERROR = "ERROR",
+}
+
+export enum RECIPE_DETECTION_STATUSES {
   WAITING = "WAITING",
   IN_PROGRESS = "IN_PROGRESS",
   SUCCESS = "SUCCESS",
@@ -102,8 +117,10 @@ const recipes = sqliteTable("recipes", {
   createdAt: text("created_at")
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
-  configuredAt: text("configured_at"),
-  detectionStartedAt: text("detection_started_at"),
+  detectionFailureReason: text("detection_failure_reason"),
+  status: text("status", { enum: toDbEnum(RECIPE_DETECTION_STATUSES) })
+    .notNull()
+    .default(RECIPE_DETECTION_STATUSES.WAITING),
 });
 
 const recipesRelations = relations(recipes, ({ one, many }) => ({

@@ -18,7 +18,7 @@ import {
   getPageCount,
 } from "../data/extractions";
 import { Recipe } from "../data/recipes";
-import { STEPS } from "../data/schema";
+import { RECIPE_DETECTION_STATUSES, STEPS } from "../data/schema";
 import { simplifyHtml, toMarkdown } from "../extraction/browser";
 import { Queues, submitJob } from "../workers";
 
@@ -55,7 +55,7 @@ export const extractionsRouter = router({
       if (!recipe) {
         throw error("NOT_FOUND", AppErrors.NOT_FOUND, "Recipe not found");
       }
-      if (!recipe.configuredAt) {
+      if (recipe.status != RECIPE_DETECTION_STATUSES.SUCCESS) {
         throw error(
           "BAD_REQUEST",
           AppErrors.RECIPE_NOT_CONFIGURED,

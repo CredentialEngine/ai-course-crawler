@@ -1,6 +1,12 @@
 import { InferSelectModel, eq } from "drizzle-orm";
-import db, { getSqliteTimestamp } from "../data";
-import { PAGE_DATA_TYPE, RecipeConfiguration, recipes } from "../data/schema";
+import { SQLiteUpdateSetSource } from "drizzle-orm/sqlite-core";
+import db from "../data";
+import {
+  PAGE_DATA_TYPE,
+  RECIPE_DETECTION_STATUSES,
+  RecipeConfiguration,
+  recipes,
+} from "../data/schema";
 
 export type Recipe = Omit<InferSelectModel<typeof recipes>, "configuration"> & {
   configuration?: RecipeConfiguration;
@@ -64,7 +70,7 @@ export async function startRecipe(
       configuration: {
         pageType: rootPageType,
       },
-      detectionStartedAt: getSqliteTimestamp(),
+      status: RECIPE_DETECTION_STATUSES.WAITING,
     })
     .returning({ id: recipes.id });
   return result[0];
@@ -72,62 +78,11 @@ export async function startRecipe(
 
 export async function updateRecipe(
   recipeId: number,
-  url: string,
-  configuration?: RecipeConfiguration
+  updateAttributes: SQLiteUpdateSetSource<typeof recipes>
 ) {
   const result = await db
     .update(recipes)
-    .set({
-      url,
-      configuration,
-    })
-    .where(eq(recipes.id, recipeId))
-    .returning();
-  return result[0];
-}
-
-export async function updateConfiguration(
-  recipeId: number,
-  configuration: RecipeConfiguration,
-  setConfigured: boolean = true
-) {
-  const result = await db
-    .update(recipes)
-    .set({
-      configuration,
-      configuredAt: setConfigured ? getSqliteTimestamp() : undefined,
-    })
-    .where(eq(recipes.id, recipeId))
-    .returning();
-  return result[0];
-}
-
-export async function updateStatus(
-  recipeId: number,
-  status: "configured" | "detecting"
-) {
-  const configuredAt = status == "configured" ? getSqliteTimestamp() : null;
-  const detectionStartedAt =
-    status == "detecting" ? getSqliteTimestamp() : null;
-
-  const result = await db
-    .update(recipes)
-    .set({
-      configuredAt,
-      detectionStartedAt,
-    })
-    .where(eq(recipes.id, recipeId))
-    .returning();
-  return result[0];
-}
-
-export async function setDetectionStarted(recipeId: number) {
-  const result = await db
-    .update(recipes)
-    .set({
-      configuredAt: null,
-      detectionStartedAt: getSqliteTimestamp(),
-    })
+    .set(updateAttributes)
     .where(eq(recipes.id, recipeId))
     .returning();
   return result[0];

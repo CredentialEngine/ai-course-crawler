@@ -41,6 +41,13 @@ export type CrawlPage = ItemType<
 >;
 export type DataItem = ItemType<RouterOutput["datasets"]["courses"]["results"]>;
 
+export enum STATUS {
+  WAITING = "WAITING",
+  IN_PROGRESS = "IN_PROGRESS",
+  SUCCESS = "SUCCESS",
+  ERROR = "ERROR",
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }

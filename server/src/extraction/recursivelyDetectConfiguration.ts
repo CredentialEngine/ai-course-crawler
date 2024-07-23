@@ -104,7 +104,7 @@ const recursivelyDetectConfiguration = async (
 
     if (mixedContent) {
       // If the LLM detects mixed content in the child pages, something is probably off; abort.
-      throw new Error("Couldn't reliably determine page type for links");
+      throw new Error("Couldn't determine page type for links");
     }
 
     const childPage = samplePageConfigs[0];
@@ -141,7 +141,7 @@ const recursivelyDetectConfiguration = async (
 
     if (mixedChildContent) {
       // If the LLM detects mixed content in the child pages, something is probably off; abort.
-      throw new Error("Couldn't reliably determine page type for child links");
+      throw new Error("Couldn't determine page type for child links");
     }
 
     const childLinkPage = sampleChildPageConfigs[0];

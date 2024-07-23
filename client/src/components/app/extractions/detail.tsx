@@ -10,7 +10,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CrawlStep, concisePrintDate, prettyPrintDate, trpc } from "@/utils";
+import {
+  CrawlStep,
+  STATUS,
+  concisePrintDate,
+  prettyPrintDate,
+  trpc,
+} from "@/utils";
 import { CookingPot, LibraryBig, List } from "lucide-react";
 import { Link, useParams } from "wouter";
 import { displayRecipeDetails } from "../recipes/util";
@@ -85,7 +91,9 @@ export default function ExtractionDetail() {
                   </div>
                   <div>
                     Recipe #{extraction.recipe.id}{" "}
-                    {extraction.recipe.configuredAt ? null : "— Draft"}
+                    {extraction.recipe.status == STATUS.SUCCESS
+                      ? null
+                      : "— Draft"}
                     <div className="text-xs">
                       {displayRecipeDetails(extraction.recipe)}
                     </div>

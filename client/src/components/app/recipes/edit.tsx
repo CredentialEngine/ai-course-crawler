@@ -1,5 +1,5 @@
 import BreadcrumbTrail from "@/components/ui/breadcrumb-trail";
-import { trpc } from "@/utils";
+import { STATUS, trpc } from "@/utils";
 import { useParams } from "wouter";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,8 +23,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { PAGE_DATA_TYPE } from "@/utils";
-import { LoaderIcon, Pickaxe, Star } from "lucide-react";
+import { LoaderIcon, Pickaxe, RotateCcw, Star } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { displayRecipeDetails } from "./util";
@@ -33,20 +32,6 @@ const FormSchema = z.object({
   url: z
     .string()
     .url("Catalogue URL must be a valid URL (e.g. https://example.com)."),
-  configuration: z.object({
-    rootPageType: z.enum([
-      PAGE_DATA_TYPE.COURSE_LINKS_PAGE,
-      PAGE_DATA_TYPE.COURSE_DETAIL_PAGE,
-      PAGE_DATA_TYPE.CATEGORY_LINKS_PAGE,
-    ]),
-    pagination: z
-      .object({
-        urlPatternType: z.enum(["page_num", "offset"]),
-        urlPattern: z.string(),
-        totalPages: z.coerce.number().positive(),
-      })
-      .optional(),
-  }),
 });
 
 export default function EditRecipe() {
@@ -66,21 +51,13 @@ export default function EditRecipe() {
     resolver: zodResolver(FormSchema),
     defaultValues: {
       url: "",
-      configuration: {
-        rootPageType: PAGE_DATA_TYPE.COURSE_LINKS_PAGE,
-        pagination: {
-          urlPatternType: "page_num",
-          urlPattern: "",
-          totalPages: 0,
-        },
-      },
     },
   });
   const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     const pollQuery = () => {
-      if (recipeQuery.data?.configuredAt) {
+      if (recipeQuery.data?.status == STATUS.SUCCESS) {
         window.clearInterval(intervalRef.current!);
         intervalRef.current = null;
         return;
@@ -92,7 +69,7 @@ export default function EditRecipe() {
       return;
     }
 
-    if (!recipeQuery.data.configuredAt) {
+    if (recipeQuery.data.status != STATUS.SUCCESS) {
       if (!intervalRef.current) {
         intervalRef.current = window.setInterval(pollQuery, 2000);
       } else {
@@ -118,17 +95,17 @@ export default function EditRecipe() {
   const catalogue = catalogueQuery.data;
   const recipe = recipeQuery.data;
 
-  async function onSubmit(_data: z.infer<typeof FormSchema>) {
-    if (recipe.configuredAt) {
-      // await updateRecipe.mutateAsync({
-      //   id: recipe.id,
-      //   update: data,
-      // });
-      recipeQuery.refetch();
-    } else {
-      await reconfigureRecipe.mutateAsync({ id: recipe.id });
-      recipeQuery.refetch();
-    }
+  async function onSubmit(data: z.infer<typeof FormSchema>) {
+    await updateRecipe.mutateAsync({
+      id: recipe.id,
+      update: data,
+    });
+    recipeQuery.refetch();
+  }
+
+  async function onReconfigure() {
+    await reconfigureRecipe.mutateAsync({ id: recipe.id });
+    recipeQuery.refetch();
   }
 
   async function onSetDefault(e: React.MouseEvent<HTMLButtonElement>) {
@@ -182,7 +159,7 @@ export default function EditRecipe() {
                     />
                   </CardContent>
                 </Card>
-                {recipe.configuredAt ? (
+                {recipe.status == STATUS.SUCCESS ? (
                   <Card>
                     <CardHeader>
                       <CardDescription>Configuration</CardDescription>
@@ -198,7 +175,58 @@ export default function EditRecipe() {
                   </Card>
                 ) : null}
               </div>
-              {recipe.configuredAt ? (
+              {recipe.status == STATUS.WAITING ? (
+                <div className="mt-4 grid gap-2 md:grid-cols-[1fr_250px] lg:grid-cols-2 lg:gap-4">
+                  <Card>
+                    <CardHeader>
+                      <CardDescription>Configuration Pending</CardDescription>
+                    </CardHeader>
+                    <CardContent className="text-sm">
+                      <div>
+                        <p>
+                          Configuration detection hasn't started for this
+                          recipe. Please check back later.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : null}
+              {recipe.status == STATUS.ERROR ? (
+                <div className="mt-4 grid gap-2 md:grid-cols-[1fr_250px] lg:grid-cols-2 lg:gap-4">
+                  <Card>
+                    <CardHeader>
+                      <CardDescription>Configuration Error</CardDescription>
+                    </CardHeader>
+                    <CardContent className="text-sm">
+                      <div>
+                        <p className="text-red-800 font-semibold">
+                          AI Course Crawler failed to detect a valid
+                          configuration for this recipe.
+                        </p>
+                        <p className="mt-4">
+                          You can adjust the URL, or try again.
+                        </p>
+                        <p className="mt-8">Failure reason:</p>
+                        <pre className="mt-2 text-xs overflow-x-auto">
+                          {recipe.detectionFailureReason}
+                        </pre>
+                        <Button
+                          className="mt-8"
+                          variant="outline"
+                          size="sm"
+                          onClick={onReconfigure}
+                          disabled={reconfigureRecipe.isLoading}
+                        >
+                          <RotateCcw className="w-4 h-4 mr-2" />
+                          Redetect configuration
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : null}
+              {recipe.status == STATUS.SUCCESS ? (
                 <div className="mt-4 grid gap-2 md:grid-cols-[1fr_250px] lg:grid-cols-2 lg:gap-4">
                   <Card>
                     <CardHeader>
@@ -234,7 +262,7 @@ export default function EditRecipe() {
               ) : null}
             </div>
             <div className="flex items-center">
-              {recipe.detectionStartedAt && !recipe.configuredAt ? (
+              {recipe.status == STATUS.IN_PROGRESS ? (
                 <Button disabled={true} variant={"outline"}>
                   <div className="flex text-sm items-center">
                     <LoaderIcon className="animate-spin mr-2 w-3.5" />
@@ -247,7 +275,7 @@ export default function EditRecipe() {
                     recipeQuery.isLoading ||
                     updateRecipe.isLoading ||
                     reconfigureRecipe.isLoading ||
-                    !recipe.configuredAt ||
+                    recipe.status == STATUS.IN_PROGRESS ||
                     !form.formState.isDirty
                   }
                   type="submit"
@@ -255,7 +283,7 @@ export default function EditRecipe() {
                   Save changes
                 </Button>
               )}
-              {recipe.configuredAt ? (
+              {recipe.status == STATUS.SUCCESS ? (
                 <Link
                   className="ml-4"
                   to={`/${catalogue.id}/extract/${recipe.id}`}
