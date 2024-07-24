@@ -45,12 +45,14 @@ const detectConfiguration: Processor<
       detectionFailureReason,
       status: RECIPE_DETECTION_STATUSES.ERROR,
     });
-    sendEmailToAll(DetectConfigurationFail, {
-      catalogueId: recipe.catalogueId,
-      recipeId: recipe.id,
-      url: recipe.url,
-      reason: detectionFailureReason,
-    });
+    if (job.attemptsStarted == job.opts.attempts) {
+      sendEmailToAll(DetectConfigurationFail, {
+        catalogueId: recipe.catalogueId,
+        recipeId: recipe.id,
+        url: recipe.url,
+        reason: detectionFailureReason,
+      });
+    }
     throw err;
   }
 };
