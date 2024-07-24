@@ -57,3 +57,8 @@ export function resolveAbsoluteUrl(base: string, relative: string): string {
   const absoluteUrl = new URL(relative, baseUrl);
   return absoluteUrl.href;
 }
+
+export function buildFrontendUrl(suffix: string) {
+  const baseUrl = process.env.FRONTEND_URL;
+  return `${baseUrl}${suffix}`;
+}

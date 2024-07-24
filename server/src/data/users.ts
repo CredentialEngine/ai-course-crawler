@@ -53,6 +53,16 @@ export async function findAllUsers() {
   });
 }
 
+export async function getAllEmailAddresses() {
+  const emails = await db.query.users.findMany({
+    columns: {
+      email: true,
+    },
+    orderBy: (u) => u.createdAt,
+  });
+  return emails.map((e) => e.email);
+}
+
 export async function createUser(
   email: string,
   password: string,

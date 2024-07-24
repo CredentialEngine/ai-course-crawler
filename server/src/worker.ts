@@ -3,6 +3,11 @@ import "dotenv/config";
 import path from "path";
 import { Queues, startProcessor } from "./workers";
 
+// @ts-ignore
+const workerExtension = process._preload_modules.some((s) => s.includes("tsx"))
+  ? "ts"
+  : "js";
+
 const workers: Worker[] = [];
 
 let shuttingDown = false;
@@ -20,7 +25,7 @@ async function handleShutdown() {
 }
 
 function processorPath(name: string) {
-  return path.join(__dirname, "workers", `${name}.js`);
+  return path.join(__dirname, "workers", `${name}.${workerExtension}`);
 }
 
 const processors: [Queue, string, number][] = [

@@ -5,6 +5,9 @@ import {
 } from ".";
 import { findRecipeById, updateRecipe } from "../data/recipes";
 import { RECIPE_DETECTION_STATUSES } from "../data/schema";
+import { sendEmailToAll } from "../email";
+import DetectConfigurationFail from "../emails/detectConfigurationFail";
+import DetectConfigurationSuccess from "../emails/detectConfigurationSuccess";
 import { closeCluster } from "../extraction/browser";
 import recursivelyDetectConfiguration from "../extraction/recursivelyDetectConfiguration";
 
@@ -30,12 +33,23 @@ const detectConfiguration: Processor<
       configuration,
       status: RECIPE_DETECTION_STATUSES.SUCCESS,
     });
+    sendEmailToAll(DetectConfigurationSuccess, {
+      catalogueId: recipe.catalogueId,
+      recipeId: recipe.id,
+      url: recipe.url,
+    });
   } catch (err: unknown) {
     let detectionFailureReason =
       err instanceof Error ? err.message : "Unknown error";
     await updateRecipe(recipe.id, {
       detectionFailureReason,
       status: RECIPE_DETECTION_STATUSES.ERROR,
+    });
+    sendEmailToAll(DetectConfigurationFail, {
+      catalogueId: recipe.catalogueId,
+      recipeId: recipe.id,
+      url: recipe.url,
+      reason: detectionFailureReason,
     });
     throw err;
   }

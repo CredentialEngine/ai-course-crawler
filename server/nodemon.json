@@ -1,5 +1,4 @@
 {
-  "ignore": [
-    "ai-course-extract.db"
-  ]
+  "watch": ["src/"],
+  "ext": "ts,tsx"
 }
