@@ -33,9 +33,5 @@ sqlite.pragma("temp_store = memory");
 
 const db = drizzle(sqlite, { schema });
 
-export function getSqliteTimestamp() {
-  return new Date().toISOString().replace(/T/, " ").replace(/\..+/, "");
-}
-
 export { sqlite };
 export default db;

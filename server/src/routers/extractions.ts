@@ -7,7 +7,7 @@ import {
   createExtraction,
   createPage,
   createStep,
-  findExtractionById,
+  findExtractionForDetailPage,
   findExtractions,
   findLogs,
   findPage,
@@ -18,15 +18,15 @@ import {
   getPageCount,
 } from "../data/extractions";
 import { Recipe } from "../data/recipes";
-import { RECIPE_DETECTION_STATUSES, STEPS } from "../data/schema";
+import { RecipeDetectionStatus, Step } from "../data/schema";
 import { simplifyHtml, toMarkdown } from "../extraction/browser";
-import { Queues, submitJob } from "../workers";
+import { Queues, submitJob, submitRepeatableJob } from "../workers";
 
 async function startExtraction(recipe: Recipe) {
   const extraction = await createExtraction(recipe.id);
   const step = await createStep({
     extractionId: extraction.id,
-    step: STEPS.FETCH_ROOT,
+    step: Step.FETCH_ROOT,
     configuration: recipe.configuration!,
   });
   const crawlPage = await createPage({
@@ -34,7 +34,17 @@ async function startExtraction(recipe: Recipe) {
     url: recipe.url,
     dataType: recipe.configuration!.pageType,
   });
-  submitJob(Queues.FetchPage, { crawlPageId: crawlPage.id });
+  submitJob(
+    Queues.FetchPage,
+    { crawlPageId: crawlPage.id },
+    `fetchPage.${crawlPage.id}`
+  );
+  submitRepeatableJob(
+    Queues.UpdateExtractionCompletion,
+    { extractionId: extraction.id },
+    `updateExtractionCompletion.${extraction.id}`,
+    { every: 5 * 60 * 1000 }
+  );
   return extraction;
 }
 
@@ -55,7 +65,7 @@ export const extractionsRouter = router({
       if (!recipe) {
         throw error("NOT_FOUND", AppErrors.NOT_FOUND, "Recipe not found");
       }
-      if (recipe.status != RECIPE_DETECTION_STATUSES.SUCCESS) {
+      if (recipe.status != RecipeDetectionStatus.SUCCESS) {
         throw error(
           "BAD_REQUEST",
           AppErrors.RECIPE_NOT_CONFIGURED,
@@ -71,7 +81,7 @@ export const extractionsRouter = router({
       })
     )
     .query(async (opts) => {
-      let result = await findExtractionById(opts.input.id);
+      let result = await findExtractionForDetailPage(opts.input.id);
       if (!result) {
         throw error("NOT_FOUND", AppErrors.NOT_FOUND, "Extraction not found");
       }

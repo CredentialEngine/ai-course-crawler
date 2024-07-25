@@ -1,6 +1,6 @@
 import {
   CourseStructuredData,
-  PAGE_DATA_TYPE,
+  PageType,
   RecipeConfiguration,
 } from "./data/schema";
 import { router } from "./routers";
@@ -26,7 +26,7 @@ export { appRouter };
 export type {
   CourseStructuredData,
   DetectConfigurationProgress,
-  PAGE_DATA_TYPE,
+  PageType as PAGE_DATA_TYPE,
   RecipeConfiguration,
 };
 

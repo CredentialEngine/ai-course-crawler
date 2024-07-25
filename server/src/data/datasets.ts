@@ -1,6 +1,7 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import db from ".";
 import {
+  CourseStructuredData,
   crawlPages,
   crawlSteps,
   dataItems,
@@ -11,7 +12,7 @@ import {
 export async function createDataItem(
   crawlPageId: number,
   datasetId: number,
-  structuredData: Record<string, any>
+  structuredData: CourseStructuredData
 ) {
   const result = await db
     .insert(dataItems)

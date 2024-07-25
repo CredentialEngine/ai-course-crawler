@@ -1,15 +1,16 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { sql } from "drizzle-orm/sql/sql";
+import { SQLiteUpdateSetSource } from "drizzle-orm/sqlite-core";
 import db from "../data";
 import {
-  EXTRACTION_LOG_LEVELS,
-  EXTRACTION_STATUSES,
+  LogLevel,
+  PageStatus,
+  PageType,
   RecipeConfiguration,
-  STEPS,
-  STEP_ITEM_STATUSES,
-  STEP_STATUSES,
+  Step,
   crawlPages,
   crawlSteps,
+  dataItems,
   extractionLogs,
   extractions,
 } from "../data/schema";
@@ -19,8 +20,19 @@ export async function createExtraction(recipeId: number) {
     .insert(extractions)
     .values({
       recipeId,
-      status: EXTRACTION_STATUSES.IN_PROGRESS,
     })
+    .returning();
+  return result[0];
+}
+
+export async function updateExtraction(
+  extractionId: number,
+  updateAttributes: SQLiteUpdateSetSource<typeof extractions>
+) {
+  const result = await db
+    .update(extractions)
+    .set(updateAttributes)
+    .where(eq(extractions.id, extractionId))
     .returning();
   return result[0];
 }
@@ -28,7 +40,7 @@ export async function createExtraction(recipeId: number) {
 export async function createExtractionLog(
   extractionId: number,
   log: string,
-  logLevel: EXTRACTION_LOG_LEVELS = EXTRACTION_LOG_LEVELS.INFO
+  logLevel: LogLevel = LogLevel.INFO
 ) {
   const result = await db
     .insert(extractionLogs)
@@ -73,6 +85,22 @@ export async function findExtractions(limit: number = 20, offset?: number) {
 }
 
 export async function findExtractionById(id: number) {
+  return db.query.extractions.findFirst({
+    where: (catalogues, { eq }) => eq(catalogues.id, id),
+    with: {
+      recipe: {
+        with: {
+          catalogue: true,
+        },
+      },
+      crawlSteps: {
+        orderBy: (e) => e.createdAt,
+      },
+    },
+  });
+}
+
+export async function findExtractionForDetailPage(id: number) {
   const result = await db.query.extractions.findFirst({
     where: (catalogues, { eq }) => eq(catalogues.id, id),
     with: {
@@ -185,7 +213,7 @@ export async function findPageForJob(crawlPageId: number) {
 
 export interface CreateStepOptions {
   extractionId: number;
-  step: STEPS;
+  step: Step;
   parentStepId?: number;
   configuration: RecipeConfiguration;
 }
@@ -203,7 +231,6 @@ export async function createStep({
       step,
       parentStepId,
       configuration,
-      status: STEP_STATUSES.IN_PROGRESS,
     })
     .returning();
   return result[0];
@@ -215,7 +242,7 @@ export interface CreatePageOptions {
   dataType: string;
   content?: string;
   screenshot?: string;
-  status?: STEP_ITEM_STATUSES;
+  status?: PageStatus;
 }
 
 export async function createPage({
@@ -234,40 +261,82 @@ export async function createPage({
       dataType,
       url,
       screenshot,
-      status: status || STEP_ITEM_STATUSES.WAITING,
+      status: status || PageStatus.WAITING,
     })
     .returning();
   return result[0];
+}
+
+export interface CreateStepAndPagesOptions {
+  extractionId: number;
+  step: Step;
+  parentStepId?: number;
+  configuration: RecipeConfiguration;
+  pageType: PageType;
+  pages: {
+    url: string;
+  }[];
+}
+
+export async function createStepAndPages(
+  createOptions: CreateStepAndPagesOptions
+) {
+  return await db.transaction(async (tx) => {
+    const step = (
+      await tx
+        .insert(crawlSteps)
+        .values({
+          extractionId: createOptions.extractionId,
+          step: createOptions.step,
+          parentStepId: createOptions.parentStepId,
+          configuration: createOptions.configuration,
+        })
+        .returning()
+    )[0];
+    const pages = await tx
+      .insert(crawlPages)
+      .values(
+        createOptions.pages.map((pageCreateOptions) => ({
+          crawlStepId: step.id,
+          url: pageCreateOptions.url,
+          dataType: createOptions.pageType,
+        }))
+      )
+      .returning();
+    return {
+      step,
+      pages,
+    };
+  });
 }
 
 export async function updatePage(
   crawlPageId: number,
-  status?: STEP_ITEM_STATUSES,
-  content?: string,
-  screenshot?: string
+  updateAttributes: SQLiteUpdateSetSource<typeof crawlPages>
 ) {
   const result = await db
     .update(crawlPages)
-    .set({
-      status,
-      content,
-      screenshot,
-    })
+    .set(updateAttributes)
     .where(eq(crawlPages.id, crawlPageId))
     .returning();
   return result[0];
 }
 
-export async function updatePageStatus(
-  crawlPageId: number,
-  status: STEP_ITEM_STATUSES
-) {
-  const result = await db
-    .update(crawlPages)
-    .set({
-      status,
+export async function getStepStats(crawlStepId: number) {
+  return await db
+    .select({
+      crawlPageId: crawlPages.id,
+      status: crawlPages.status,
+      dataExtractionStartedAt: crawlPages.dataExtractionStartedAt,
+      dataItemCount: sql<number>`COUNT(${dataItems.id})`,
     })
-    .where(eq(crawlPages.id, crawlPageId))
-    .returning();
-  return result[0];
+    .from(crawlPages)
+    .leftJoin(dataItems, eq(dataItems.crawlPageId, crawlPages.id))
+    .where(
+      and(
+        eq(crawlPages.crawlStepId, crawlStepId),
+        eq(crawlPages.dataType, PageType.COURSE_DETAIL_PAGE)
+      )
+    )
+    .groupBy(crawlPages.id);
 }

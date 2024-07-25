@@ -4,20 +4,21 @@ import {
   Processor,
   Queues,
   submitJob,
+  submitJobs,
 } from ".";
 import {
-  createPage,
-  createStep,
+  createStepAndPages,
   findPageForJob,
+  updateExtraction,
   updatePage,
-  updatePageStatus,
 } from "../data/extractions";
 import {
-  PAGE_DATA_TYPE,
+  ExtractionStatus,
+  PageStatus,
+  PageType,
   PaginationConfiguration,
   RecipeConfiguration,
-  STEP_ITEM_STATUSES,
-  STEPS,
+  Step,
 } from "../data/schema";
 import { closeCluster, fetchBrowserPage } from "../extraction/browser";
 import { detectPageCount } from "../extraction/detectPageCount";
@@ -47,7 +48,11 @@ async function enqueueExtraction(
   crawlPage: Awaited<ReturnType<typeof findPageForJob>>
 ) {
   console.log(`Enqueuing extraction for page ${crawlPage.id}`);
-  return submitJob(Queues.ExtractData, { crawlPageId: crawlPage.id });
+  return submitJob(
+    Queues.ExtractData,
+    { crawlPageId: crawlPage.id },
+    `extractData.${crawlPage.id}`
+  );
 }
 
 async function enqueuePages(
@@ -74,21 +79,27 @@ async function enqueuePages(
 
   const pageUrls = constructPaginatedUrls(updatedPagination);
 
-  const fetchPagesStep = await createStep({
+  const stepAndPages = await createStepAndPages({
     extractionId: crawlPage.crawlStep.extractionId,
-    step: STEPS.FETCH_PAGINATED,
+    step: Step.FETCH_PAGINATED,
     parentStepId: crawlPage.crawlStepId,
     configuration,
+    pageType: configuration.pageType,
+    pages: pageUrls.map((url) => ({ url })),
   });
 
-  for (const url of pageUrls) {
-    const fetchPageItem = await createPage({
-      crawlStepId: fetchPagesStep.id,
-      url,
-      dataType: configuration.pageType,
-    });
-    await submitJob(Queues.FetchPage, { crawlPageId: fetchPageItem.id });
-  }
+  // Non course detail pages get the highest priority
+  const priority =
+    configuration.pageType == PageType.COURSE_DETAIL_PAGE ? undefined : 1;
+
+  await submitJobs(
+    Queues.FetchPage,
+    stepAndPages.pages.map((page) => ({
+      data: { crawlPageId: page.id },
+      jobId: `fetchPage.${page.id}`,
+      priority,
+    }))
+  );
 }
 
 async function processLinks(
@@ -101,21 +112,29 @@ async function processLinks(
   const extractor = createUrlExtractor(regexp);
   const urls = await extractor(crawlPage.url, crawlPage.content!);
 
-  const fetchLinksStep = await createStep({
+  const stepAndPages = await createStepAndPages({
     extractionId: crawlPage.crawlStep.extractionId,
-    step: STEPS.FETCH_LINKS,
+    step: Step.FETCH_LINKS,
     parentStepId: crawlPage.crawlStepId,
     configuration: configuration.links!,
+    pageType: configuration.links!.pageType,
+    pages: urls.map((url) => ({ url })),
   });
 
-  for (const url of urls) {
-    const fetchLinkItem = await createPage({
-      crawlStepId: fetchLinksStep.id,
-      url,
-      dataType: configuration.links!.pageType,
-    });
-    await submitJob(Queues.FetchPage, { crawlPageId: fetchLinkItem.id });
-  }
+  // Non course detail pages get the highest priority
+  const priority =
+    configuration.links!.pageType == PageType.COURSE_DETAIL_PAGE
+      ? undefined
+      : 1;
+
+  await submitJobs(
+    Queues.FetchPage,
+    stepAndPages.pages.map((page) => ({
+      data: { crawlPageId: page.id },
+      jobId: `fetchPage.${page.id}`,
+      priority,
+    }))
+  );
 }
 
 const processNextStep = async (
@@ -125,11 +144,11 @@ const processNextStep = async (
     .configuration as RecipeConfiguration;
   const currentStep = crawlPage.crawlStep.step;
 
-  if (configuration.pagination && currentStep != STEPS.FETCH_PAGINATED) {
+  if (configuration.pagination && currentStep != Step.FETCH_PAGINATED) {
     return enqueuePages(configuration, crawlPage);
   }
 
-  if (configuration.pageType == PAGE_DATA_TYPE.COURSE_DETAIL_PAGE) {
+  if (configuration.pageType == PageType.COURSE_DETAIL_PAGE) {
     return enqueueExtraction(crawlPage);
   }
 
@@ -145,21 +164,31 @@ const processNextStep = async (
 const fetchPage: Processor<FetchPageJob, FetchPageProgress> = async (job) => {
   const crawlPage = await findPageForJob(job.data.crawlPageId);
 
+  if (crawlPage.crawlStep.step == Step.FETCH_ROOT) {
+    await updateExtraction(crawlPage.crawlStep.extractionId, {
+      status: ExtractionStatus.IN_PROGRESS,
+    });
+  }
+
   try {
     console.log(`Loading ${crawlPage.url} for page ${crawlPage.id}`);
-    await updatePageStatus(crawlPage.id, STEP_ITEM_STATUSES.IN_PROGRESS);
+    await updatePage(crawlPage.id, { status: PageStatus.IN_PROGRESS });
     const page = await fetchBrowserPage(crawlPage.url);
-    await updatePage(
-      crawlPage.id,
-      STEP_ITEM_STATUSES.SUCCESS,
-      page.content,
-      page.screenshot
-    );
+    if (!page.content) {
+      throw new Error(`Could not fetch URL ${crawlPage.url}`);
+    }
     crawlPage.content = page.content;
     crawlPage.screenshot = page.screenshot || null;
+    await updatePage(crawlPage.id, {
+      content: page.content,
+      screenshot: page.screenshot,
+    });
     await processNextStep(crawlPage);
+    await updatePage(crawlPage.id, {
+      status: PageStatus.SUCCESS,
+    });
   } catch (err) {
-    await updatePageStatus(crawlPage.id, STEP_ITEM_STATUSES.ERROR);
+    await updatePage(crawlPage.id, { status: PageStatus.ERROR });
     throw err;
   }
 };

@@ -1,5 +1,18 @@
-import { Button, Html, Link, Text } from "@react-email/components";
+import {
+  Body,
+  Button,
+  Column,
+  Container,
+  Head,
+  Html,
+  Link,
+  Preview,
+  Row,
+  Section,
+  Text,
+} from "@react-email/components";
 import { buildFrontendUrl } from "../utils";
+import * as styles from "./styles";
 
 export interface DetectConfigurationSuccessProps {
   catalogueId: number;
@@ -26,16 +39,31 @@ const DetectConfigurationSuccess = ({
   );
   return (
     <Html lang="en">
-      <Text>Hi,</Text>
-      <Text>
-        Good news! It looks like configuration detection was successful for the
-        URL:
-      </Text>
-      <Link href={url}>{url}</Link>
-      <Text>To start an extraction, you can click the link below.</Text>
-      <Button style={button} href={recipeUrl}>
-        View recipe
-      </Button>
+      <Head />
+      <Preview>A recipe configuration has failed</Preview>
+      <Body style={styles.main}>
+        <Container style={styles.container}>
+          <Text style={styles.title}>
+            Hi! It looks like configuration detection has completed successfully
+            for the URL below.
+          </Text>
+          <Section style={styles.dataSection}>
+            <Row>
+              <Column style={styles.dataColumnHeader}>URL</Column>
+              <Column>
+                <Link href={url}>{url}</Link>
+              </Column>
+            </Row>
+          </Section>
+          <Text>To start an extraction, see the link below.</Text>
+          <Button style={styles.button} href={recipeUrl}>
+            View recipe and start extraction
+          </Button>
+          <Text style={styles.footer}>
+            Credential Engine - AI Course Crawler
+          </Text>
+        </Container>
+      </Body>
     </Html>
   );
 };

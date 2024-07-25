@@ -2,21 +2,8 @@ import {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
 } from "openai/resources/chat/completions";
-import { PAGE_DATA_TYPE } from "../data/schema";
 import { assertBool, assertNumber, simpleToolCompletion } from "../openai";
 import { simplifyHtml, toMarkdown } from "./browser";
-
-const pageTypeDescriptions = {
-  [PAGE_DATA_TYPE.COURSE_LINKS_PAGE]:
-    "It has links to ALL the courses for an institution. Pagination is for pages of links to courses.",
-  [PAGE_DATA_TYPE.CATEGORY_LINKS_PAGE]:
-    "It has links to program or degree pages that presumably have links/descriptions for the courses. " +
-    "Those links are presumably extensive for ALL the programs/degrees in the institution." +
-    "Pagination is for pages of program/degree links.",
-  [PAGE_DATA_TYPE.COURSE_DETAIL_PAGE]:
-    "It has names/descriptions for ALL the courses for an instution. " +
-    "Pagination is for pages of course descriptions.",
-};
 
 export async function detectPageCount(
   html: string,

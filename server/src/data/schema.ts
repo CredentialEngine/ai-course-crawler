@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   AnySQLiteColumn,
+  index,
   integer,
   sqliteTable,
   text,
@@ -20,7 +21,7 @@ export function toDbEnum(myEnum: any): [string, ...string[]] {
   ];
 }
 
-export enum PAGE_DATA_TYPE {
+export enum PageType {
   COURSE_DETAIL_PAGE = "COURSE_DETAIL_PAGE",
   CATEGORY_LINKS_PAGE = "CATEGORY_LINKS_PAGE",
   COURSE_LINKS_PAGE = "COURSE_LINKS_PAGE",
@@ -35,46 +36,39 @@ export interface PaginationConfiguration {
 }
 
 export interface RecipeConfiguration {
-  pageType: PAGE_DATA_TYPE;
+  pageType: PageType;
   linkRegexp?: string;
   pagination?: PaginationConfiguration;
   links?: RecipeConfiguration;
 }
 
-export enum EXTRACTION_LOG_LEVELS {
+export enum LogLevel {
   INFO = "INFO",
   ERROR = "ERROR",
 }
 
-export enum EXTRACTION_STATUSES {
+export enum ExtractionStatus {
+  WAITING = "WAITING",
+  IN_PROGRESS = "IN_PROGRESS",
+  COMPLETE = "COMPLETE",
+  STALE = "STALE",
+}
+
+export enum PageStatus {
   WAITING = "WAITING",
   IN_PROGRESS = "IN_PROGRESS",
   SUCCESS = "SUCCESS",
   ERROR = "ERROR",
 }
 
-export enum STEP_STATUSES {
+export enum RecipeDetectionStatus {
   WAITING = "WAITING",
   IN_PROGRESS = "IN_PROGRESS",
   SUCCESS = "SUCCESS",
   ERROR = "ERROR",
 }
 
-export enum STEP_ITEM_STATUSES {
-  WAITING = "WAITING",
-  IN_PROGRESS = "IN_PROGRESS",
-  SUCCESS = "SUCCESS",
-  ERROR = "ERROR",
-}
-
-export enum RECIPE_DETECTION_STATUSES {
-  WAITING = "WAITING",
-  IN_PROGRESS = "IN_PROGRESS",
-  SUCCESS = "SUCCESS",
-  ERROR = "ERROR",
-}
-
-export enum STEPS {
+export enum Step {
   FETCH_ROOT = "FETCH_ROOT",
   FETCH_PAGINATED = "FETCH_PAGINATED",
   FETCH_LINKS = "FETCH_LINKS",
@@ -86,6 +80,28 @@ export interface CourseStructuredData {
   course_description: string;
   course_credits_min: number;
   course_credits_max: number;
+}
+
+export interface StepCompletionStats {
+  downloads: {
+    total: number;
+    attempted: number;
+    succeeded: number;
+  };
+  extractions: {
+    attempted: number;
+    succeeded: number;
+    courses: number;
+  };
+}
+
+export interface CompletionStats {
+  steps: StepCompletionStats[];
+  generatedAt: string;
+}
+
+export function getSqliteTimestamp() {
+  return sql`CURRENT_TIMESTAMP`;
 }
 
 const catalogues = sqliteTable("catalogues", {
@@ -118,9 +134,9 @@ const recipes = sqliteTable("recipes", {
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
   detectionFailureReason: text("detection_failure_reason"),
-  status: text("status", { enum: toDbEnum(RECIPE_DETECTION_STATUSES) })
+  status: text("status", { enum: toDbEnum(RecipeDetectionStatus) })
     .notNull()
-    .default(RECIPE_DETECTION_STATUSES.WAITING),
+    .default(RecipeDetectionStatus.WAITING),
 });
 
 const recipesRelations = relations(recipes, ({ one, many }) => ({
@@ -136,7 +152,12 @@ const extractions = sqliteTable("extractions", {
   recipeId: integer("recipe_id")
     .notNull()
     .references(() => recipes.id, { onDelete: "cascade" }),
-  status: text("status").notNull(),
+  completionStats: text("completion_stats", {
+    mode: "json",
+  }).$type<CompletionStats>(),
+  status: text("status", { enum: toDbEnum(ExtractionStatus) })
+    .notNull()
+    .default(ExtractionStatus.WAITING),
   createdAt: text("created_at")
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
@@ -158,7 +179,9 @@ const extractionLogs = sqliteTable("extraction_logs", {
     .notNull()
     .references(() => extractions.id, { onDelete: "cascade" }),
   log: text("log").notNull(),
-  logLevel: text("log_level").notNull().default("INFO"),
+  logLevel: text("log_level", { enum: toDbEnum(LogLevel) })
+    .notNull()
+    .default(LogLevel.INFO),
   createdAt: text("created_at")
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
@@ -176,15 +199,16 @@ const crawlSteps = sqliteTable("crawl_steps", {
   extractionId: integer("extraction_id")
     .notNull()
     .references(() => extractions.id, { onDelete: "cascade" }),
-  step: text("step").notNull(),
+  step: text("step", { enum: toDbEnum(Step) }).notNull(),
   parentStepId: integer("parent_step_id").references(
     (): AnySQLiteColumn => crawlSteps.id,
     {
       onDelete: "cascade",
     }
   ),
-  configuration: text("configuration", { mode: "json" }),
-  status: text("status").notNull(),
+  configuration: text("configuration", { mode: "json" })
+    .$type<RecipeConfiguration>()
+    .notNull(),
   createdAt: text("created_at")
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
@@ -210,17 +234,23 @@ const crawlPages = sqliteTable(
     crawlStepId: integer("crawl_step_id")
       .notNull()
       .references(() => crawlSteps.id, { onDelete: "cascade" }),
-    status: text("status").notNull(),
+    status: text("status", { enum: toDbEnum(PageStatus) })
+      .notNull()
+      .default(PageStatus.WAITING),
     url: text("url").notNull(),
     content: text("content"),
     screenshot: text("screenshot"),
-    dataType: text("data_type"),
+    dataType: text("data_type", { enum: toDbEnum(PageType) }),
+    dataExtractionStartedAt: text("data_extraction_started_at"),
     createdAt: text("created_at")
       .notNull()
       .default(sql`CURRENT_TIMESTAMP`),
   },
   (t) => ({
     uniq: unique().on(t.crawlStepId, t.url),
+    statusIdx: index("status_idx").on(t.status),
+    dataTypeIdx: index("data_type_idx").on(t.dataType),
+    stepIdx: index("step_idx").on(t.crawlStepId),
   })
 );
 
@@ -267,7 +297,9 @@ const dataItems = sqliteTable("data_items", {
   crawlPageId: integer("crawl_page_id").references(() => crawlPages.id, {
     onDelete: "cascade",
   }),
-  structuredData: text("structured_data", { mode: "json" }).notNull(),
+  structuredData: text("structured_data", { mode: "json" })
+    .$type<CourseStructuredData>()
+    .notNull(),
   createdAt: text("created_at")
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),

@@ -1,5 +1,5 @@
 import { inspect } from "util";
-import { PAGE_DATA_TYPE, RecipeConfiguration } from "../data/schema";
+import { PageType, RecipeConfiguration } from "../data/schema";
 import { detectPageType } from "../extraction/detectPageType";
 import { detectPagination } from "../extraction/detectPagination";
 import detectUrlRegexp, {
@@ -40,8 +40,8 @@ const detectConfiguration = async (url: string) => {
   console.log(`Detected as: ${inspect(pagination)}`);
   let linkRegexp;
   if (
-    pageType == PAGE_DATA_TYPE.CATEGORY_LINKS_PAGE ||
-    pageType == PAGE_DATA_TYPE.COURSE_LINKS_PAGE
+    pageType == PageType.CATEGORY_LINKS_PAGE ||
+    pageType == PageType.COURSE_LINKS_PAGE
   ) {
     console.log(`Detecting regexp for ${url}`);
     linkRegexp = await bestOutOf(
@@ -83,7 +83,7 @@ const recursivelyDetectConfiguration = async (
     pagination,
   };
 
-  if (pageType == PAGE_DATA_TYPE.COURSE_DETAIL_PAGE) {
+  if (pageType == PageType.COURSE_DETAIL_PAGE) {
     // We are already at the course details page.
     return configuration;
   } else {
@@ -116,15 +116,15 @@ const recursivelyDetectConfiguration = async (
     };
 
     if (
-      pageType == PAGE_DATA_TYPE.COURSE_LINKS_PAGE &&
-      childPage.pageType != PAGE_DATA_TYPE.COURSE_DETAIL_PAGE
+      pageType == PageType.COURSE_LINKS_PAGE &&
+      childPage.pageType != PageType.COURSE_DETAIL_PAGE
     ) {
       throw new Error(
         `Detected course links page and expected course detail pages, but child pages are ${childPage.pageType}`
       );
     }
 
-    if (childPage.pageType == PAGE_DATA_TYPE.COURSE_DETAIL_PAGE) {
+    if (childPage.pageType == PageType.COURSE_DETAIL_PAGE) {
       return configuration;
     }
 
@@ -152,14 +152,14 @@ const recursivelyDetectConfiguration = async (
       pagination: childLinkPage.pagination,
     };
 
-    if (childPage.pageType == PAGE_DATA_TYPE.COURSE_LINKS_PAGE) {
-      if (childLinkPage.pageType != PAGE_DATA_TYPE.COURSE_DETAIL_PAGE) {
+    if (childPage.pageType == PageType.COURSE_LINKS_PAGE) {
+      if (childLinkPage.pageType != PageType.COURSE_DETAIL_PAGE) {
         throw new Error(
           `Detected course links page and expected course detail pages, but child pages are ${childLinkPage.pageType}`
         );
       }
       return configuration;
-    } else if (childPage.pageType == PAGE_DATA_TYPE.CATEGORY_LINKS_PAGE) {
+    } else if (childPage.pageType == PageType.CATEGORY_LINKS_PAGE) {
       configuration.links.links.links = await recursivelyDetectConfiguration(
         childLinkPage.url,
         depth + 1

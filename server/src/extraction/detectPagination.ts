@@ -3,7 +3,7 @@ import {
   ChatCompletionMessageParam,
 } from "openai/resources/chat/completions";
 import {
-  PAGE_DATA_TYPE,
+  PageType,
   PaginationConfiguration,
   UrlPatternType,
 } from "../data/schema";
@@ -18,13 +18,13 @@ import {
 import { simplifyHtml, toMarkdown } from "./browser";
 
 const pageTypeDescriptions = {
-  [PAGE_DATA_TYPE.COURSE_LINKS_PAGE]:
+  [PageType.COURSE_LINKS_PAGE]:
     "It has links to ALL the courses for an institution. Pagination is for pages of links to courses.",
-  [PAGE_DATA_TYPE.CATEGORY_LINKS_PAGE]:
+  [PageType.CATEGORY_LINKS_PAGE]:
     "It has links to program or degree pages that presumably have links/descriptions for the courses. " +
     "Those links are presumably extensive for ALL the programs/degrees in the institution." +
     "Pagination is for pages of program/degree links.",
-  [PAGE_DATA_TYPE.COURSE_DETAIL_PAGE]:
+  [PageType.COURSE_DETAIL_PAGE]:
     "It has names/descriptions for ALL the courses for an instution. " +
     "Pagination is for pages of course descriptions.",
 };
@@ -32,7 +32,7 @@ const pageTypeDescriptions = {
 export async function detectPagination(
   url: string,
   html: string,
-  rootPageType: PAGE_DATA_TYPE,
+  rootPageType: PageType,
   screenshot?: string
 ): Promise<PaginationConfiguration | undefined> {
   const content = await toMarkdown(await simplifyHtml(html));
