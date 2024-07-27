@@ -93,9 +93,7 @@ async function afterExtractionComplete(
     UpdateExtractionCompletionJob,
     UpdateExtractionCompletionProgress
   >,
-  extraction: NonNullable<Awaited<ReturnType<typeof findExtractionById>>>,
-  completionStats: CompletionStats,
-  stale = false
+  extraction: NonNullable<Awaited<ReturnType<typeof findExtractionById>>>
 ) {
   await removeSelf(job);
   return sendEmailToAll(
@@ -106,12 +104,49 @@ async function afterExtractionComplete(
       catalogueId: extraction.recipe.catalogueId,
       catalogueName: extraction.recipe.catalogue.name,
       url: extraction.recipe.url,
-      completionStats,
+      completionStats: extraction.completionStats!,
       createdAt: extraction.createdAt,
-      stale,
+      stale: extraction.status == ExtractionStatus.STALE,
     },
     `Extraction #${extraction.id} has finished`
   );
+}
+
+async function handleStaleExtraction(
+  job: JobWithProgress<
+    UpdateExtractionCompletionJob,
+    UpdateExtractionCompletionProgress
+  >,
+  extraction: NonNullable<Awaited<ReturnType<typeof findExtractionById>>>,
+  staleHrs: number
+) {
+  const allStepsCompleted = extraction.completionStats!.steps.every(
+    (s) =>
+      s.downloads.attempted == s.downloads.total &&
+      s.extractions.attempted == s.downloads.succeeded
+  );
+  const status = allStepsCompleted
+    ? ExtractionStatus.COMPLETE
+    : ExtractionStatus.STALE;
+
+  if (status == ExtractionStatus.COMPLETE && staleHrs < 1) {
+    console.log(
+      `No changes for extraction ${extraction.id}, looks complete; waiting`
+    );
+    return;
+  } else if (status == ExtractionStatus.STALE && staleHrs < 4) {
+    console.log(
+      `No changes for extraction ${extraction.id}, looks incomplete; waiting`
+    );
+    return;
+  }
+
+  console.log(`Marking extraction ${extraction.id} as ${status}`);
+  extraction.status = status;
+  await updateExtraction(extraction.id, {
+    status,
+  });
+  return afterExtractionComplete(job, extraction);
 }
 
 const updateExtractionCompletion: Processor<
@@ -127,54 +162,25 @@ const updateExtractionCompletion: Processor<
 
   const stepStats = await getStepCompletionStats(extraction);
   const currentDate = new Date();
+  const completionStats: CompletionStats = {
+    generatedAt: currentDate.toISOString(),
+    steps: stepStats,
+  };
 
   // If there's a preexisting completionStats value, check if it changed
   if (extraction.completionStats) {
-    const hasChanges = !deepEqual(stepStats, extraction.completionStats.steps);
-    const lastChangeHrs = hoursDiff(
-      new Date(extraction.completionStats.generatedAt),
-      currentDate
-    );
-    if (!hasChanges) {
-      if (lastChangeHrs < 2) {
-        console.log(`No changes for extraction ${extraction.id}; waiting`);
-        // No changes but it has been under 2hrs. Wait a while.
-        return;
-      }
-      // Extraction looks stale...
-      console.log(
-        `No changes for extraction ${extraction.id}; marking as stale`
+    const stale = deepEqual(stepStats, extraction.completionStats.steps);
+    if (stale) {
+      return handleStaleExtraction(
+        job,
+        extraction,
+        hoursDiff(new Date(extraction.completionStats.generatedAt), currentDate)
       );
-      const completionStats: CompletionStats = {
-        generatedAt: new Date().toISOString(),
-        steps: stepStats,
-      };
-      await updateExtraction(extraction.id, {
-        completionStats,
-        status: ExtractionStatus.STALE,
-      });
-      return afterExtractionComplete(job, extraction, completionStats, true);
     }
   }
 
-  console.log(`Detected changes for extraction ${extraction.id}`);
-  const completionStats: CompletionStats = {
-    generatedAt: new Date().toISOString(),
-    steps: stepStats,
-  };
-  const allStepsCompleted = stepStats.every(
-    (s) =>
-      s.downloads.attempted == s.downloads.total &&
-      s.extractions.attempted == s.downloads.succeeded
-  );
-  const status = allStepsCompleted ? ExtractionStatus.COMPLETE : undefined;
-  await updateExtraction(extraction.id, { completionStats, status });
-  if (status == ExtractionStatus.COMPLETE) {
-    console.log(
-      `All steps for ${extraction.id} are done, marking as completed`
-    );
-    return afterExtractionComplete(job, extraction, completionStats);
-  }
+  console.log(`Detected changes for extraction ${extraction.id}; updating`);
+  return updateExtraction(extraction.id, { completionStats });
 };
 
 export default updateExtractionCompletion;
