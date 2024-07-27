@@ -32,6 +32,11 @@ const processors: [Queue, string, number][] = [
   [Queues.DetectConfiguration, processorPath("detectConfiguration"), 1],
   [Queues.FetchPage, processorPath("fetchPage"), 2],
   [Queues.ExtractData, processorPath("extractData"), 10],
+  [
+    Queues.UpdateExtractionCompletion,
+    processorPath("updateExtractionCompletion"),
+    10,
+  ],
 ];
 
 for (const [queue, processor, localConcurrency] of processors) {

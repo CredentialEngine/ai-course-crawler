@@ -2,9 +2,9 @@ import { InferSelectModel, eq } from "drizzle-orm";
 import { SQLiteUpdateSetSource } from "drizzle-orm/sqlite-core";
 import db from "../data";
 import {
-  PAGE_DATA_TYPE,
-  RECIPE_DETECTION_STATUSES,
+  PageType,
   RecipeConfiguration,
+  RecipeDetectionStatus,
   recipes,
 } from "../data/schema";
 
@@ -59,7 +59,7 @@ export async function findRecipeById(id: number): Promise<undefined | Recipe> {
 export async function startRecipe(
   catalogueId: number,
   url: string,
-  rootPageType: PAGE_DATA_TYPE
+  rootPageType: PageType
 ) {
   const result = await db
     .insert(recipes)
@@ -70,7 +70,7 @@ export async function startRecipe(
       configuration: {
         pageType: rootPageType,
       },
-      status: RECIPE_DETECTION_STATUSES.WAITING,
+      status: RecipeDetectionStatus.WAITING,
     })
     .returning({ id: recipes.id });
   return result[0];

@@ -1,4 +1,4 @@
-import { Queue, SandboxedJob, Worker } from "bullmq";
+import { Queue, RepeatOptions, SandboxedJob, Worker } from "bullmq";
 import { default as IORedis } from "ioredis";
 
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
@@ -27,10 +27,40 @@ export type Processor<T, K extends BaseProgress> = (
 export async function submitJob<T, K extends T>(
   queue: Queue<T>,
   data: K,
-  name?: string
+  jobId: string,
+  priority?: number
 ) {
-  name = name || `${queue.name}.default`;
-  queue.add(name, data);
+  const name = `${queue.name}.default`;
+  return queue.add(name, data, { jobId, priority: priority || 100 });
+}
+
+export async function submitRepeatableJob<T, K extends T>(
+  queue: Queue<T>,
+  data: K,
+  jobId: string,
+  repeat: RepeatOptions
+) {
+  const name = `${queue.name}.default`;
+  return queue.add(name, data, { jobId, repeat });
+}
+
+export interface SubmitJobsItem<K> {
+  data: K;
+  jobId: string;
+  priority?: number;
+}
+
+export async function submitJobs<T, K extends T>(
+  queue: Queue<T>,
+  jobs: SubmitJobsItem<K>[]
+) {
+  const name = `${queue.name}.default`;
+  const bulkJobs = jobs.map((j) => ({
+    name,
+    data: j.data,
+    opts: { jobId: j.jobId, priority: j.priority || 100 },
+  }));
+  return queue.addBulk(bulkJobs);
 }
 
 export function startProcessor<T>(
@@ -58,9 +88,14 @@ export interface ExtractDataJob {
   crawlPageId: number;
 }
 
+export interface UpdateExtractionCompletionJob {
+  extractionId: number;
+}
+
 export interface DetectConfigurationProgress extends BaseProgress {}
 export interface FetchPageProgress extends BaseProgress {}
 export interface ExtractDataProgress extends BaseProgress {}
+export interface UpdateExtractionCompletionProgress extends BaseProgress {}
 
 export const Queues = {
   DetectConfiguration: new Queue<DetectConfigurationJob>(
@@ -96,4 +131,17 @@ export const Queues = {
       },
     },
   }),
+  UpdateExtractionCompletion: new Queue<UpdateExtractionCompletionJob>(
+    "extractions.updateExtractionCompletion",
+    {
+      connection: getRedisConnection(),
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 1000,
+        },
+      },
+    }
+  ),
 };

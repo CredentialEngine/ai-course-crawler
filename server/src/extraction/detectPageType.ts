@@ -2,14 +2,14 @@ import {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
 } from "openai/resources/chat/completions";
-import { PAGE_DATA_TYPE } from "../data/schema";
+import { PageType } from "../data/schema";
 import { assertStringEnum, simpleToolCompletion } from "../openai";
 import { simplifyHtml, toMarkdown } from "./browser";
 
 export async function detectPageType(
   url: string,
   html: string,
-  screenshot?: string,
+  screenshot?: string
 ) {
   const content = await toMarkdown(await simplifyHtml(html));
   const prompt = `
@@ -182,11 +182,11 @@ export async function detectPageType(
 
   switch (pageType) {
     case "course_links":
-      return PAGE_DATA_TYPE.COURSE_LINKS_PAGE;
+      return PageType.COURSE_LINKS_PAGE;
     case "course_details":
-      return PAGE_DATA_TYPE.COURSE_DETAIL_PAGE;
+      return PageType.COURSE_DETAIL_PAGE;
     case "category_links":
-      return PAGE_DATA_TYPE.CATEGORY_LINKS_PAGE;
+      return PageType.CATEGORY_LINKS_PAGE;
     default:
       return null;
   }

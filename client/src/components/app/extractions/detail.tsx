@@ -1,5 +1,7 @@
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartContainer } from "@/components/ui/chart";
 import JsonPopover from "@/components/ui/jsonPopover";
 import {
   Table,
@@ -18,6 +20,7 @@ import {
   trpc,
 } from "@/utils";
 import { CookingPot, LibraryBig, List } from "lucide-react";
+import { Bar, BarChart, LabelList, XAxis, YAxis } from "recharts";
 import { Link, useParams } from "wouter";
 import { displayRecipeDetails } from "../recipes/util";
 import { displayStepType } from "./utils";
@@ -48,6 +51,21 @@ export default function ExtractionDetail() {
 
   const extraction = query.data;
   const extractionLogs = logsQuery.data?.results;
+  let totalDownloads = 0,
+    totalDownloadsAttempted = 0,
+    totalDownloadErrors = 0,
+    totalExtractionsPossible = 0,
+    totalExtractionsAttempted = 0,
+    totalExtractionErrors = 0;
+  for (const step of extraction.completionStats?.steps || []) {
+    totalDownloads += step.downloads.total;
+    totalDownloadsAttempted += step.downloads.attempted;
+    totalDownloadErrors += step.downloads.attempted - step.downloads.succeeded;
+    totalExtractionsPossible += step.downloads.succeeded;
+    totalExtractionsAttempted += step.extractions.attempted;
+    totalExtractionErrors +=
+      step.extractions.attempted - step.extractions.succeeded;
+  }
 
   return (
     <>
@@ -58,7 +76,8 @@ export default function ExtractionDetail() {
           </CardHeader>
           <CardContent>
             <div className="mb-4">
-              Started at {prettyPrintDate(extraction.createdAt)}
+              Started at {prettyPrintDate(extraction.createdAt)}.{" "}
+              <Badge>{extraction.status}</Badge>
             </div>
             <div className="flex gap-4">
               <div className="rounded-md border p-4 mt-2 flex items-center">
@@ -104,6 +123,74 @@ export default function ExtractionDetail() {
                 </Link>
               </div>
             </div>
+            {extraction.completionStats ? (
+              <div>
+                <div className="flex mt-4 gap-4">
+                  <ChartContainer config={{}} className="h-[140px] w-4/5">
+                    <BarChart
+                      margin={{
+                        left: 10,
+                        right: 0,
+                        top: 0,
+                        bottom: 10,
+                      }}
+                      data={[
+                        {
+                          activity: "Downloads",
+                          value:
+                            (totalDownloadsAttempted / totalDownloads) * 100,
+                          label: `${totalDownloadsAttempted}/${totalDownloads}`,
+                        },
+                        {
+                          activity: "Extractions",
+                          value:
+                            (totalExtractionsAttempted /
+                              totalExtractionsPossible) *
+                            100,
+                          label: `${totalExtractionsAttempted}/${totalExtractionsPossible}`,
+                        },
+                      ]}
+                      layout="vertical"
+                      barSize={32}
+                      barGap={2}
+                    >
+                      <XAxis type="number" dataKey="value" hide />
+                      <YAxis
+                        dataKey="activity"
+                        type="category"
+                        tickLine={false}
+                        tickMargin={4}
+                        axisLine={false}
+                        className="capitalize"
+                      />
+                      <Bar
+                        dataKey="value"
+                        radius={5}
+                        background={{ fill: "#949494" }}
+                      >
+                        <LabelList
+                          position="insideLeft"
+                          dataKey="label"
+                          fill="white"
+                          offset={8}
+                          fontSize={12}
+                        />
+                      </Bar>
+                    </BarChart>
+                  </ChartContainer>
+                </div>
+                <div className="mt-2 gap-4 text-xs">
+                  <div>
+                    Download Errors: {totalDownloadErrors} /{" "}
+                    {totalDownloadsAttempted}.
+                  </div>
+                  <div>
+                    Extraction Errors: {totalExtractionErrors} /{" "}
+                    {totalExtractionsAttempted}.
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
         <Card className="mt-4">

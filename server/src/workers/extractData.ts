@@ -1,6 +1,7 @@
 import { ExtractDataJob, ExtractDataProgress, Processor } from ".";
 import { createDataItem, findOrCreateDataset } from "../data/datasets";
-import { findPageForJob } from "../data/extractions";
+import { findPageForJob, updatePage } from "../data/extractions";
+import { getSqliteTimestamp } from "../data/schema";
 import { closeCluster } from "../extraction/browser";
 import { extractCourseDataItem } from "../extraction/extractCourseDataItem";
 
@@ -13,6 +14,9 @@ const extractData: Processor<ExtractDataJob, ExtractDataProgress> = async (
   job
 ) => {
   const crawlPage = await findPageForJob(job.data.crawlPageId);
+  await updatePage(crawlPage.id, {
+    dataExtractionStartedAt: getSqliteTimestamp(),
+  });
   try {
     const dataset = await findOrCreateDataset(
       crawlPage.crawlStep.extraction.recipe.catalogueId,

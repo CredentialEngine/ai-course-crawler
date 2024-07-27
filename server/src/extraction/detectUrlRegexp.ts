@@ -1,5 +1,5 @@
 import { ChatCompletionContentPart } from "openai/resources/chat/completions";
-import { PAGE_DATA_TYPE } from "../data/schema";
+import { PageType } from "../data/schema";
 import { assertArray, assertString, simpleToolCompletion } from "../openai";
 import { resolveAbsoluteUrl } from "../utils";
 import { simplifyHtml, toMarkdown } from "./browser";
@@ -19,23 +19,23 @@ export function createUrlExtractor(regexp: RegExp) {
 }
 
 export default async function detectUrlRegexp(
-  dataType: PAGE_DATA_TYPE,
+  dataType: PageType,
   html: string,
   screenshot?: string
 ) {
-  if (dataType == PAGE_DATA_TYPE.COURSE_DETAIL_PAGE) {
+  if (dataType == PageType.COURSE_DETAIL_PAGE) {
     throw new Error("Invalid page data type.");
   }
 
   const content = await toMarkdown(await simplifyHtml(html));
   const descriptions = {
-    [PAGE_DATA_TYPE.CATEGORY_LINKS_PAGE]: `
+    [PageType.CATEGORY_LINKS_PAGE]: `
     Programs, careers, degrees, or course category pages.
     In other words, the page links to "categories" or "groups" of courses, and we'll find more detailed course
     information if we navigate to those category pages.
     `,
 
-    [PAGE_DATA_TYPE.COURSE_LINKS_PAGE]: `
+    [PageType.COURSE_LINKS_PAGE]: `
     Course detail pages in an educational institution.
     Typically those links include the course identifier and/or description.
     Presumably, more information about the course will be in the destination link.

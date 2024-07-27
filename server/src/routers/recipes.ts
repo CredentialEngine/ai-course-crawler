@@ -7,7 +7,7 @@ import {
   startRecipe,
   updateRecipe,
 } from "../data/recipes";
-import { PAGE_DATA_TYPE } from "../data/schema";
+import { PageType } from "../data/schema";
 import { fetchBrowserPage } from "../extraction/browser";
 import { detectPageType } from "../extraction/detectPageType";
 import { bestOutOf } from "../utils";
@@ -24,7 +24,7 @@ const PaginationConfigurationSchema = z.object({
 });
 
 const RecipeConfigurationSchema = z.object({
-  pageType: z.nativeEnum(PAGE_DATA_TYPE),
+  pageType: z.nativeEnum(PageType),
   linkRegexp: z.string().optional(),
   pagination: PaginationConfigurationSchema.optional(),
   links: z.lazy((): z.ZodSchema => RecipeConfigurationSchema).optional(),
@@ -62,7 +62,7 @@ export const recipesRouter = router({
       if (!pageType) {
         message =
           "Page was not detected as a course catalogue index. Defaulting to home page type: course links.";
-        pageType = PAGE_DATA_TYPE.COURSE_LINKS_PAGE;
+        pageType = PageType.COURSE_LINKS_PAGE;
       }
       console.log(`Creating recipe`);
       const result = await startRecipe(
@@ -73,7 +73,11 @@ export const recipesRouter = router({
       console.log(`Created recipe ${result.id}`);
       if (result) {
         const id = result.id;
-        submitJob(Queues.DetectConfiguration, { recipeId: id });
+        submitJob(
+          Queues.DetectConfiguration,
+          { recipeId: id },
+          `detectConfiguration.${id}`
+        );
         return {
           id,
           pageType,
@@ -97,7 +101,11 @@ export const recipesRouter = router({
       if (!recipe) {
         throw error("NOT_FOUND", AppErrors.NOT_FOUND, "Recipe not found");
       }
-      submitJob(Queues.DetectConfiguration, { recipeId: opts.input.id });
+      submitJob(
+        Queues.DetectConfiguration,
+        { recipeId: opts.input.id },
+        `detectConfiguration.${recipe.id}`
+      );
     }),
   update: publicProcedure
     .input(
@@ -113,7 +121,11 @@ export const recipesRouter = router({
       if (!recipe) {
         throw error("NOT_FOUND", AppErrors.NOT_FOUND, "Recipe not found");
       }
-      submitJob(Queues.DetectConfiguration, { recipeId: recipe?.id });
+      submitJob(
+        Queues.DetectConfiguration,
+        { recipeId: recipe.id },
+        `detectConfiguration.${recipe.id}`
+      );
       return updateRecipe(recipe.id, {
         url: opts.input.update.url,
       });

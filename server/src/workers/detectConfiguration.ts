@@ -4,7 +4,7 @@ import {
   Processor,
 } from ".";
 import { findRecipeById, updateRecipe } from "../data/recipes";
-import { RECIPE_DETECTION_STATUSES } from "../data/schema";
+import { RecipeDetectionStatus } from "../data/schema";
 import { sendEmailToAll } from "../email";
 import DetectConfigurationFail from "../emails/detectConfigurationFail";
 import DetectConfigurationSuccess from "../emails/detectConfigurationSuccess";
@@ -25,13 +25,13 @@ const detectConfiguration: Processor<
     throw new Error(`Recipe with ID ${job.data.recipeId} not found`);
   }
   await updateRecipe(recipe.id, {
-    status: RECIPE_DETECTION_STATUSES.IN_PROGRESS,
+    status: RecipeDetectionStatus.IN_PROGRESS,
   });
   try {
     const configuration = await recursivelyDetectConfiguration(recipe.url);
     await updateRecipe(recipe.id, {
       configuration,
-      status: RECIPE_DETECTION_STATUSES.SUCCESS,
+      status: RecipeDetectionStatus.SUCCESS,
     });
     sendEmailToAll(DetectConfigurationSuccess, {
       catalogueId: recipe.catalogueId,
@@ -43,7 +43,7 @@ const detectConfiguration: Processor<
       err instanceof Error ? err.message : "Unknown error";
     await updateRecipe(recipe.id, {
       detectionFailureReason,
-      status: RECIPE_DETECTION_STATUSES.ERROR,
+      status: RecipeDetectionStatus.ERROR,
     });
     if (job.attemptsStarted == job.opts.attempts) {
       sendEmailToAll(DetectConfigurationFail, {

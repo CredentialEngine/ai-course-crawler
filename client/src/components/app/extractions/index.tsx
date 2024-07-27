@@ -20,6 +20,21 @@ type ExtractionSummary = IterableElement<
 
 const ExtractionListItem = (extraction: ExtractionSummary) => {
   const catalogue = extraction.recipe.catalogue;
+  let totalDownloads = 0,
+    totalDownloadsAttempted = 0,
+    totalDownloadErrors = 0,
+    totalExtractionsPossible = 0,
+    totalExtractionsAttempted = 0,
+    totalExtractionErrors = 0;
+  for (const step of extraction.completionStats?.steps || []) {
+    totalDownloads += step.downloads.total;
+    totalDownloadsAttempted += step.downloads.attempted;
+    totalDownloadErrors += step.downloads.attempted - step.downloads.succeeded;
+    totalExtractionsPossible += step.downloads.succeeded;
+    totalExtractionsAttempted += step.extractions.attempted;
+    totalExtractionErrors +=
+      step.extractions.attempted - step.extractions.succeeded;
+  }
   return (
     <TableRow>
       <TableCell colSpan={2} className="">
@@ -34,6 +49,19 @@ const ExtractionListItem = (extraction: ExtractionSummary) => {
       </TableCell>
       <TableCell className="font-medium">
         <Link to={`/${extraction.id}`}>Courses</Link>
+      </TableCell>
+      <TableCell className="text-xs">{extraction.status}</TableCell>
+      <TableCell className="text-xs">
+        {extraction.completionStats
+          ? `${Math.floor((totalDownloadsAttempted / totalDownloads) * 100)}%`
+          : "Pending"}
+      </TableCell>
+      <TableCell className="text-xs">
+        {extraction.completionStats
+          ? `${Math.floor(
+              (totalExtractionsAttempted / totalExtractionsPossible) * 100
+            )}%`
+          : "Pending"}
       </TableCell>
       <TableCell className="text-xs">
         {prettyPrintDate(extraction.createdAt)}
@@ -86,8 +114,11 @@ export default function Extractions() {
             <TableHeader>
               <TableRow>
                 <TableHead colSpan={2}>Catalogue</TableHead>
-                <TableHead>Extraction Type</TableHead>
-                <TableHead>Created At</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Downloads</TableHead>
+                <TableHead>Extractions</TableHead>
+                <TableHead>Date</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

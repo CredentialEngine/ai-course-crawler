@@ -43,6 +43,13 @@
       "when": 1721744251005,
       "tag": "0005_burly_ezekiel_stane",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1722014752989,
+      "tag": "0006_flaky_black_queen",
+      "breakpoints": true
     }
   ]
 }

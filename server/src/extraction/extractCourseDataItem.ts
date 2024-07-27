@@ -2,17 +2,9 @@ import {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
 } from "openai/resources/chat/completions";
+import { CourseStructuredData } from "../appRouter";
 import { assertArray, simpleToolCompletion } from "../openai";
 import { simplifyHtml, toMarkdown } from "./browser";
-
-export interface CourseResponse {
-  course_id: string;
-  course_name: string;
-  course_description: string;
-  course_credits_min?: string;
-  course_credits_max?: string;
-  requirements?: string[];
-}
 
 export async function extractCourseDataItem(
   url: string,
@@ -100,7 +92,7 @@ ${content}
   if (!completion) {
     return [];
   }
-  const courses = assertArray<CourseResponse>(completion, "courses");
+  const courses = assertArray<CourseStructuredData>(completion, "courses");
   return courses.filter(
     (c) => c.course_id && c.course_name && c.course_description
   );
