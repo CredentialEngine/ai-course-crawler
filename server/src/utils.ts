@@ -59,6 +59,12 @@ export function resolveAbsoluteUrl(base: string, relative: string): string {
 }
 
 export function buildFrontendUrl(suffix: string) {
-  const baseUrl = process.env.FRONTEND_URL;
+  let baseUrl = process.env.FRONTEND_URL || "";
+  if (!baseUrl.endsWith("/")) {
+    baseUrl = `${baseUrl}/`;
+  }
+  if (suffix.startsWith("/")) {
+    suffix = suffix.substring(1);
+  }
   return `${baseUrl}${suffix}`;
 }
