@@ -33,11 +33,15 @@ const detectConfiguration: Processor<
       configuration,
       status: RecipeDetectionStatus.SUCCESS,
     });
-    sendEmailToAll(DetectConfigurationSuccess, {
-      catalogueId: recipe.catalogueId,
-      recipeId: recipe.id,
-      url: recipe.url,
-    });
+    sendEmailToAll(
+      DetectConfigurationSuccess,
+      {
+        catalogueId: recipe.catalogueId,
+        recipeId: recipe.id,
+        url: recipe.url,
+      },
+      `Recipe configuration detection #${recipe.id} is complete`
+    );
   } catch (err: unknown) {
     let detectionFailureReason =
       err instanceof Error ? err.message : "Unknown error";
@@ -46,12 +50,16 @@ const detectConfiguration: Processor<
       status: RecipeDetectionStatus.ERROR,
     });
     if (job.attemptsStarted == job.opts.attempts) {
-      sendEmailToAll(DetectConfigurationFail, {
-        catalogueId: recipe.catalogueId,
-        recipeId: recipe.id,
-        url: recipe.url,
-        reason: detectionFailureReason,
-      });
+      sendEmailToAll(
+        DetectConfigurationFail,
+        {
+          catalogueId: recipe.catalogueId,
+          recipeId: recipe.id,
+          url: recipe.url,
+          reason: detectionFailureReason,
+        },
+        `Recipe configuration detection #${recipe.id} has failed`
+      );
     }
     throw err;
   }

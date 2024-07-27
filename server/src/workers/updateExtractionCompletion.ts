@@ -98,16 +98,20 @@ async function afterExtractionComplete(
   stale = false
 ) {
   await removeSelf(job);
-  return sendEmailToAll(ExtractionComplete, {
-    extractionId: extraction.id,
-    recipeId: extraction.recipeId,
-    catalogueId: extraction.recipe.catalogueId,
-    catalogueName: extraction.recipe.catalogue.name,
-    url: extraction.recipe.url,
-    completionStats,
-    createdAt: extraction.createdAt,
-    stale,
-  });
+  return sendEmailToAll(
+    ExtractionComplete,
+    {
+      extractionId: extraction.id,
+      recipeId: extraction.recipeId,
+      catalogueId: extraction.recipe.catalogueId,
+      catalogueName: extraction.recipe.catalogue.name,
+      url: extraction.recipe.url,
+      completionStats,
+      createdAt: extraction.createdAt,
+      stale,
+    },
+    `Extraction #${extraction.id} has finished`
+  );
 }
 
 const updateExtractionCompletion: Processor<
