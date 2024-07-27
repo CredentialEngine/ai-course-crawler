@@ -56,7 +56,8 @@ export default function ExtractionDetail() {
     totalDownloadErrors = 0,
     totalExtractionsPossible = 0,
     totalExtractionsAttempted = 0,
-    totalExtractionErrors = 0;
+    totalExtractionErrors = 0,
+    totalCourses = 0;
   for (const step of extraction.completionStats?.steps || []) {
     totalDownloads += step.downloads.total;
     totalDownloadsAttempted += step.downloads.attempted;
@@ -65,6 +66,7 @@ export default function ExtractionDetail() {
     totalExtractionsAttempted += step.extractions.attempted;
     totalExtractionErrors +=
       step.extractions.attempted - step.extractions.succeeded;
+    totalCourses += step.extractions.courses;
   }
 
   return (
@@ -179,15 +181,23 @@ export default function ExtractionDetail() {
                     </BarChart>
                   </ChartContainer>
                 </div>
-                <div className="mt-2 gap-4 text-xs">
-                  <div>
-                    Download Errors: {totalDownloadErrors} /{" "}
-                    {totalDownloadsAttempted}.
-                  </div>
-                  <div>
-                    Extraction Errors: {totalExtractionErrors} /{" "}
-                    {totalExtractionsAttempted}.
-                  </div>
+                <div className="mt-2 gap-4 text-xs text-muted-foreground">
+                  {}
+                  {totalDownloadErrors ? (
+                    <div>
+                      Download Errors: {totalDownloadErrors} /{" "}
+                      {totalDownloadsAttempted}.
+                    </div>
+                  ) : null}
+                  {totalExtractionErrors ? (
+                    <div>
+                      Extraction Errors: {totalExtractionErrors} /{" "}
+                      {totalExtractionsAttempted}.
+                    </div>
+                  ) : null}
+                  {totalCourses ? (
+                    <div>Total Courses Extracted: {totalCourses}.</div>
+                  ) : null}
                 </div>
               </div>
             ) : null}
