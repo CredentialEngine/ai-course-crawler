@@ -20,8 +20,10 @@ We are looking for the following fields:
 Course identifier: code/identifier for the course (example: "AGRI 101")
 Course name: name for the course (for example "Landscape Design")
 Course description: the full description of the course
-Course credits (min): min credit hours
-Course credits (max): max credit hours. If there is only a single credit information in the page, set it as the max.
+Course credits (min): min credit
+Course credits (max): max credit (if the page shows a range).
+  - If there is only a single credit information in the page, set it as the max.
+Course credits type: infer it from the page (ref. one of the enum values)
 
 PAGE URL:
 
@@ -75,6 +77,26 @@ ${content}
             },
             course_credits_max: {
               type: "string",
+            },
+            course_credits_type: {
+              type: "string",
+              enum: [
+                "AcademicYear",
+                "CarnegieUnit",
+                "CertificateCredit",
+                "ClockHour",
+                "CompetencyCredit",
+                "ContactHour",
+                "ContinuingEducationUnit",
+                "DegreeCredit",
+                "DualCredit",
+                "QuarterHour",
+                "RequirementCredit",
+                "SecondaryDiplomaCredit",
+                "SemesterHour",
+                "TimeBasedCredit",
+                "TypeBasedCredit",
+              ],
             },
             requirements: {
               type: "array",

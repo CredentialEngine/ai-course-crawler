@@ -78,8 +78,9 @@ export interface CourseStructuredData {
   course_id: string;
   course_name: string;
   course_description: string;
-  course_credits_min: number;
-  course_credits_max: number;
+  course_credits_min?: number;
+  course_credits_max?: number;
+  course_credits_type?: string;
 }
 
 export interface StepCompletionStats {

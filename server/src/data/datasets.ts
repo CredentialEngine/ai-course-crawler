@@ -125,6 +125,7 @@ export async function findDataItems(
     .select({
       id: dataItems.id,
       structuredData: dataItems.structuredData,
+      url: crawlPages.url,
     })
     .from(dataItems)
     .innerJoin(crawlPages, eq(crawlPages.id, dataItems.crawlPageId))
