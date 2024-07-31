@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge";
 import BreadcrumbTrail from "@/components/ui/breadcrumb-trail";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -10,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { API_URL } from "@/constants";
-import { CourseStructuredData, DataItem, trpc } from "@/utils";
+import { CourseStructuredData, DataItem, prettyPrintDate, trpc } from "@/utils";
 import { Download } from "lucide-react";
 import { useState } from "react";
 import { useParams } from "wouter";
@@ -126,12 +127,29 @@ export default function DatasetCourses() {
         </h1>
       </div>
       <div className="border p-6">
-        <div className="font-semibold">Downloads</div>
-        <div className="mt-4">
-          <Button onClick={handleDownload} disabled={downloadInProgress}>
-            <Download className="w-4 h-4 mr-2" />
-            Download bulk-upload template
-          </Button>
+        <div className="flex gap-10">
+          <div>
+            <div className="font-semibold">Catalogue</div>
+            <div className="text-sm">{extraction.recipe.catalogue.name}</div>
+            <div className="font-semibold mt-4">Recipe URL</div>
+            <div className="text-sm">
+              <a href={extraction.recipe.url} target="_blank">
+                {extraction.recipe.url}
+              </a>
+            </div>
+          </div>
+          <div>
+            <div className="font-semibold mb-4">Downloads</div>
+            <Button onClick={handleDownload} disabled={downloadInProgress}>
+              <Download className="w-4 h-4 mr-2" />
+              Download bulk-upload template
+            </Button>
+          </div>
+        </div>
+        <div className="mt-6 border-t border-border pt-6 text-sm">
+          {coursesQuery.data.totalItems} courses were extracted. The extraction
+          was created on {prettyPrintDate(extraction.createdAt)}.
+          <Badge className="ml-2">{extraction.status}</Badge>
         </div>
       </div>
       <Card>
