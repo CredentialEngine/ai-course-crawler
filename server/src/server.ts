@@ -11,6 +11,7 @@ import fastify from "fastify";
 import { z } from "zod";
 import { appRouter, type AppRouter } from "./appRouter";
 import { streamCsv } from "./csv";
+import { findExtractionById } from "./data/extractions";
 import { findUserByEmail } from "./data/users";
 import fastifySessionAuth, {
   requireAuthentication,
@@ -44,8 +45,9 @@ if (CLIENT_PATH) {
 }
 
 server.register(cors, {
-  origin: ["http://localhost:5173"],
+  origin: [process.env.FRONTEND_URL!],
   credentials: true,
+  exposedHeaders: ["Content-Disposition", "Content-Type"],
 });
 
 server.register(fastifySecureSession, {
@@ -83,13 +85,22 @@ server.register(async (instance) => {
     "/downloads/courses/bulk_upload_template/:extractionId",
     async (request, reply) => {
       const { extractionId } = request.params as any;
+      const extraction = await findExtractionById(extractionId);
+      if (!extraction) {
+        return reply.code(404).send({ error: "Extraction not found" });
+      }
+      const cataloguePiece = extraction.recipe.catalogue.name
+        .replace(/[^a-zA-Z0-9]/g, "_")
+        .replace(/_+/g, "_")
+        .replace(/^_|_$/g, "")
+        .substring(0, 50);
+      const filename = `AICourseCrawl-BulkUploadTemplate-${extraction.id}_${cataloguePiece}.csv`;
 
       return reply
-        .header("Content-Type", "application/octet-stream")
-        .header(
-          "Content-Disposition",
-          `attachment; filename="AICourseMapping-BulkUploadTemplate-${extractionId}.csv"`
-        )
+        .headers({
+          "Content-Type": "application/octet-stream",
+          "Content-Disposition": `attachment; filename="${filename}"`,
+        })
         .send(streamCsv(extractionId));
     }
   );
