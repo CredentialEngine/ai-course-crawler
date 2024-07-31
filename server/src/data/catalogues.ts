@@ -34,6 +34,12 @@ export async function findCatalogueById(id: number) {
   return result;
 }
 
+export async function findCatalogueByUrl(url: string) {
+  return db.query.catalogues.findFirst({
+    where: (catalogues, { eq }) => eq(catalogues.url, url),
+  });
+}
+
 export async function findLatestExtractionsForCatalogue(catalogueId: number) {
   const catExtractions = await db
     .select()

@@ -4,6 +4,7 @@ import {
   createCatalogue,
   destroyCatalogue,
   findCatalogueById,
+  findCatalogueByUrl,
   findCatalogues,
   findLatestExtractionsForCatalogue,
   getCatalogueCount,
@@ -47,7 +48,17 @@ export const cataloguesRouter = router({
     )
     .mutation(async (opts) => {
       const { name, url, thumbnailUrl } = opts.input;
-      return createCatalogue(name, url, thumbnailUrl);
+      const existingCatalogue = await findCatalogueByUrl(url);
+      if (existingCatalogue) {
+        return {
+          id: existingCatalogue.id,
+          existing: true,
+        };
+      }
+      return {
+        id: await createCatalogue(name, url, thumbnailUrl),
+        existing: false,
+      };
     }),
   detail: publicProcedure
     .input(

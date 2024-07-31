@@ -64,12 +64,20 @@ export default function CreateCatalogue() {
         thumbnailUrl: previewQuery.data?.thumbnailUrl,
       });
       form.reset();
-      toast({
-        title: "Catalogue saved",
-        description:
-          "Catalogue saved successfully! Now let's set up an extraction recipe.",
-      });
-      navigate(`/${result}/recipes/new`);
+      if (result.existing) {
+        toast({
+          title: "Catalogue already exists",
+          description: "Catalogue already exists, redirecting to it.",
+        });
+        navigate(`/${result.id}`);
+      } else {
+        toast({
+          title: "Catalogue saved",
+          description:
+            "Catalogue saved successfully! Now let's set up an extraction recipe.",
+        });
+        navigate(`/${result.id}/recipes/new`);
+      }
     } catch (error: unknown) {
       const description =
         error instanceof Error ? error.message : JSON.stringify(error);
