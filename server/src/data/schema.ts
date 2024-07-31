@@ -52,6 +52,7 @@ export enum ExtractionStatus {
   IN_PROGRESS = "IN_PROGRESS",
   COMPLETE = "COMPLETE",
   STALE = "STALE",
+  CANCELLED = "CANCELLED",
 }
 
 export enum PageStatus {

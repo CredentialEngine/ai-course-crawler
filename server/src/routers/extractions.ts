@@ -16,9 +16,10 @@ import {
   getExtractionCount,
   getLogCount,
   getPageCount,
+  updateExtraction,
 } from "../data/extractions";
 import { Recipe } from "../data/recipes";
-import { RecipeDetectionStatus, Step } from "../data/schema";
+import { ExtractionStatus, RecipeDetectionStatus, Step } from "../data/schema";
 import { simplifyHtml, toMarkdown } from "../extraction/browser";
 import { Queues, submitJob, submitRepeatableJob } from "../workers";
 
@@ -73,6 +74,17 @@ export const extractionsRouter = router({
         );
       }
       return startExtraction(recipe as Recipe);
+    }),
+  cancel: publicProcedure
+    .input(
+      z.object({
+        id: z.number().int().positive(),
+      })
+    )
+    .mutation(async (opts) => {
+      return updateExtraction(opts.input.id, {
+        status: ExtractionStatus.CANCELLED,
+      });
     }),
   detail: publicProcedure
     .input(

@@ -1,7 +1,7 @@
 import { ExtractDataJob, ExtractDataProgress, Processor } from ".";
 import { createDataItem, findOrCreateDataset } from "../data/datasets";
 import { findPageForJob, updatePage } from "../data/extractions";
-import { getSqliteTimestamp } from "../data/schema";
+import { ExtractionStatus, getSqliteTimestamp } from "../data/schema";
 import { closeCluster } from "../extraction/browser";
 import { extractCourseDataItem } from "../extraction/extractCourseDataItem";
 
@@ -14,6 +14,14 @@ const extractData: Processor<ExtractDataJob, ExtractDataProgress> = async (
   job
 ) => {
   const crawlPage = await findPageForJob(job.data.crawlPageId);
+
+  if (crawlPage.crawlStep.extraction.status == ExtractionStatus.CANCELLED) {
+    console.log(
+      `Extraction ${crawlPage.crawlStep.extractionId} was cancelled; aborting`
+    );
+    return;
+  }
+
   await updatePage(crawlPage.id, {
     dataExtractionStartedAt: getSqliteTimestamp(),
   });

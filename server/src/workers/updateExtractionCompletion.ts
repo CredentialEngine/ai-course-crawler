@@ -154,7 +154,11 @@ const updateExtractionCompletion: Processor<
   UpdateExtractionCompletionProgress
 > = async (job) => {
   const extraction = await findExtractionById(job.data.extractionId);
-  if (!extraction || extraction.status == ExtractionStatus.COMPLETE) {
+  if (
+    !extraction ||
+    extraction.status == ExtractionStatus.COMPLETE ||
+    extraction.status == ExtractionStatus.CANCELLED
+  ) {
     await removeSelf(job);
     return;
   }

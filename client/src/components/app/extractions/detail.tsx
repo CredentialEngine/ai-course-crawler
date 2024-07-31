@@ -2,6 +2,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer } from "@/components/ui/chart";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import JsonPopover from "@/components/ui/jsonPopover";
 import {
   Table,
@@ -12,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useToast } from "@/components/ui/use-toast";
 import {
   CrawlStep,
   STATUS,
@@ -20,8 +30,9 @@ import {
   trpc,
 } from "@/utils";
 import { CookingPot, LibraryBig, List } from "lucide-react";
+import { useState } from "react";
 import { Bar, BarChart, LabelList, XAxis, YAxis } from "recharts";
-import { Link, useParams } from "wouter";
+import { Link, useLocation, useParams } from "wouter";
 import { displayRecipeDetails } from "../recipes/util";
 import { displayStepType } from "./utils";
 
@@ -35,6 +46,9 @@ function displayStepParent(steps: CrawlStep[], parentId: number) {
 
 export default function ExtractionDetail() {
   let { extractionId } = useParams();
+  const [lockedCancel, setLockedCancel] = useState(true);
+  const { toast } = useToast();
+  const [_location, navigate] = useLocation();
   const query = trpc.extractions.detail.useQuery(
     { id: parseInt(extractionId || "") },
     { enabled: !!parseInt(extractionId || "") }
@@ -45,9 +59,23 @@ export default function ExtractionDetail() {
     { enabled: !!parseInt(extractionId || "") }
   );
 
+  const cancelExtraction = trpc.extractions.cancel.useMutation();
+
   if (!query.data) {
     return null;
   }
+
+  const onCancelExtraction = async () => {
+    if (lockedCancel) {
+      return;
+    }
+    await cancelExtraction.mutateAsync({ id: extraction.id });
+    toast({
+      title: "Extraction cancelled",
+      description: "The extraction has been cancelled.",
+    });
+    navigate("/");
+  };
 
   const extraction = query.data;
   const extractionLogs = logsQuery.data?.results;
@@ -199,6 +227,46 @@ export default function ExtractionDetail() {
                     <div>Total Courses Extracted: {totalCourses}.</div>
                   ) : null}
                 </div>
+              </div>
+            ) : null}
+            {extraction.status == STATUS.IN_PROGRESS ? (
+              <div className="mt-4">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="destructive">Cancel extraction</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Are you absolutely sure?</DialogTitle>
+                      <DialogDescription className="pt-2">
+                        This action cannot be undone. This will cancel the
+                        ongoing extraction and all its steps.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="items-top flex space-x-2">
+                      <Checkbox
+                        id="cancel_extraction"
+                        onCheckedChange={(e) => setLockedCancel(!!!e)}
+                      />
+                      <div className="grid gap-1.5 leading-none">
+                        <label
+                          htmlFor="cancel_extraction"
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          I understand the consequences
+                        </label>
+                        <Button
+                          variant="destructive"
+                          disabled={lockedCancel}
+                          onClick={onCancelExtraction}
+                          className="mt-4"
+                        >
+                          Cancel extraction
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             ) : null}
           </CardContent>

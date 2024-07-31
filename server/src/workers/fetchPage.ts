@@ -164,6 +164,13 @@ const processNextStep = async (
 const fetchPage: Processor<FetchPageJob, FetchPageProgress> = async (job) => {
   const crawlPage = await findPageForJob(job.data.crawlPageId);
 
+  if (crawlPage.crawlStep.extraction.status == ExtractionStatus.CANCELLED) {
+    console.log(
+      `Extraction ${crawlPage.crawlStep.extractionId} was cancelled; aborting`
+    );
+    return;
+  }
+
   if (crawlPage.crawlStep.step == Step.FETCH_ROOT) {
     await updateExtraction(crawlPage.crawlStep.extractionId, {
       status: ExtractionStatus.IN_PROGRESS,
