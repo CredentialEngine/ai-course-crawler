@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Recipe, STATUS, trpc } from "@/utils";
+import { Recipe, RecipeDetectionStatus, trpc } from "@/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pickaxe } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -75,7 +75,7 @@ export default function CatalogueCreateExtraction() {
   }
 
   const recipes = catalogueDetail?.data?.recipes.filter(
-    (r) => r.status == STATUS.SUCCESS
+    (r) => r.status == RecipeDetectionStatus.SUCCESS
   );
 
   if (!recipes) {

@@ -6,7 +6,7 @@ import {
   PageType,
   PaginationConfiguration,
   UrlPatternType,
-} from "../data/schema";
+} from "../../data/schema";
 import {
   BadToolCallResponseError,
   assertBool,
@@ -14,8 +14,8 @@ import {
   assertString,
   assertStringEnum,
   simpleToolCompletion,
-} from "../openai";
-import { simplifyHtml, toMarkdown } from "./browser";
+} from "../../openai";
+import { simplifyHtml, toMarkdown } from "../browser";
 
 const pageTypeDescriptions = {
   [PageType.COURSE_LINKS_PAGE]:

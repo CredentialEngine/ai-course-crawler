@@ -1,7 +1,7 @@
 import { ChatCompletionContentPart } from "openai/resources/chat/completions";
-import { PageType } from "../data/schema";
-import { assertArray, assertString, simpleToolCompletion } from "../openai";
-import { simplifyHtml, toMarkdown } from "./browser";
+import { PageType } from "../../data/schema";
+import { assertArray, assertString, simpleToolCompletion } from "../../openai";
+import { simplifyHtml, toMarkdown } from "../browser";
 
 function resolveAbsoluteUrl(base: string, relative: string): string {
   const baseUrl = new URL(base);

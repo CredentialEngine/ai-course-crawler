@@ -1,12 +1,8 @@
 import { z } from "zod";
-import { error, publicProcedure, router } from ".";
-import { AppErrors } from "../appErrors";
-import { findCatalogueById } from "../data/catalogues";
+import { publicProcedure, router } from ".";
+import { AppError, AppErrors } from "../appErrors";
 import { getItemsCount } from "../data/datasets";
 import {
-  createExtraction,
-  createPage,
-  createStep,
   findExtractionForDetailPage,
   findExtractions,
   findLogs,
@@ -18,36 +14,10 @@ import {
   getPageCount,
   updateExtraction,
 } from "../data/extractions";
-import { Recipe } from "../data/recipes";
-import { ExtractionStatus, RecipeDetectionStatus, Step } from "../data/schema";
+import { ExtractionStatus } from "../data/schema";
 import { simplifyHtml, toMarkdown } from "../extraction/browser";
-import { Queues, submitJob, submitRepeatableJob } from "../workers";
-
-async function startExtraction(recipe: Recipe) {
-  const extraction = await createExtraction(recipe.id);
-  const step = await createStep({
-    extractionId: extraction.id,
-    step: Step.FETCH_ROOT,
-    configuration: recipe.configuration!,
-  });
-  const crawlPage = await createPage({
-    crawlStepId: step.id,
-    url: recipe.url,
-    dataType: recipe.configuration!.pageType,
-  });
-  submitJob(
-    Queues.FetchPage,
-    { crawlPageId: crawlPage.id },
-    `fetchPage.${crawlPage.id}`
-  );
-  submitRepeatableJob(
-    Queues.UpdateExtractionCompletion,
-    { extractionId: extraction.id },
-    `updateExtractionCompletion.${extraction.id}`,
-    { every: 5 * 60 * 1000 }
-  );
-  return extraction;
-}
+import { retryFailedItems } from "../extraction/retryFailedItems";
+import { startExtraction } from "../extraction/startExtraction";
 
 export const extractionsRouter = router({
   create: publicProcedure
@@ -58,22 +28,7 @@ export const extractionsRouter = router({
       })
     )
     .mutation(async (opts) => {
-      const catalogue = await findCatalogueById(opts.input.catalogueId);
-      if (!catalogue) {
-        throw error("NOT_FOUND", AppErrors.NOT_FOUND, "Catalogue not found");
-      }
-      const recipe = catalogue.recipes.find((r) => r.id == opts.input.recipeId);
-      if (!recipe) {
-        throw error("NOT_FOUND", AppErrors.NOT_FOUND, "Recipe not found");
-      }
-      if (recipe.status != RecipeDetectionStatus.SUCCESS) {
-        throw error(
-          "BAD_REQUEST",
-          AppErrors.RECIPE_NOT_CONFIGURED,
-          "Recipe hasn't been configured for extraction"
-        );
-      }
-      return startExtraction(recipe as Recipe);
+      return startExtraction(opts.input.catalogueId, opts.input.recipeId);
     }),
   cancel: publicProcedure
     .input(
@@ -86,6 +41,15 @@ export const extractionsRouter = router({
         status: ExtractionStatus.CANCELLED,
       });
     }),
+  retryFailed: publicProcedure
+    .input(
+      z.object({
+        id: z.number().int().positive(),
+      })
+    )
+    .mutation(async (opts) => {
+      return retryFailedItems(opts.input.id);
+    }),
   detail: publicProcedure
     .input(
       z.object({
@@ -95,7 +59,7 @@ export const extractionsRouter = router({
     .query(async (opts) => {
       let result = await findExtractionForDetailPage(opts.input.id);
       if (!result) {
-        throw error("NOT_FOUND", AppErrors.NOT_FOUND, "Extraction not found");
+        throw new AppError("Extraction not found", AppErrors.NOT_FOUND);
       }
       return {
         ...result,
@@ -135,7 +99,7 @@ export const extractionsRouter = router({
     .query(async (opts) => {
       const crawlStep = await findStep(opts.input.stepId);
       if (!crawlStep) {
-        throw error("NOT_FOUND", AppErrors.NOT_FOUND, "Step not found");
+        throw new AppError("Step not found", AppErrors.NOT_FOUND);
       }
       const totalItems = await getPageCount(opts.input.stepId);
       const totalPages = Math.ceil(totalItems / 20);
@@ -159,7 +123,7 @@ export const extractionsRouter = router({
     .query(async (opts) => {
       const crawlPage = await findPage(opts.input.crawlPageId);
       if (!crawlPage) {
-        throw error("NOT_FOUND", AppErrors.NOT_FOUND, "Step item not found");
+        throw new AppError("Step item not found", AppErrors.NOT_FOUND);
       }
       return {
         ...crawlPage,

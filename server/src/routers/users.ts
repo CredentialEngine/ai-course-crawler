@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { error, publicProcedure, router } from ".";
-import { AppErrors } from "../appErrors";
+import { publicProcedure, router } from ".";
+import { AppError, AppErrors } from "../appErrors";
 import {
   createUser,
   deleteUser,
@@ -48,13 +48,12 @@ export const usersRouter = router({
     .mutation(async (opts) => {
       const user = await findUserById(opts.input.id);
       if (!user) {
-        throw error("NOT_FOUND", AppErrors.NOT_FOUND, "User not found");
+        throw new AppError("User not found", AppErrors.NOT_FOUND);
       }
       if (user.id == opts.ctx.user?.id) {
-        throw error(
-          "BAD_REQUEST",
-          AppErrors.BAD_REQUEST,
-          "User tried to delete themselves"
+        throw new AppError(
+          "User tried to delete themselves",
+          AppErrors.BAD_REQUEST
         );
       }
       await deleteUser(user.id);
@@ -68,7 +67,7 @@ export const usersRouter = router({
     .mutation(async (opts) => {
       const user = await findUserById(opts.input.id);
       if (!user) {
-        throw error("NOT_FOUND", AppErrors.NOT_FOUND, "User not found");
+        throw new AppError("User not found", AppErrors.NOT_FOUND);
       }
       const generatedPassword = generateStrongPassword(12);
       await resetUserPassword(user.id, generatedPassword);

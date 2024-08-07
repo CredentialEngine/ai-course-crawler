@@ -3,7 +3,7 @@ import { createDataItem, findOrCreateDataset } from "../data/datasets";
 import { findPageForJob, updatePage } from "../data/extractions";
 import { ExtractionStatus, getSqliteTimestamp } from "../data/schema";
 import { closeCluster } from "../extraction/browser";
-import { extractCourseDataItem } from "../extraction/extractCourseDataItem";
+import { extractCourseDataItem } from "../extraction/llm/extractCourseDataItem";
 
 process.on("SIGTERM", async () => {
   console.log("Shutting down extractData");

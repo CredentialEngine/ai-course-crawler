@@ -2,9 +2,9 @@ import {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
 } from "openai/resources/chat/completions";
-import { CourseStructuredData } from "../appRouter";
-import { assertArray, simpleToolCompletion } from "../openai";
-import { simplifyHtml, toMarkdown } from "./browser";
+import { CourseStructuredData } from "../../appRouter";
+import { assertArray, simpleToolCompletion } from "../../openai";
+import { simplifyHtml, toMarkdown } from "../browser";
 
 export async function extractCourseDataItem(
   url: string,

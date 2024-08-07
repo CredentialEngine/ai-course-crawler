@@ -2,9 +2,9 @@ import {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
 } from "openai/resources/chat/completions";
-import { PageType } from "../data/schema";
-import { assertStringEnum, simpleToolCompletion } from "../openai";
-import { simplifyHtml, toMarkdown } from "./browser";
+import { PageType } from "../../data/schema";
+import { assertStringEnum, simpleToolCompletion } from "../../openai";
+import { simplifyHtml, toMarkdown } from "../browser";
 
 export async function detectPageType(
   url: string,

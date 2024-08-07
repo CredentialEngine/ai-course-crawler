@@ -4,25 +4,9 @@ import type { inferRouterOutputs } from "@trpc/server";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-import type {
-  AppRouter,
-  CourseStructuredData,
-  DetectConfigurationProgress,
-  RecipeConfiguration,
-} from "../../server/src/appRouter";
+import type { AppRouter } from "../../server/src/appRouter";
+export { AppRouter };
 
-export enum PAGE_DATA_TYPE {
-  COURSE_DETAIL_PAGE = "COURSE_DETAIL_PAGE",
-  CATEGORY_LINKS_PAGE = "CATEGORY_LINKS_PAGE",
-  COURSE_LINKS_PAGE = "COURSE_LINKS_PAGE",
-}
-
-export {
-  AppRouter,
-  CourseStructuredData,
-  DetectConfigurationProgress,
-  RecipeConfiguration,
-};
 export const trpc = createTRPCReact<AppRouter>();
 export type ItemType<T> = T extends (infer U)[] ? U : never;
 export type RouterOutput = inferRouterOutputs<AppRouter>;
@@ -40,12 +24,40 @@ export type CrawlPage = ItemType<
   RouterOutput["extractions"]["stepDetail"]["crawlPages"]["results"]
 >;
 export type DataItem = ItemType<RouterOutput["datasets"]["courses"]["results"]>;
+export type CourseStructuredData = DataItem["structuredData"];
 
-export enum STATUS {
+export enum PageType {
+  COURSE_DETAIL_PAGE = "COURSE_DETAIL_PAGE",
+  CATEGORY_LINKS_PAGE = "CATEGORY_LINKS_PAGE",
+  COURSE_LINKS_PAGE = "COURSE_LINKS_PAGE",
+}
+
+export enum ExtractionStatus {
+  WAITING = "WAITING",
+  IN_PROGRESS = "IN_PROGRESS",
+  COMPLETE = "COMPLETE",
+  STALE = "STALE",
+  CANCELLED = "CANCELLED",
+}
+
+export enum PageStatus {
   WAITING = "WAITING",
   IN_PROGRESS = "IN_PROGRESS",
   SUCCESS = "SUCCESS",
   ERROR = "ERROR",
+}
+
+export enum RecipeDetectionStatus {
+  WAITING = "WAITING",
+  IN_PROGRESS = "IN_PROGRESS",
+  SUCCESS = "SUCCESS",
+  ERROR = "ERROR",
+}
+
+export enum Step {
+  FETCH_ROOT = "FETCH_ROOT",
+  FETCH_PAGINATED = "FETCH_PAGINATED",
+  FETCH_LINKS = "FETCH_LINKS",
 }
 
 export function cn(...inputs: ClassValue[]) {

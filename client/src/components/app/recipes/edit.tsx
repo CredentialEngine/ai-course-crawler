@@ -1,5 +1,5 @@
 import BreadcrumbTrail from "@/components/ui/breadcrumb-trail";
-import { STATUS, trpc } from "@/utils";
+import { RecipeDetectionStatus, trpc } from "@/utils";
 import { useParams } from "wouter";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -57,7 +57,7 @@ export default function EditRecipe() {
 
   useEffect(() => {
     const pollQuery = () => {
-      if (recipeQuery.data?.status == STATUS.SUCCESS) {
+      if (recipeQuery.data?.status == RecipeDetectionStatus.SUCCESS) {
         window.clearInterval(intervalRef.current!);
         intervalRef.current = null;
         return;
@@ -69,7 +69,7 @@ export default function EditRecipe() {
       return;
     }
 
-    if (recipeQuery.data.status != STATUS.SUCCESS) {
+    if (recipeQuery.data.status != RecipeDetectionStatus.SUCCESS) {
       if (!intervalRef.current) {
         intervalRef.current = window.setInterval(pollQuery, 2000);
       } else {
@@ -159,7 +159,7 @@ export default function EditRecipe() {
                     />
                   </CardContent>
                 </Card>
-                {recipe.status == STATUS.SUCCESS ? (
+                {recipe.status == RecipeDetectionStatus.SUCCESS ? (
                   <Card>
                     <CardHeader>
                       <CardDescription>Configuration</CardDescription>
@@ -175,7 +175,7 @@ export default function EditRecipe() {
                   </Card>
                 ) : null}
               </div>
-              {recipe.status == STATUS.WAITING ? (
+              {recipe.status == RecipeDetectionStatus.WAITING ? (
                 <div className="mt-4 grid gap-2 md:grid-cols-[1fr_250px] lg:grid-cols-2 lg:gap-4">
                   <Card>
                     <CardHeader>
@@ -192,7 +192,7 @@ export default function EditRecipe() {
                   </Card>
                 </div>
               ) : null}
-              {recipe.status == STATUS.ERROR ? (
+              {recipe.status == RecipeDetectionStatus.ERROR ? (
                 <div className="mt-4 grid gap-2 md:grid-cols-[1fr_250px] lg:grid-cols-2 lg:gap-4">
                   <Card>
                     <CardHeader>
@@ -226,7 +226,7 @@ export default function EditRecipe() {
                   </Card>
                 </div>
               ) : null}
-              {recipe.status == STATUS.SUCCESS ? (
+              {recipe.status == RecipeDetectionStatus.SUCCESS ? (
                 <div className="mt-4 grid gap-2 md:grid-cols-[1fr_250px] lg:grid-cols-2 lg:gap-4">
                   <Card>
                     <CardHeader>
@@ -262,7 +262,7 @@ export default function EditRecipe() {
               ) : null}
             </div>
             <div className="flex items-center">
-              {recipe.status == STATUS.IN_PROGRESS ? (
+              {recipe.status == RecipeDetectionStatus.IN_PROGRESS ? (
                 <Button disabled={true} variant={"outline"}>
                   <div className="flex text-sm items-center">
                     <LoaderIcon className="animate-spin mr-2 w-3.5" />
@@ -275,7 +275,7 @@ export default function EditRecipe() {
                     recipeQuery.isLoading ||
                     updateRecipe.isLoading ||
                     reconfigureRecipe.isLoading ||
-                    recipe.status == STATUS.IN_PROGRESS ||
+                    recipe.status == RecipeDetectionStatus.IN_PROGRESS ||
                     !form.formState.isDirty
                   }
                   type="submit"
@@ -283,7 +283,7 @@ export default function EditRecipe() {
                   Save changes
                 </Button>
               )}
-              {recipe.status == STATUS.SUCCESS ? (
+              {recipe.status == RecipeDetectionStatus.SUCCESS ? (
                 <Link
                   className="ml-4"
                   to={`/${catalogue.id}/extract/${recipe.id}`}

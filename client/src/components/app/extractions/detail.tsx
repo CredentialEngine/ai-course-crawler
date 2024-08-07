@@ -24,7 +24,8 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import {
   CrawlStep,
-  STATUS,
+  ExtractionStatus,
+  RecipeDetectionStatus,
   concisePrintDate,
   prettyPrintDate,
   trpc,
@@ -61,6 +62,8 @@ export default function ExtractionDetail() {
 
   const cancelExtraction = trpc.extractions.cancel.useMutation();
 
+  const retryFailed = trpc.extractions.retryFailed.useMutation();
+
   if (!query.data) {
     return null;
   }
@@ -75,6 +78,17 @@ export default function ExtractionDetail() {
       description: "The extraction has been cancelled.",
     });
     navigate("/");
+  };
+
+  const onRetryFailed = async () => {
+    await retryFailed.mutateAsync({
+      id: extraction.id,
+    });
+    toast({
+      title: "Retrying failed items",
+      description: "We are retrying the failed items for this extraction.",
+    });
+    await query.refetch();
   };
 
   const extraction = query.data;
@@ -140,7 +154,7 @@ export default function ExtractionDetail() {
                   </div>
                   <div>
                     Recipe #{extraction.recipe.id}{" "}
-                    {extraction.recipe.status == STATUS.SUCCESS
+                    {extraction.recipe.status == RecipeDetectionStatus.SUCCESS
                       ? null
                       : "— Draft"}
                     <div className="text-xs">
@@ -229,7 +243,7 @@ export default function ExtractionDetail() {
                 </div>
               </div>
             ) : null}
-            {extraction.status == STATUS.IN_PROGRESS ? (
+            {extraction.status == ExtractionStatus.IN_PROGRESS ? (
               <div className="mt-4">
                 <Dialog>
                   <DialogTrigger asChild>
@@ -267,6 +281,19 @@ export default function ExtractionDetail() {
                     </div>
                   </DialogContent>
                 </Dialog>
+              </div>
+            ) : null}
+            {extraction.status == ExtractionStatus.COMPLETE &&
+            (totalDownloadErrors || totalExtractionErrors) ? (
+              <div className="mt-4 text-xs">
+                <Button
+                  variant={"outline"}
+                  size={"sm"}
+                  onClick={onRetryFailed}
+                  disabled={retryFailed.isLoading}
+                >
+                  Retry failed items
+                </Button>
               </div>
             ) : null}
           </CardContent>

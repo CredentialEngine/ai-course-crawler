@@ -1,16 +1,9 @@
 import { z } from "zod";
-import { error, publicProcedure, router } from ".";
-import { AppErrors } from "../appErrors";
-import {
-  findRecipeById,
-  setDefault,
-  startRecipe,
-  updateRecipe,
-} from "../data/recipes";
+import { publicProcedure, router } from ".";
+import { AppError, AppErrors } from "../appErrors";
+import { findRecipeById, setDefault, updateRecipe } from "../data/recipes";
 import { PageType } from "../data/schema";
-import { fetchBrowserPage } from "../extraction/browser";
-import { detectPageType } from "../extraction/detectPageType";
-import { bestOutOf } from "../utils";
+import { createRecipe } from "../extraction/createRecipe";
 import { Queues, submitJob } from "../workers";
 
 enum UrlPatternType {
@@ -47,49 +40,9 @@ export const recipesRouter = router({
         catalogueId: z.number().int().positive(),
       })
     )
-    .mutation(async (opts) => {
-      console.log(`Fetching ${opts.input.url}`);
-      const { content, screenshot } = await fetchBrowserPage(opts.input.url);
-      console.log(`Downloaded ${opts.input.url}.`);
-      console.log(`Detecting page type`);
-      let pageType = await bestOutOf(
-        5,
-        () => detectPageType(opts.input.url, content, screenshot!),
-        (p) => p as string
-      );
-      console.log(`Detected page type: ${pageType}`);
-      let message: string | null = null;
-      if (!pageType) {
-        message =
-          "Page was not detected as a course catalogue index. Defaulting to home page type: course links.";
-        pageType = PageType.COURSE_LINKS_PAGE;
-      }
-      console.log(`Creating recipe`);
-      const result = await startRecipe(
-        opts.input.catalogueId,
-        opts.input.url,
-        pageType
-      );
-      console.log(`Created recipe ${result.id}`);
-      if (result) {
-        const id = result.id;
-        submitJob(
-          Queues.DetectConfiguration,
-          { recipeId: id },
-          `detectConfiguration.${id}`
-        );
-        return {
-          id,
-          pageType,
-          message,
-        };
-      }
-      throw error(
-        "INTERNAL_SERVER_ERROR",
-        AppErrors.UNKNOWN,
-        "Something went wrong when saving the recipe."
-      );
-    }),
+    .mutation(async (opts) =>
+      createRecipe(opts.input.url, opts.input.catalogueId)
+    ),
   reconfigure: publicProcedure
     .input(
       z.object({
@@ -99,13 +52,14 @@ export const recipesRouter = router({
     .mutation(async (opts) => {
       const recipe = await findRecipeById(opts.input.id);
       if (!recipe) {
-        throw error("NOT_FOUND", AppErrors.NOT_FOUND, "Recipe not found");
+        throw new AppError("Recipe not found", AppErrors.NOT_FOUND);
       }
-      submitJob(
+      await submitJob(
         Queues.DetectConfiguration,
         { recipeId: opts.input.id },
         `detectConfiguration.${recipe.id}`
       );
+      return;
     }),
   update: publicProcedure
     .input(
@@ -119,9 +73,9 @@ export const recipesRouter = router({
     .mutation(async (opts) => {
       const recipe = await findRecipeById(opts.input.id);
       if (!recipe) {
-        throw error("NOT_FOUND", AppErrors.NOT_FOUND, "Recipe not found");
+        throw new AppError("Recipe not found", AppErrors.NOT_FOUND);
       }
-      submitJob(
+      await submitJob(
         Queues.DetectConfiguration,
         { recipeId: recipe.id },
         `detectConfiguration.${recipe.id}`
@@ -135,7 +89,7 @@ export const recipesRouter = router({
     .mutation(async (opts) => {
       const recipe = await findRecipeById(opts.input.id);
       if (!recipe) {
-        throw error("NOT_FOUND", AppErrors.NOT_FOUND, "Recipe not found");
+        throw new AppError("Recipe not found", AppErrors.NOT_FOUND);
       }
       return setDefault(opts.input.id);
     }),

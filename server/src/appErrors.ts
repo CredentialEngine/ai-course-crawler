@@ -1,7 +1,13 @@
 export enum AppErrors {
-  UNKNOWN,
-  PAGE_TYPE_INVALID,
   NOT_FOUND,
-  RECIPE_NOT_CONFIGURED,
   BAD_REQUEST,
+}
+
+export class AppError extends Error {
+  public readonly code;
+
+  constructor(message: string, code: AppErrors) {
+    super(message);
+    this.code = code;
+  }
 }

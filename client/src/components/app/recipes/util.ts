@@ -1,7 +1,7 @@
-import { Recipe, RecipeConfiguration } from "@/utils";
+import { Recipe } from "@/utils";
 
 export function displayRecipeDetails(recipe: Recipe) {
-  let currentConfig: RecipeConfiguration = recipe.configuration!;
+  let currentConfig = recipe.configuration!;
   let display = `${currentConfig.pageType} (${
     currentConfig.pagination ? "has pagination" : "no pagination"
   })`;

@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 import { sql } from "drizzle-orm/sql/sql";
 import { SQLiteUpdateSetSource } from "drizzle-orm/sqlite-core";
 import db from "../data";
@@ -339,4 +339,43 @@ export async function getStepStats(crawlStepId: number) {
       )
     )
     .groupBy(crawlPages.id);
+}
+
+export async function findFailedAndNoDataPageIds(crawlStepId: number) {
+  // Pages where a data extraction was attempted, but no data was found
+  const noDataPageIds = await db
+    .select({
+      id: crawlPages.id,
+    })
+    .from(crawlPages)
+    .leftJoin(dataItems, eq(dataItems.crawlPageId, crawlPages.id))
+    .where(
+      and(
+        eq(crawlPages.crawlStepId, crawlStepId),
+        eq(crawlPages.status, PageStatus.SUCCESS),
+        eq(crawlPages.dataType, PageType.COURSE_DETAIL_PAGE),
+        isNotNull(crawlPages.dataExtractionStartedAt)
+      )
+    )
+    .groupBy(crawlPages.id)
+    .having(sql`count(${dataItems.id}) = 0`);
+
+  // Pages where the download failed
+  const failedIds = await db
+    .select({
+      id: crawlPages.id,
+    })
+    .from(crawlPages)
+    .where(
+      and(
+        eq(crawlPages.crawlStepId, crawlStepId),
+        eq(crawlPages.status, PageStatus.ERROR)
+      )
+    );
+
+  return [
+    ...new Set(
+      noDataPageIds.map((p) => p.id).concat(failedIds.map((p) => p.id))
+    ),
+  ];
 }

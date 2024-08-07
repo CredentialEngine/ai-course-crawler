@@ -21,8 +21,8 @@ import {
   Step,
 } from "../data/schema";
 import { closeCluster, fetchBrowserPage } from "../extraction/browser";
-import { detectPageCount } from "../extraction/detectPageCount";
-import { createUrlExtractor } from "../extraction/detectUrlRegexp";
+import { detectPageCount } from "../extraction/llm/detectPageCount";
+import { createUrlExtractor } from "../extraction/llm/detectUrlRegexp";
 
 process.on("SIGTERM", async () => {
   console.log("Shutting down fetchPage");

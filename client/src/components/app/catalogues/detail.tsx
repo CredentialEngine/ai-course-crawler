@@ -20,7 +20,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
-import { Catalogue, prettyPrintDate, STATUS, trpc } from "@/utils";
+import {
+  Catalogue,
+  prettyPrintDate,
+  RecipeDetectionStatus,
+  trpc,
+} from "@/utils";
 import { CookingPot, Star } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation, useParams } from "wouter";
@@ -54,7 +59,9 @@ const RecipeList = ({ catalogue }: RecipeListProps) => {
                 <div className="text-xs">
                   <div>
                     Recipe #{recipe.id}{" "}
-                    {recipe.status == STATUS.SUCCESS ? null : "— Draft"}
+                    {recipe.status == RecipeDetectionStatus.SUCCESS
+                      ? null
+                      : "— Draft"}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {displayRecipeDetails(recipe)}

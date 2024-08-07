@@ -1,8 +1,8 @@
 import { ChatCompletionContentPart } from "openai/resources/chat/completions";
-import { PageType } from "../data/schema";
-import { assertArray, assertString, simpleToolCompletion } from "../openai";
-import { resolveAbsoluteUrl } from "../utils";
-import { simplifyHtml, toMarkdown } from "./browser";
+import { PageType } from "../../data/schema";
+import { assertArray, assertString, simpleToolCompletion } from "../../openai";
+import { resolveAbsoluteUrl } from "../../utils";
+import { simplifyHtml, toMarkdown } from "../browser";
 
 export function createUrlExtractor(regexp: RegExp) {
   return async (baseUrl: string, html: string) => {

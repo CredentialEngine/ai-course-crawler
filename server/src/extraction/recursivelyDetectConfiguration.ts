@@ -1,12 +1,10 @@
 import { inspect } from "util";
 import { PageType, RecipeConfiguration } from "../data/schema";
-import { detectPageType } from "../extraction/detectPageType";
-import { detectPagination } from "../extraction/detectPagination";
-import detectUrlRegexp, {
-  createUrlExtractor,
-} from "../extraction/detectUrlRegexp";
 import { bestOutOf, exponentialRetry, unique } from "../utils";
 import { fetchBrowserPage } from "./browser";
+import { detectPageType } from "./llm/detectPageType";
+import { detectPagination } from "./llm/detectPagination";
+import detectUrlRegexp, { createUrlExtractor } from "./llm/detectUrlRegexp";
 
 const sample = <T>(arr: T[], sampleSize: number) =>
   arr.sort(() => 0.5 - Math.random()).slice(0, sampleSize);

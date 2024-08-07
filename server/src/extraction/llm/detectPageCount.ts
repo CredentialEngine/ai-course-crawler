@@ -2,8 +2,8 @@ import {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
 } from "openai/resources/chat/completions";
-import { assertBool, assertNumber, simpleToolCompletion } from "../openai";
-import { simplifyHtml, toMarkdown } from "./browser";
+import { assertBool, assertNumber, simpleToolCompletion } from "../../openai";
+import { simplifyHtml, toMarkdown } from "../browser";
 
 export async function detectPageCount(
   html: string,
