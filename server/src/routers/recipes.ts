@@ -1,7 +1,12 @@
 import { z } from "zod";
 import { publicProcedure, router } from ".";
 import { AppError, AppErrors } from "../appErrors";
-import { findRecipeById, setDefault, updateRecipe } from "../data/recipes";
+import {
+  destroyRecipe,
+  findRecipeById,
+  setDefault,
+  updateRecipe,
+} from "../data/recipes";
 import { PageType } from "../data/schema";
 import { createRecipe } from "../extraction/createRecipe";
 import { Queues, submitJob } from "../workers";
@@ -83,6 +88,19 @@ export const recipesRouter = router({
       return updateRecipe(recipe.id, {
         url: opts.input.update.url,
       });
+    }),
+  destroy: publicProcedure
+    .input(
+      z.object({
+        id: z.number().int().positive(),
+      })
+    )
+    .mutation(async (opts) => {
+      const recipe = await findRecipeById(opts.input.id);
+      if (!recipe) {
+        throw new AppError("Recipe not found", AppErrors.NOT_FOUND);
+      }
+      return destroyRecipe(opts.input.id);
     }),
   setDefault: publicProcedure
     .input(z.object({ id: z.number().int().positive() }))

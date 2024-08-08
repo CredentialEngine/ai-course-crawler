@@ -87,3 +87,7 @@ export async function updateRecipe(
     .returning();
   return result[0];
 }
+
+export async function destroyRecipe(id: number) {
+  return db.delete(recipes).where(eq(recipes.id, id));
+}

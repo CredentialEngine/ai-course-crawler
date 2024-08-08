@@ -1,6 +1,6 @@
 import BreadcrumbTrail from "@/components/ui/breadcrumb-trail";
 import { RecipeDetectionStatus, trpc } from "@/utils";
-import { useParams } from "wouter";
+import { useLocation, useParams } from "wouter";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -13,6 +13,15 @@ import {
   CardDescription,
   CardHeader,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -23,8 +32,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/use-toast";
 import { LoaderIcon, Pickaxe, RotateCcw, Star } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { displayRecipeDetails } from "./util";
 
@@ -35,6 +45,8 @@ const FormSchema = z.object({
 });
 
 export default function EditRecipe() {
+  const [lockedDelete, setLockDelete] = useState(true);
+  const [_location, navigate] = useLocation();
   let { catalogueId, recipeId } = useParams();
   const catalogueQuery = trpc.catalogues.detail.useQuery(
     { id: parseInt(catalogueId || "") },
@@ -47,6 +59,8 @@ export default function EditRecipe() {
   const updateRecipe = trpc.recipes.update.useMutation();
   const reconfigureRecipe = trpc.recipes.reconfigure.useMutation();
   const setDefaultRecipe = trpc.recipes.setDefault.useMutation();
+  const destroyRecipe = trpc.recipes.destroy.useMutation();
+  const { toast } = useToast();
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -114,6 +128,18 @@ export default function EditRecipe() {
       id: recipe.id,
     });
     recipeQuery.refetch();
+  }
+
+  async function onDestroyRecipe() {
+    if (lockedDelete) {
+      return;
+    }
+    await destroyRecipe.mutateAsync({ id: recipe.id });
+    toast({
+      title: "Recipe deleted",
+      description: "The recipe has been deleted successfully.",
+    });
+    navigate(`/${catalogueId}`);
   }
 
   const breadCrumbs = [
@@ -226,36 +252,82 @@ export default function EditRecipe() {
                   </Card>
                 </div>
               ) : null}
-              {recipe.status == RecipeDetectionStatus.SUCCESS ? (
+              {recipe.status != RecipeDetectionStatus.IN_PROGRESS ? (
                 <div className="mt-4 grid gap-2 md:grid-cols-[1fr_250px] lg:grid-cols-2 lg:gap-4">
                   <Card>
                     <CardHeader>
-                      <CardDescription>Default</CardDescription>
+                      <CardDescription>Settings</CardDescription>
                     </CardHeader>
                     <CardContent className="text-sm">
-                      {recipe.isDefault ? (
-                        <p className="text-green-800">
-                          This recipe is currently set as the default extraction
-                          method for the catalogue.
-                        </p>
-                      ) : (
-                        <div>
-                          <p>
-                            This recipe is not currently set as the default
+                      {recipe.status == RecipeDetectionStatus.SUCCESS ? (
+                        recipe.isDefault ? (
+                          <p className="text-green-800">
+                            Default: this recipe is currently set as the default
                             extraction method for the catalogue.
                           </p>
-                          <Button
-                            className="mt-4"
-                            variant="outline"
-                            size="sm"
-                            onClick={onSetDefault}
-                            disabled={setDefaultRecipe.isLoading}
-                          >
-                            <Star className="w-4 h-4 mr-2" />
-                            Set as Default
-                          </Button>
-                        </div>
-                      )}
+                        ) : (
+                          <div>
+                            <p>
+                              This recipe is not currently set as the default
+                              extraction method for the catalogue.
+                            </p>
+                            <Button
+                              className="mt-4"
+                              variant="outline"
+                              size="sm"
+                              onClick={onSetDefault}
+                              disabled={setDefaultRecipe.isLoading}
+                            >
+                              <Star className="w-4 h-4 mr-2" />
+                              Set as Default
+                            </Button>
+                          </div>
+                        )
+                      ) : null}
+                      <div className="mt-4">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="destructive">Delete recipe</Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>
+                                Are you absolutely sure?
+                              </DialogTitle>
+                              <DialogDescription className="pt-2">
+                                This action cannot be undone. This will
+                                permanently delete the recipe along with its
+                                extractions.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="items-top flex space-x-2">
+                              <Checkbox
+                                id="terms1"
+                                onCheckedChange={(e) => setLockDelete(!!!e)}
+                              />
+                              <div className="grid gap-1.5 leading-none">
+                                <label
+                                  htmlFor="terms1"
+                                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                >
+                                  I understand the consequences
+                                </label>
+                                <p className="text-sm text-muted-foreground">
+                                  Permanently delete the recipe and all its data
+                                </p>
+                                <Button
+                                  variant="destructive"
+                                  disabled={lockedDelete}
+                                  onClick={onDestroyRecipe}
+                                  className="mt-4"
+                                >
+                                  Delete recipe
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
                     </CardContent>
                   </Card>
                 </div>
