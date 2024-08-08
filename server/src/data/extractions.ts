@@ -375,3 +375,7 @@ export async function findFailedAndNoDataPageIds(crawlStepId: number) {
 
   return [...new Set(failedIds.concat(noDataIds).map((p) => p.id))];
 }
+
+export async function destroyExtraction(id: number) {
+  return db.delete(extractions).where(eq(extractions.id, id));
+}

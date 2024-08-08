@@ -3,6 +3,7 @@ import { publicProcedure, router } from ".";
 import { AppError, AppErrors } from "../appErrors";
 import { getItemsCount } from "../data/datasets";
 import {
+  destroyExtraction,
   findExtractionForDetailPage,
   findExtractions,
   findLogs,
@@ -66,7 +67,15 @@ export const extractionsRouter = router({
         dataItemsCount: await getItemsCount(opts.input.id),
       };
     }),
-
+  destroy: publicProcedure
+    .input(
+      z.object({
+        id: z.number().int().positive(),
+      })
+    )
+    .mutation(async (opts) => {
+      return destroyExtraction(opts.input.id);
+    }),
   logs: publicProcedure
     .input(
       z.object({

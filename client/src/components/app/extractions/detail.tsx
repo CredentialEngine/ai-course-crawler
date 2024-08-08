@@ -48,6 +48,7 @@ function displayStepParent(steps: CrawlStep[], parentId: number) {
 export default function ExtractionDetail() {
   let { extractionId } = useParams();
   const [lockedCancel, setLockedCancel] = useState(true);
+  const [lockedDelete, setLockDelete] = useState(true);
   const { toast } = useToast();
   const [_location, navigate] = useLocation();
   const query = trpc.extractions.detail.useQuery(
@@ -61,7 +62,7 @@ export default function ExtractionDetail() {
   );
 
   const cancelExtraction = trpc.extractions.cancel.useMutation();
-
+  const destroyExtraction = trpc.extractions.destroy.useMutation();
   const retryFailed = trpc.extractions.retryFailed.useMutation();
 
   if (!query.data) {
@@ -101,6 +102,18 @@ export default function ExtractionDetail() {
         description: errorMessage,
       });
     }
+  };
+
+  const onDestroyExtraction = async () => {
+    if (lockedDelete) {
+      return;
+    }
+    await destroyExtraction.mutateAsync({ id: query.data!.id });
+    toast({
+      title: "Extraction deleted",
+      description: "The extraction has been deleted successfully.",
+    });
+    navigate("/");
   };
 
   const extraction = query.data;
@@ -306,6 +319,49 @@ export default function ExtractionDetail() {
                 >
                   Retry failed items
                 </Button>
+              </div>
+            ) : null}
+            {extraction.status != ExtractionStatus.IN_PROGRESS ? (
+              <div className="mt-4">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="destructive">Delete extraction</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Are you absolutely sure?</DialogTitle>
+                      <DialogDescription className="pt-2">
+                        This action cannot be undone. This will permanently
+                        delete the extraction along with the extracted data.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="items-top flex space-x-2">
+                      <Checkbox
+                        id="terms1"
+                        onCheckedChange={(e) => setLockDelete(!!!e)}
+                      />
+                      <div className="grid gap-1.5 leading-none">
+                        <label
+                          htmlFor="terms1"
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          I understand the consequences
+                        </label>
+                        <p className="text-sm text-muted-foreground">
+                          Permanently delete the extraction and all its data
+                        </p>
+                        <Button
+                          variant="destructive"
+                          disabled={lockedDelete || destroyExtraction.isLoading}
+                          onClick={onDestroyExtraction}
+                          className="mt-4"
+                        >
+                          Delete extraction
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             ) : null}
           </CardContent>
