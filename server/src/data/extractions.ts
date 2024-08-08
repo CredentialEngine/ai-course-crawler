@@ -342,8 +342,21 @@ export async function getStepStats(crawlStepId: number) {
 }
 
 export async function findFailedAndNoDataPageIds(crawlStepId: number) {
+  // Pages where the download failed
+  const failedIds = await db
+    .select({
+      id: crawlPages.id,
+    })
+    .from(crawlPages)
+    .where(
+      and(
+        eq(crawlPages.crawlStepId, crawlStepId),
+        eq(crawlPages.status, PageStatus.ERROR)
+      )
+    );
+
   // Pages where a data extraction was attempted, but no data was found
-  const noDataPageIds = await db
+  const noDataIds = await db
     .select({
       id: crawlPages.id,
     })
@@ -360,22 +373,5 @@ export async function findFailedAndNoDataPageIds(crawlStepId: number) {
     .groupBy(crawlPages.id)
     .having(sql`count(${dataItems.id}) = 0`);
 
-  // Pages where the download failed
-  const failedIds = await db
-    .select({
-      id: crawlPages.id,
-    })
-    .from(crawlPages)
-    .where(
-      and(
-        eq(crawlPages.crawlStepId, crawlStepId),
-        eq(crawlPages.status, PageStatus.ERROR)
-      )
-    );
-
-  return [
-    ...new Set(
-      noDataPageIds.map((p) => p.id).concat(failedIds.map((p) => p.id))
-    ),
-  ];
+  return [...new Set(failedIds.concat(noDataIds).map((p) => p.id))];
 }

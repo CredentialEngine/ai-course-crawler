@@ -81,14 +81,26 @@ export default function ExtractionDetail() {
   };
 
   const onRetryFailed = async () => {
-    await retryFailed.mutateAsync({
-      id: extraction.id,
-    });
-    toast({
-      title: "Retrying failed items",
-      description: "We are retrying the failed items for this extraction.",
-    });
-    await query.refetch();
+    try {
+      await retryFailed.mutateAsync({
+        id: extraction.id,
+      });
+      toast({
+        title: "Retrying failed items",
+        description: "We are retrying the failed items for this extraction.",
+      });
+      await query.refetch();
+    } catch (err: unknown) {
+      let errorMessage =
+        "Something wrong when retrying the items. Please notify us about it.";
+      if (err instanceof Error && err.message) {
+        errorMessage = err.message;
+      }
+      toast({
+        title: "Error retrying items",
+        description: errorMessage,
+      });
+    }
   };
 
   const extraction = query.data;
