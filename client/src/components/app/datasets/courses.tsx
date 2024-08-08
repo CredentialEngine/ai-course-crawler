@@ -116,6 +116,10 @@ export default function DatasetCourses() {
   const breadCrumbs = [
     { label: "Data Library", href: "/" },
     { label: `Catalogue #${catalogue.id}`, href: `/catalogue/${catalogue.id}` },
+    {
+      label: `Extraction ${extraction.id}`,
+      href: `~/extractions/${extraction.id}`,
+    },
   ];
 
   return (
@@ -123,7 +127,7 @@ export default function DatasetCourses() {
       <BreadcrumbTrail items={breadCrumbs} />
       <div className="flex items-center">
         <h1 className="text-lg font-semibold md:text-2xl">
-          Extraction #{extraction.id} Library — Courses
+          Extraction #{extraction.id} Data — Courses
         </h1>
       </div>
       <div className="border p-6">
