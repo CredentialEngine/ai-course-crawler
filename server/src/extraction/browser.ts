@@ -26,6 +26,9 @@ export async function getCluster() {
   cluster = await Cluster.launch({
     concurrency: Cluster.CONCURRENCY_CONTEXT,
     maxConcurrency: 2,
+    puppeteerOptions: {
+      args: ["--font-render-hinting=none", "--force-gpu-mem-available-mb=4096"],
+    },
   });
   await cluster.task(async ({ page, data }) => {
     const { url } = data;
@@ -35,7 +38,7 @@ export async function getCluster() {
     screenshot = await page.screenshot({
       type: "webp",
       encoding: "base64",
-      fullPage: true,
+      fullPage: false,
       quality: 60,
     });
     if (!isValidBase64(screenshot)) {
