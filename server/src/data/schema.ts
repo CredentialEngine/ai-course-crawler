@@ -17,7 +17,7 @@ export const ENCRYPTION_KEY: string = process.env.ENCRYPTION_KEY;
 export function toDbEnum(myEnum: any): [string, ...string[]] {
   return Object.values(myEnum).map((value: any) => `${value}`) as [
     string,
-    ...string[]
+    ...string[],
   ];
 }
 
@@ -45,6 +45,14 @@ export interface RecipeConfiguration {
 export enum LogLevel {
   INFO = "INFO",
   ERROR = "ERROR",
+}
+
+export enum Provider {
+  OpenAI = "openai",
+}
+
+export enum ProviderModel {
+  Gpt4o = "gpt-4o",
 }
 
 export enum ExtractionStatus {
@@ -97,7 +105,22 @@ export interface StepCompletionStats {
   };
 }
 
+export interface CostCallSite {
+  callSite: string;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  estimatedCost: number;
+}
+
+export interface CostSummary {
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  callSites: CostCallSite[];
+  estimatedCost: number;
+}
+
 export interface CompletionStats {
+  costs?: CostSummary;
   steps: StepCompletionStats[];
   generatedAt: string;
 }
@@ -173,6 +196,35 @@ const extractionsRelations = relations(extractions, ({ one, many }) => ({
   crawlSteps: many(crawlSteps),
   dataset: many(datasets),
   logs: many(extractionLogs),
+  modelApiCalls: many(modelApiCalls),
+}));
+
+const modelApiCalls = sqliteTable(
+  "model_api_calls",
+  {
+    id: integer("id").primaryKey(),
+    extractionId: integer("extraction_id").references(() => extractions.id, {
+      onDelete: "cascade",
+    }),
+    provider: text("provider", { enum: toDbEnum(Provider) }).notNull(),
+    model: text("model", { enum: toDbEnum(ProviderModel) }).notNull(),
+    callSite: text("call_site").notNull(),
+    input_token_count: integer("input_token_count").notNull(),
+    output_token_count: integer("output_token_count").notNull(),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => ({
+    extractionIdx: index("extraction_idx").on(t.extractionId),
+  })
+);
+
+const modelApiCallsRelations = relations(modelApiCalls, ({ one }) => ({
+  extraction: one(extractions, {
+    fields: [modelApiCalls.extractionId],
+    references: [extractions.id],
+  }),
 }));
 
 const extractionLogs = sqliteTable("extraction_logs", {
@@ -376,6 +428,8 @@ export {
   extractionLogsRelations,
   extractions,
   extractionsRelations,
+  modelApiCalls,
+  modelApiCallsRelations,
   recipes,
   recipesRelations,
   settings,

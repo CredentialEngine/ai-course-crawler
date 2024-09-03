@@ -6,10 +6,17 @@ import { PageType } from "../../data/schema";
 import { assertStringEnum, simpleToolCompletion } from "../../openai";
 import { simplifyHtml, toMarkdown } from "../browser";
 
+export interface ExtraOptions {
+  screenshot?: string;
+  logApiCalls?: {
+    extractionId: number;
+  };
+}
+
 export async function detectPageType(
   url: string,
   html: string,
-  screenshot?: string
+  extraOptions?: ExtraOptions
 ) {
   const content = await toMarkdown(await simplifyHtml(html));
   const prompt = `
@@ -147,10 +154,10 @@ export async function detectPageType(
     },
   ];
 
-  if (screenshot) {
+  if (extraOptions?.screenshot) {
     completionContent.push({
       type: "image_url",
-      image_url: { url: `data:image/webp;base64,${screenshot}` },
+      image_url: { url: `data:image/webp;base64,${extraOptions.screenshot}` },
     });
   }
 
@@ -161,21 +168,32 @@ export async function detectPageType(
     },
   ];
 
-  const completion = await simpleToolCompletion(messages, "page_type", {
-    page_type: {
-      type: "string",
-      enum: pageTypes,
+  const result = await simpleToolCompletion({
+    messages,
+    toolName: "page_type",
+    parameters: {
+      page_type: {
+        type: "string",
+        enum: pageTypes,
+      },
     },
+    logApiCall: extraOptions?.logApiCalls
+      ? {
+          extractionId: extraOptions.logApiCalls.extractionId,
+          callSite: "detectPageType",
+        }
+      : undefined,
   });
 
-  if (!completion) {
-    return null;
-  }
-  if (!completion.page_type) {
+  if (!result?.toolCallArgs?.page_type) {
     return null;
   }
 
-  const pageType = assertStringEnum(completion, "page_type", pageTypes);
+  const pageType = assertStringEnum(
+    result.toolCallArgs,
+    "page_type",
+    pageTypes
+  );
   if (pageType === "unknown") {
     return null;
   }

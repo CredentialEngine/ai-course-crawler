@@ -1,0 +1,1 @@
+ALTER TABLE `model_api_calls` ADD `created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL;

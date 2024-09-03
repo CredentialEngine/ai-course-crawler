@@ -39,3 +39,7 @@ server/_scratchbook.md
 server/*.db
 server/*.db-*
 server/.env*
+
+node_modules
+package.json
+pnpm-lock.yaml

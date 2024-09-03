@@ -8,18 +8,23 @@ import {
 } from ".";
 import {
   findExtractionById,
+  getApiCallSummary,
   getStepStats,
   updateExtraction,
 } from "../data/extractions";
 import {
   CompletionStats,
+  CostCallSite,
+  CostSummary,
   ExtractionStatus,
   PageStatus,
+  ProviderModel,
   StepCompletionStats,
 } from "../data/schema";
 import { sendEmailToAll } from "../email";
 import ExtractionComplete from "../emails/extractionComplete";
 import { closeCluster } from "../extraction/browser";
+import { estimateCost } from "../openai";
 
 process.on("SIGTERM", async () => {
   console.log("Shutting down updateExtractionCompletion");
@@ -88,6 +93,47 @@ async function removeSelf(
   );
 }
 
+async function computeCosts(
+  extraction: NonNullable<Awaited<ReturnType<typeof findExtractionById>>>
+) {
+  const apiCallSummary = await getApiCallSummary(extraction.id);
+
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+  const callSites: CostCallSite[] = [];
+
+  for (const summary of apiCallSummary) {
+    totalInputTokens += summary.totalInputTokens;
+    totalOutputTokens += summary.totalOutputTokens;
+    callSites.push({
+      callSite: summary.callSite,
+      totalInputTokens: summary.totalInputTokens,
+      totalOutputTokens: summary.totalOutputTokens,
+      estimatedCost: estimateCost(
+        summary.model as ProviderModel,
+        summary.totalInputTokens,
+        summary.totalOutputTokens
+      ),
+    });
+  }
+
+  const costSummary: CostSummary = {
+    totalInputTokens,
+    totalOutputTokens,
+    callSites,
+    estimatedCost: callSites.reduce((sum, site) => sum + site.estimatedCost, 0),
+  };
+
+  const updatedCompletionStats: CompletionStats = {
+    ...extraction.completionStats!,
+    costs: costSummary,
+  };
+
+  await updateExtraction(extraction.id, {
+    completionStats: updatedCompletionStats,
+  });
+}
+
 async function afterExtractionComplete(
   job: JobWithProgress<
     UpdateExtractionCompletionJob,
@@ -96,7 +142,7 @@ async function afterExtractionComplete(
   extraction: NonNullable<Awaited<ReturnType<typeof findExtractionById>>>
 ) {
   await removeSelf(job);
-  return sendEmailToAll(
+  await sendEmailToAll(
     ExtractionComplete,
     {
       extractionId: extraction.id,
@@ -110,6 +156,7 @@ async function afterExtractionComplete(
     },
     `Extraction #${extraction.id} has finished`
   );
+  await computeCosts(extraction);
 }
 
 async function handleStaleExtraction(
@@ -175,16 +222,18 @@ const updateExtractionCompletion: Processor<
   if (extraction.completionStats) {
     const stale = deepEqual(stepStats, extraction.completionStats.steps);
     if (stale) {
-      return handleStaleExtraction(
+      await handleStaleExtraction(
         job,
         extraction,
         hoursDiff(new Date(extraction.completionStats.generatedAt), currentDate)
       );
+      return;
     }
   }
 
   console.log(`Detected changes for extraction ${extraction.id}; updating`);
-  return updateExtraction(extraction.id, { completionStats });
+  await updateExtraction(extraction.id, { completionStats });
+  return;
 };
 
 export default updateExtractionCompletion;

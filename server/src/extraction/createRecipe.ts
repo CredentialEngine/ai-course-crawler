@@ -12,7 +12,7 @@ export async function createRecipe(url: string, catalogueId: number) {
   console.log(`Detecting page type`);
   let pageType = await bestOutOf(
     5,
-    () => detectPageType(url, content, screenshot!),
+    () => detectPageType(url, content, { screenshot }),
     (p) => p as string
   );
   console.log(`Detected page type: ${pageType}`);

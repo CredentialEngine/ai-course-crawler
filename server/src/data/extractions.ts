@@ -6,6 +6,8 @@ import {
   LogLevel,
   PageStatus,
   PageType,
+  Provider,
+  ProviderModel,
   RecipeConfiguration,
   Step,
   crawlPages,
@@ -13,6 +15,7 @@ import {
   dataItems,
   extractionLogs,
   extractions,
+  modelApiCalls,
 } from "../data/schema";
 
 export async function createExtraction(recipeId: number) {
@@ -308,6 +311,43 @@ export async function createStepAndPages(
       pages,
     };
   });
+}
+
+export async function getApiCallSummary(extractionId: number) {
+  const result = await db
+    .select({
+      callSite: modelApiCalls.callSite,
+      model: modelApiCalls.model,
+      totalInputTokens: sql<number>`SUM(${modelApiCalls.input_token_count})`,
+      totalOutputTokens: sql<number>`SUM(${modelApiCalls.output_token_count})`,
+    })
+    .from(modelApiCalls)
+    .where(eq(modelApiCalls.extractionId, extractionId))
+    .groupBy(modelApiCalls.callSite);
+
+  return result;
+}
+
+export async function createModelApiCallLog(
+  extractionId: number,
+  provider: Provider,
+  model: ProviderModel,
+  callSite: string,
+  inputTokenCount: number,
+  outputTokenCount: number
+) {
+  const result = await db
+    .insert(modelApiCalls)
+    .values({
+      extractionId,
+      provider,
+      model,
+      callSite,
+      input_token_count: inputTokenCount,
+      output_token_count: outputTokenCount,
+    })
+    .returning();
+  return result[0];
 }
 
 export async function updatePage(

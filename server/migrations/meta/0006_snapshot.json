@@ -47,9 +47,7 @@
       "indexes": {
         "catalogues_url_unique": {
           "name": "catalogues_url_unique",
-          "columns": [
-            "url"
-          ],
+          "columns": ["url"],
           "isUnique": true
         }
       },
@@ -129,31 +127,22 @@
       "indexes": {
         "status_idx": {
           "name": "status_idx",
-          "columns": [
-            "status"
-          ],
+          "columns": ["status"],
           "isUnique": false
         },
         "data_type_idx": {
           "name": "data_type_idx",
-          "columns": [
-            "data_type"
-          ],
+          "columns": ["data_type"],
           "isUnique": false
         },
         "step_idx": {
           "name": "step_idx",
-          "columns": [
-            "crawl_step_id"
-          ],
+          "columns": ["crawl_step_id"],
           "isUnique": false
         },
         "crawl_pages_crawl_step_id_url_unique": {
           "name": "crawl_pages_crawl_step_id_url_unique",
-          "columns": [
-            "crawl_step_id",
-            "url"
-          ],
+          "columns": ["crawl_step_id", "url"],
           "isUnique": true
         }
       },
@@ -162,12 +151,8 @@
           "name": "crawl_pages_crawl_step_id_crawl_steps_id_fk",
           "tableFrom": "crawl_pages",
           "tableTo": "crawl_steps",
-          "columnsFrom": [
-            "crawl_step_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["crawl_step_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -228,12 +213,8 @@
           "name": "crawl_steps_extraction_id_extractions_id_fk",
           "tableFrom": "crawl_steps",
           "tableTo": "extractions",
-          "columnsFrom": [
-            "extraction_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["extraction_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -241,12 +222,8 @@
           "name": "crawl_steps_parent_step_id_crawl_steps_id_fk",
           "tableFrom": "crawl_steps",
           "tableTo": "crawl_steps",
-          "columnsFrom": [
-            "parent_step_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parent_step_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -300,12 +277,8 @@
           "name": "data_items_dataset_id_datasets_id_fk",
           "tableFrom": "data_items",
           "tableTo": "datasets",
-          "columnsFrom": [
-            "dataset_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["dataset_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -313,12 +286,8 @@
           "name": "data_items_crawl_page_id_crawl_pages_id_fk",
           "tableFrom": "data_items",
           "tableTo": "crawl_pages",
-          "columnsFrom": [
-            "crawl_page_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["crawl_page_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -362,10 +331,7 @@
       "indexes": {
         "datasets_catalogue_id_extraction_id_unique": {
           "name": "datasets_catalogue_id_extraction_id_unique",
-          "columns": [
-            "catalogue_id",
-            "extraction_id"
-          ],
+          "columns": ["catalogue_id", "extraction_id"],
           "isUnique": true
         }
       },
@@ -374,12 +340,8 @@
           "name": "datasets_catalogue_id_catalogues_id_fk",
           "tableFrom": "datasets",
           "tableTo": "catalogues",
-          "columnsFrom": [
-            "catalogue_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["catalogue_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -387,12 +349,8 @@
           "name": "datasets_extraction_id_extractions_id_fk",
           "tableFrom": "datasets",
           "tableTo": "extractions",
-          "columnsFrom": [
-            "extraction_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["extraction_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -447,12 +405,8 @@
           "name": "extraction_logs_extraction_id_extractions_id_fk",
           "tableFrom": "extraction_logs",
           "tableTo": "extractions",
-          "columnsFrom": [
-            "extraction_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["extraction_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -507,12 +461,8 @@
           "name": "extractions_recipe_id_recipes_id_fk",
           "tableFrom": "extractions",
           "tableTo": "recipes",
-          "columnsFrom": [
-            "recipe_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipe_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -589,12 +539,8 @@
           "name": "recipes_catalogue_id_catalogues_id_fk",
           "tableFrom": "recipes",
           "tableTo": "catalogues",
-          "columnsFrom": [
-            "catalogue_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["catalogue_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -646,9 +592,7 @@
       "indexes": {
         "settings_key_unique": {
           "name": "settings_key_unique",
-          "columns": [
-            "key"
-          ],
+          "columns": ["key"],
           "isUnique": true
         }
       },
@@ -699,9 +643,7 @@
       "indexes": {
         "users_email_unique": {
           "name": "users_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         }
       },

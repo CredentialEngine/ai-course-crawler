@@ -98,10 +98,9 @@ export async function copyToClipboard(text: string) {
   return navigator.clipboard.writeText(text);
 }
 
-export type IterableElement<TargetIterable> = TargetIterable extends Iterable<
-  infer ElementType
->
-  ? ElementType
-  : TargetIterable extends AsyncIterable<infer ElementType>
-  ? ElementType
-  : never;
+export type IterableElement<TargetIterable> =
+  TargetIterable extends Iterable<infer ElementType>
+    ? ElementType
+    : TargetIterable extends AsyncIterable<infer ElementType>
+      ? ElementType
+      : never;

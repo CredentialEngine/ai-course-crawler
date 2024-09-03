@@ -5,11 +5,18 @@ import {
 import { assertBool, assertNumber, simpleToolCompletion } from "../../openai";
 import { simplifyHtml, toMarkdown } from "../browser";
 
+export interface ExtraOptions {
+  screenshot?: string;
+  logApiCalls?: {
+    extractionId: number;
+  };
+}
+
 export async function detectPageCount(
   html: string,
   urlPattern: string,
   urlPatternType: string,
-  screenshot?: string
+  extraOptions?: ExtraOptions
 ) {
   const content = await toMarkdown(await simplifyHtml(html));
   const prompt = `
@@ -34,10 +41,10 @@ ${content}
     },
   ];
 
-  if (screenshot) {
+  if (extraOptions?.screenshot) {
     completionContent.push({
       type: "image_url",
-      image_url: { url: `data:image/webp;base64,${screenshot}` },
+      image_url: { url: `data:image/webp;base64,${extraOptions.screenshot}` },
     });
   }
 
@@ -47,10 +54,10 @@ ${content}
       content: completionContent,
     },
   ];
-  const toolCall = await simpleToolCompletion(
+  const result = await simpleToolCompletion({
     messages,
-    "submit_detected_page_count",
-    {
+    toolName: "submit_detected_page_count",
+    parameters: {
       detected_pagination: {
         type: "boolean",
       },
@@ -60,8 +67,19 @@ ${content}
       total_pages: {
         type: "number",
       },
-    }
-  );
+    },
+    logApiCall: extraOptions?.logApiCalls
+      ? {
+          callSite: "detectPageCount",
+          extractionId: extraOptions.logApiCalls.extractionId,
+        }
+      : undefined,
+  });
+
+  if (!result.toolCallArgs) {
+    return undefined;
+  }
+  const toolCall = result.toolCallArgs;
   if (!toolCall) {
     return undefined;
   }

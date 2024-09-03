@@ -18,10 +18,17 @@ export function createUrlExtractor(regexp: RegExp) {
   };
 }
 
+export interface ExtraOptions {
+  screenshot?: string;
+  logApiCalls?: {
+    extractionId: number;
+  };
+}
+
 export default async function detectUrlRegexp(
   dataType: PageType,
   html: string,
-  screenshot?: string
+  extraOptions?: ExtraOptions
 ) {
   if (dataType == PageType.COURSE_DETAIL_PAGE) {
     throw new Error("Invalid page data type.");
@@ -108,22 +115,22 @@ export default async function detectUrlRegexp(
     },
   ];
 
-  if (screenshot) {
+  if (extraOptions?.screenshot) {
     completionContent.push({
       type: "image_url",
-      image_url: { url: `data:image/webp;base64,${screenshot}` },
+      image_url: { url: `data:image/webp;base64,${extraOptions.screenshot}` },
     });
   }
 
-  const completion = await simpleToolCompletion(
-    [
+  const result = await simpleToolCompletion({
+    messages: [
       {
         role: "user",
         content: completionContent,
       },
     ],
-    "detail_link_regexp",
-    {
+    toolName: "detail_link_regexp",
+    parameters: {
       regexp: {
         type: "string",
       },
@@ -133,13 +140,20 @@ export default async function detectUrlRegexp(
           type: "string",
         },
       },
-    }
-  );
+    },
+    logApiCall: extraOptions?.logApiCalls
+      ? {
+          extractionId: extraOptions.logApiCalls.extractionId,
+          callSite: "detectUrlRegexp",
+        }
+      : undefined,
+  });
 
-  if (!completion) {
+  if (!result?.toolCallArgs) {
     throw new Error("Couldn't detect regexp");
   }
 
+  const completion = result.toolCallArgs;
   let regexpStr = assertString(completion, "regexp");
   const exampleMatches = assertArray<string>(completion, "example_matches");
   console.log(`Raw regexp is ${regexpStr}`);

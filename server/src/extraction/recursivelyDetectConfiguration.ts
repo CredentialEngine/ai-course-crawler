@@ -16,7 +16,7 @@ const detectConfiguration = async (url: string) => {
     5,
     () =>
       exponentialRetry(
-        async () => detectPageType(url, content, screenshot),
+        async () => detectPageType(url, content, { screenshot }),
         10
       ),
     (t) => t as string
@@ -30,7 +30,7 @@ const detectConfiguration = async (url: string) => {
     5,
     () =>
       exponentialRetry(
-        async () => detectPagination(url, content, pageType, screenshot),
+        async () => detectPagination(url, content, pageType, { screenshot }),
         10
       ),
     (p) => inspect(p)
@@ -46,7 +46,7 @@ const detectConfiguration = async (url: string) => {
       5,
       () =>
         exponentialRetry(
-          async () => detectUrlRegexp(pageType, content, screenshot),
+          async () => detectUrlRegexp(pageType, content, { screenshot }),
           10
         ),
       (r) => r.source

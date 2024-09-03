@@ -104,9 +104,7 @@ export async function findDatasets(
     .$dynamic();
 
   const items = await Promise.all(
-    (
-      await datasetsQuery
-    ).map(async (dataset) => ({
+    (await datasetsQuery).map(async (dataset) => ({
       ...dataset,
       itemsCount: await getItemsCount(dataset.id),
     }))

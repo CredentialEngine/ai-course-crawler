@@ -29,11 +29,18 @@ const pageTypeDescriptions = {
     "Pagination is for pages of course descriptions.",
 };
 
+export interface ExtraOptions {
+  screenshot?: string;
+  logApiCalls?: {
+    extractionId: number;
+  };
+}
+
 export async function detectPagination(
   url: string,
   html: string,
   rootPageType: PageType,
-  screenshot?: string
+  extraOptions?: ExtraOptions
 ): Promise<PaginationConfiguration | undefined> {
   const content = await toMarkdown(await simplifyHtml(html));
   const prompt = `
@@ -75,10 +82,10 @@ ${content}
     },
   ];
 
-  if (screenshot) {
+  if (extraOptions?.screenshot) {
     completionContent.push({
       type: "image_url",
-      image_url: { url: `data:image/webp;base64,${screenshot}` },
+      image_url: { url: `data:image/webp;base64,${extraOptions.screenshot}` },
     });
   }
 
@@ -88,10 +95,10 @@ ${content}
       content: completionContent,
     },
   ];
-  const toolCall = await simpleToolCompletion(
+  const response = await simpleToolCompletion({
     messages,
-    "submit_detected_pagination",
-    {
+    toolName: "submit_detected_pagination",
+    parameters: {
       has_pagination: {
         type: "boolean",
       },
@@ -105,11 +112,18 @@ ${content}
       total_pages: {
         type: "number",
       },
-    }
-  );
-  if (!toolCall) {
+    },
+    logApiCall: extraOptions?.logApiCalls
+      ? {
+          extractionId: extraOptions.logApiCalls.extractionId,
+          callSite: "detectPagination",
+        }
+      : undefined,
+  });
+  if (!response?.toolCallArgs) {
     return undefined;
   }
+  const toolCall = response.toolCallArgs;
   const hasPagination = assertBool(toolCall, "has_pagination");
   if (!hasPagination) {
     return undefined;
