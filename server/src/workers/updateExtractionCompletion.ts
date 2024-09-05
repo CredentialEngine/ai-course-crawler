@@ -124,14 +124,7 @@ async function computeCosts(
     estimatedCost: callSites.reduce((sum, site) => sum + site.estimatedCost, 0),
   };
 
-  const updatedCompletionStats: CompletionStats = {
-    ...extraction.completionStats!,
-    costs: costSummary,
-  };
-
-  await updateExtraction(extraction.id, {
-    completionStats: updatedCompletionStats,
-  });
+  return costSummary;
 }
 
 async function afterExtractionComplete(
@@ -156,7 +149,6 @@ async function afterExtractionComplete(
     },
     `Extraction #${extraction.id} has finished`
   );
-  await computeCosts(extraction);
 }
 
 async function handleStaleExtraction(
@@ -212,10 +204,12 @@ const updateExtractionCompletion: Processor<
   console.log(`Updating completion for extraction ${extraction.id}`);
 
   const stepStats = await getStepCompletionStats(extraction);
+  const costStats = await computeCosts(extraction);
   const currentDate = new Date();
   const completionStats: CompletionStats = {
     generatedAt: currentDate.toISOString(),
     steps: stepStats,
+    costs: costStats,
   };
 
   // If there's a preexisting completionStats value, check if it changed
