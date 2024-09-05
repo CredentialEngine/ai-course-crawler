@@ -297,206 +297,150 @@ export default function ExtractionDetail() {
                 <CardTitle>Extraction Stats</CardTitle>
               </CardHeader>
               <CardContent>
-                <div>
-                  <div className="grid auto-rows-min gap-2 mt-4">
+                <div className="grid auto-rows-min gap-2">
+                  {totalCourses ? (
                     <div className="flex items-baseline gap-1 text-2xl font-bold tabular-nums leading-none">
-                      {totalDownloadsAttempted}/{totalDownloads}
-                      <span className="text-sm font-normal">Downloads</span>
+                      {totalCourses}
+                      <span className="text-sm font-normal">
+                        Courses extracted
+                      </span>
                     </div>
-                    <ChartContainer
-                      config={{
-                        downloads: {
-                          label: "Downloads",
-                        },
-                      }}
-                      className="aspect-auto h-[32px] w-full"
-                    >
-                      <BarChart
-                        accessibilityLayer
-                        layout="vertical"
-                        margin={{
-                          left: 0,
-                          top: 0,
-                          right: 0,
-                          bottom: 0,
-                        }}
-                        data={[
-                          {
-                            date: "",
-                            value:
-                              (totalDownloadsAttempted / totalDownloads) * 100,
-                          },
-                        ]}
-                      >
-                        <Bar
-                          dataKey="value"
-                          fill="var(--color-downloads)"
-                          radius={4}
-                          barSize={32}
-                        >
-                          <LabelList
-                            position="insideLeft"
-                            dataKey="date"
-                            offset={8}
-                            fontSize={12}
-                            fill="white"
-                          />
-                        </Bar>
-                        <YAxis
-                          dataKey="date"
-                          type="category"
-                          tickCount={1}
-                          hide
-                        />
-                        <XAxis dataKey="value" type="number" hide />
-                      </BarChart>
-                    </ChartContainer>
+                  ) : null}
+                  <div className="flex items-baseline gap-1 text-2xl mt-4 font-bold tabular-nums leading-none">
+                    {totalDownloadsAttempted}/{totalDownloads}
+                    <span className="text-sm font-normal">Downloads</span>
                   </div>
-                  <div className="grid auto-rows-min gap-2 mt-4">
-                    <div className="flex items-baseline gap-1 text-2xl font-bold tabular-nums leading-none">
-                      {totalExtractionsAttempted}/{totalExtractionsPossible}
-                      <span className="text-sm font-normal">Extractions</span>
+                  <ChartContainer
+                    config={{}}
+                    className="aspect-auto h-[32px] w-full"
+                  >
+                    <BarChart
+                      data={[
+                        {
+                          name: "Downloads",
+                          value:
+                            (totalDownloadsAttempted / totalDownloads) * 100,
+                        },
+                      ]}
+                      layout="vertical"
+                      margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                    >
+                      <Bar dataKey="value" radius={2} />
+                      <YAxis type="category" hide />
+                      <XAxis domain={[0, 100]} type="number" hide />
+                    </BarChart>
+                  </ChartContainer>
+                </div>
+                <div className="grid auto-rows-min gap-2 mt-4">
+                  <div className="flex items-baseline gap-1 text-2xl font-bold tabular-nums leading-none">
+                    {totalExtractionsAttempted}/{totalExtractionsPossible}
+                    <span className="text-sm font-normal">
+                      Page Extractions
+                    </span>
+                  </div>
+                  <ChartContainer
+                    config={{}}
+                    className="aspect-auto h-[32px] w-full"
+                  >
+                    <BarChart
+                      data={[
+                        {
+                          name: "Extractions",
+                          value:
+                            (totalExtractionsAttempted /
+                              totalExtractionsPossible) *
+                            100,
+                        },
+                      ]}
+                      layout="vertical"
+                      margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+                    >
+                      <Bar dataKey="value" radius={2} />
+                      <YAxis type="category" hide />
+                      <XAxis domain={[0, 100]} type="number" hide />
+                    </BarChart>
+                  </ChartContainer>
+                </div>
+                <div className="mt-2 gap-4">
+                  {totalDownloadErrors ? (
+                    <div className="text-xs text-muted-foreground py-1">
+                      Download Errors: {totalDownloadErrors} /{" "}
+                      {totalDownloadsAttempted}.
                     </div>
-                    <ChartContainer
-                      config={{
-                        extractions: {
-                          label: "Extractions",
-                        },
-                      }}
-                      className="aspect-auto h-[32px] w-full"
-                    >
-                      <BarChart
-                        accessibilityLayer
-                        layout="vertical"
-                        margin={{
-                          left: 0,
-                          top: 0,
-                          right: 0,
-                          bottom: 0,
-                        }}
-                        data={[
-                          {
-                            date: "",
-                            value:
-                              (totalExtractionsAttempted /
-                                totalExtractionsPossible) *
-                              100,
-                          },
-                        ]}
-                      >
-                        <Bar
-                          dataKey="value"
-                          fill="var(--color-extractions)"
-                          radius={4}
-                          barSize={32}
-                        >
-                          <LabelList
-                            position="insideLeft"
-                            dataKey="date"
-                            offset={8}
-                            fontSize={12}
-                            fill="white"
-                          />
-                        </Bar>
-                        <YAxis
-                          dataKey="date"
-                          type="category"
-                          tickCount={1}
-                          hide
-                        />
-                        <XAxis dataKey="value" type="number" hide />
-                      </BarChart>
-                    </ChartContainer>
-                  </div>
-                  <div className="mt-2 gap-4">
-                    {totalDownloadErrors ? (
-                      <div className="text-xs text-muted-foreground">
-                        Download Errors: {totalDownloadErrors} /{" "}
-                        {totalDownloadsAttempted}.
-                      </div>
-                    ) : null}
-                    {totalExtractionErrors ? (
-                      <div className="text-xs text-muted-foreground">
-                        Extraction Errors: {totalExtractionErrors} /{" "}
-                        {totalExtractionsAttempted}.
-                      </div>
-                    ) : null}
-                    {totalCourses ? (
-                      <div>
-                        <span className="text-xs">
-                          Total Courses Extracted:
-                        </span>{" "}
-                        <span className="text-xl">{totalCourses}</span>
-                      </div>
-                    ) : null}
-                  </div>
-                  {extraction.completionStats.costs ? (
-                    <div className="mt-4">
-                      <Accordion type="single" collapsible>
-                        <AccordionItem value="cost-breakdown">
-                          <AccordionTrigger>Cost Breakdown</AccordionTrigger>
-                          <AccordionContent>
-                            <Table>
-                              <TableHeader>
-                                <TableRow className="text-xs">
-                                  <TableHead>Call Site</TableHead>
-                                  <TableHead>Input Tokens</TableHead>
-                                  <TableHead>Output Tokens</TableHead>
-                                  <TableHead className="text-right">
-                                    Est. Cost
-                                  </TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody className="text-xs">
-                                {extraction.completionStats.costs.callSites.map(
-                                  (callSite) => (
-                                    <TableRow key={callSite.callSite}>
-                                      <TableCell>{callSite.callSite}</TableCell>
-                                      <TableCell>
-                                        {callSite.totalInputTokens}
-                                      </TableCell>
-                                      <TableCell>
-                                        {callSite.totalOutputTokens}
-                                      </TableCell>
-                                      <TableCell className="text-right">
-                                        {callSite.estimatedCost.toFixed(2)}
-                                      </TableCell>
-                                    </TableRow>
-                                  )
-                                )}
-                              </TableBody>
-                            </Table>
-                            <div className="mt-2 text-xs text-muted-foreground">
-                              <div>
-                                Total Input Tokens:{" "}
-                                {
-                                  extraction.completionStats.costs
-                                    .totalInputTokens
-                                }
-                              </div>
-                              <div>
-                                Total Output Tokens:{" "}
-                                {
-                                  extraction.completionStats.costs
-                                    .totalOutputTokens
-                                }
-                              </div>
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      </Accordion>
-                      <div className="mt-4">
-                        <span className="text-xs">Estimated Total Cost:</span>{" "}
-                        <span className="text-xl">
-                          $
-                          {extraction.completionStats.costs.estimatedCost.toFixed(
-                            2
-                          )}
-                        </span>
-                      </div>
+                  ) : null}
+                  {totalExtractionErrors ? (
+                    <div className="text-xs text-muted-foreground py-1">
+                      Extraction Errors: {totalExtractionErrors} /{" "}
+                      {totalExtractionsAttempted}.
                     </div>
                   ) : null}
                 </div>
+                {extraction.completionStats.costs ? (
+                  <div className="mt-4">
+                    <Accordion type="single" collapsible>
+                      <AccordionItem value="cost-breakdown">
+                        <AccordionTrigger>Cost Breakdown</AccordionTrigger>
+                        <AccordionContent>
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="text-xs">
+                                <TableHead>Call Site</TableHead>
+                                <TableHead>Input Tokens</TableHead>
+                                <TableHead>Output Tokens</TableHead>
+                                <TableHead className="text-right">
+                                  Est. Cost
+                                </TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody className="text-xs">
+                              {extraction.completionStats.costs.callSites.map(
+                                (callSite) => (
+                                  <TableRow key={callSite.callSite}>
+                                    <TableCell>{callSite.callSite}</TableCell>
+                                    <TableCell>
+                                      {callSite.totalInputTokens}
+                                    </TableCell>
+                                    <TableCell>
+                                      {callSite.totalOutputTokens}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      {callSite.estimatedCost.toFixed(2)}
+                                    </TableCell>
+                                  </TableRow>
+                                )
+                              )}
+                            </TableBody>
+                          </Table>
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            <div>
+                              Total Input Tokens:{" "}
+                              {
+                                extraction.completionStats.costs
+                                  .totalInputTokens
+                              }
+                            </div>
+                            <div>
+                              Total Output Tokens:{" "}
+                              {
+                                extraction.completionStats.costs
+                                  .totalOutputTokens
+                              }
+                            </div>
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                    <div className="mt-4">
+                      <span className="text-xs">Estimated Total Cost:</span>{" "}
+                      <span className="text-xl">
+                        $
+                        {extraction.completionStats.costs.estimatedCost.toFixed(
+                          2
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
               </CardContent>
             </Card>
           ) : null}
