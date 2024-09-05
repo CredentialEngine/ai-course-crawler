@@ -31,7 +31,7 @@ import {
 } from "@/utils";
 import { CookingPot, LibraryBig, List } from "lucide-react";
 import { useState } from "react";
-import { Bar, BarChart, LabelList, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, XAxis, YAxis } from "recharts";
 import { Link, useLocation, useParams } from "wouter";
 import { displayStepType } from "./utils";
 import {
