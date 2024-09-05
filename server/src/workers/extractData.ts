@@ -37,7 +37,10 @@ const extractData: Processor<ExtractDataJob, ExtractDataProgress> = async (
     const coursesData = await extractCourseDataItem(
       crawlPage.url,
       crawlPage.content!,
-      crawlPage.screenshot!
+      {
+        screenshot: crawlPage.screenshot || undefined,
+        logApiCalls: { extractionId: crawlPage.crawlStep.extractionId },
+      }
     );
     if (!coursesData) {
       throw new Error("Couldn't find course data");

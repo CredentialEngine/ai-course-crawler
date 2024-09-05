@@ -1,50 +1,9 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "bae08833-2a6e-4456-9008-2adb08e020ac",
-  "prevId": "edcbce53-06ca-4dee-ad32-4c2dc6a52ec2",
+  "id": "d8a77682-8c3e-42c9-ab72-d15ea02a4b93",
+  "prevId": "91d25873-5ece-495a-be64-ab3f7e9a017e",
   "tables": {
-    "catalogue_data": {
-      "name": "catalogue_data",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "extraction_id": {
-          "name": "extraction_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "catalogue_data_extraction_id_extractions_id_fk": {
-          "name": "catalogue_data_extraction_id_extractions_id_fk",
-          "tableFrom": "catalogue_data",
-          "tableTo": "extractions",
-          "columnsFrom": ["extraction_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
     "catalogues": {
       "name": "catalogues",
       "columns": {
@@ -85,7 +44,13 @@
           "default": "CURRENT_TIMESTAMP"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "catalogues_url_unique": {
+          "name": "catalogues_url_unique",
+          "columns": ["url"],
+          "isUnique": true
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
@@ -112,7 +77,8 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "'WAITING'"
         },
         "url": {
           "name": "url",
@@ -142,6 +108,13 @@
           "notNull": false,
           "autoincrement": false
         },
+        "data_extraction_started_at": {
+          "name": "data_extraction_started_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "text",
@@ -151,7 +124,28 @@
           "default": "CURRENT_TIMESTAMP"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "status_idx": {
+          "name": "status_idx",
+          "columns": ["status"],
+          "isUnique": false
+        },
+        "data_type_idx": {
+          "name": "data_type_idx",
+          "columns": ["data_type"],
+          "isUnique": false
+        },
+        "step_idx": {
+          "name": "step_idx",
+          "columns": ["crawl_step_id"],
+          "isUnique": false
+        },
+        "crawl_pages_crawl_step_id_url_unique": {
+          "name": "crawl_pages_crawl_step_id_url_unique",
+          "columns": ["crawl_step_id", "url"],
+          "isUnique": true
+        }
+      },
       "foreignKeys": {
         "crawl_pages_crawl_step_id_crawl_steps_id_fk": {
           "name": "crawl_pages_crawl_step_id_crawl_steps_id_fk",
@@ -201,13 +195,6 @@
           "name": "configuration",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
@@ -254,8 +241,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "catalogue_data_id": {
-          "name": "catalogue_data_id",
+        "dataset_id": {
+          "name": "dataset_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -286,11 +273,11 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "data_items_catalogue_data_id_catalogue_data_id_fk": {
-          "name": "data_items_catalogue_data_id_catalogue_data_id_fk",
+        "data_items_dataset_id_datasets_id_fk": {
+          "name": "data_items_dataset_id_datasets_id_fk",
           "tableFrom": "data_items",
-          "tableTo": "catalogue_data",
-          "columnsFrom": ["catalogue_data_id"],
+          "tableTo": "datasets",
+          "columnsFrom": ["dataset_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
@@ -300,6 +287,69 @@
           "tableFrom": "data_items",
           "tableTo": "crawl_pages",
           "columnsFrom": ["crawl_page_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "datasets": {
+      "name": "datasets",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "catalogue_id": {
+          "name": "catalogue_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "extraction_id": {
+          "name": "extraction_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "datasets_catalogue_id_extraction_id_unique": {
+          "name": "datasets_catalogue_id_extraction_id_unique",
+          "columns": ["catalogue_id", "extraction_id"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "datasets_catalogue_id_catalogues_id_fk": {
+          "name": "datasets_catalogue_id_catalogues_id_fk",
+          "tableFrom": "datasets",
+          "tableTo": "catalogues",
+          "columnsFrom": ["catalogue_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "datasets_extraction_id_extractions_id_fk": {
+          "name": "datasets_extraction_id_extractions_id_fk",
+          "tableFrom": "datasets",
+          "tableTo": "extractions",
+          "columnsFrom": ["extraction_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
@@ -381,12 +431,20 @@
           "notNull": true,
           "autoincrement": false
         },
+        "completion_stats": {
+          "name": "completion_stats",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "status": {
           "name": "status",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": "'WAITING'"
         },
         "created_at": {
           "name": "created_at",
@@ -404,6 +462,80 @@
           "tableFrom": "extractions",
           "tableTo": "recipes",
           "columnsFrom": ["recipe_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "model_api_calls": {
+      "name": "model_api_calls",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "extraction_id": {
+          "name": "extraction_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "call_site": {
+          "name": "call_site",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "input_token_count": {
+          "name": "input_token_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "output_token_count": {
+          "name": "output_token_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "extraction_idx": {
+          "name": "extraction_idx",
+          "columns": ["extraction_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "model_api_calls_extraction_id_extractions_id_fk": {
+          "name": "model_api_calls_extraction_id_extractions_id_fk",
+          "tableFrom": "model_api_calls",
+          "tableTo": "extractions",
+          "columnsFrom": ["extraction_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
@@ -459,19 +591,20 @@
           "autoincrement": false,
           "default": "CURRENT_TIMESTAMP"
         },
-        "configured_at": {
-          "name": "configured_at",
+        "detection_failure_reason": {
+          "name": "detection_failure_reason",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "detection_started_at": {
-          "name": "detection_started_at",
+        "status": {
+          "name": "status",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'WAITING'"
         }
       },
       "indexes": {},
@@ -530,7 +663,13 @@
           "default": "CURRENT_TIMESTAMP"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "settings_key_unique": {
+          "name": "settings_key_unique",
+          "columns": ["key"],
+          "isUnique": true
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
@@ -590,14 +729,8 @@
   "enums": {},
   "_meta": {
     "schemas": {},
-    "tables": {
-      "\"extraction_step_items\"": "\"crawl_pages\"",
-      "\"extraction_steps\"": "\"crawl_steps\""
-    },
-    "columns": {
-      "\"data_items\".\"extraction_step_item_id\"": "\"data_items\".\"crawl_page_id\"",
-      "\"crawl_pages\".\"extraction_step_id\"": "\"crawl_pages\".\"crawl_step_id\""
-    }
+    "tables": {},
+    "columns": {}
   },
   "internal": {
     "indexes": {}

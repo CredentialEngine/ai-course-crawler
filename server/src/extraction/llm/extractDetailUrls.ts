@@ -3,6 +3,13 @@ import { PageType } from "../../data/schema";
 import { assertArray, assertString, simpleToolCompletion } from "../../openai";
 import { simplifyHtml, toMarkdown } from "../browser";
 
+export interface ExtraOptions {
+  screenshot?: string;
+  logApiCalls?: {
+    extractionId: number;
+  };
+}
+
 function resolveAbsoluteUrl(base: string, relative: string): string {
   const baseUrl = new URL(base);
   const absoluteUrl = new URL(relative, baseUrl);
@@ -12,8 +19,8 @@ function resolveAbsoluteUrl(base: string, relative: string): string {
 export default async function extractDetailUrls(
   _url: string,
   html: string,
-  screenshot: string,
-  dataType: PageType
+  dataType: PageType,
+  extraOptions?: ExtraOptions
 ) {
   if (dataType == PageType.COURSE_DETAIL_PAGE) {
     throw new Error("Invalid page data type.");
@@ -100,22 +107,22 @@ export default async function extractDetailUrls(
     },
   ];
 
-  if (screenshot) {
+  if (extraOptions?.screenshot) {
     completionContent.push({
       type: "image_url",
-      image_url: { url: `data:image/webp;base64,${screenshot}` },
+      image_url: { url: `data:image/webp;base64,${extraOptions.screenshot}` },
     });
   }
 
-  const completion = await simpleToolCompletion(
-    [
+  const result = await simpleToolCompletion({
+    messages: [
       {
         role: "user",
         content: completionContent,
       },
     ],
-    "detail_link_regexp",
-    {
+    toolName: "detail_link_regexp",
+    parameters: {
       regexp: {
         type: "string",
       },
@@ -125,13 +132,20 @@ export default async function extractDetailUrls(
           type: "string",
         },
       },
-    }
-  );
+    },
+    logApiCall: extraOptions?.logApiCalls
+      ? {
+          extractionId: extraOptions?.logApiCalls.extractionId,
+          callSite: "extractDetailUrls",
+        }
+      : undefined,
+  });
 
-  if (!completion) {
+  if (!result?.toolCallArgs) {
     return null;
   }
 
+  const completion = result.toolCallArgs;
   let regexpStr = assertString(completion, "regexp");
   const exampleMatches = assertArray<string>(completion, "example_matches");
   console.log(`Raw regexp is ${regexpStr}`);

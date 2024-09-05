@@ -15,7 +15,6 @@ import JsonPopover from "@/components/ui/jsonPopover";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -34,8 +33,14 @@ import { CookingPot, LibraryBig, List } from "lucide-react";
 import { useState } from "react";
 import { Bar, BarChart, LabelList, XAxis, YAxis } from "recharts";
 import { Link, useLocation, useParams } from "wouter";
-import { displayRecipeDetails } from "../recipes/util";
 import { displayStepType } from "./utils";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { displayRecipeDetails } from "../recipes/util";
 
 function displayStepParent(steps: CrawlStep[], parentId: number) {
   const parent = steps.find((s) => s.id == parentId);
@@ -46,21 +51,15 @@ function displayStepParent(steps: CrawlStep[], parentId: number) {
 }
 
 export default function ExtractionDetail() {
-  let { extractionId } = useParams();
+  const { extractionId } = useParams();
   const [lockedCancel, setLockedCancel] = useState(true);
   const [lockedDelete, setLockDelete] = useState(true);
   const { toast } = useToast();
-  const [_location, navigate] = useLocation();
+  const [, navigate] = useLocation();
   const query = trpc.extractions.detail.useQuery(
     { id: parseInt(extractionId || "") },
     { enabled: !!parseInt(extractionId || "") }
   );
-
-  const logsQuery = trpc.extractions.logs.useQuery(
-    { extractionId: parseInt(extractionId || ""), perPage: 5 },
-    { enabled: !!parseInt(extractionId || "") }
-  );
-
   const cancelExtraction = trpc.extractions.cancel.useMutation();
   const destroyExtraction = trpc.extractions.destroy.useMutation();
   const retryFailed = trpc.extractions.retryFailed.useMutation();
@@ -117,7 +116,6 @@ export default function ExtractionDetail() {
   };
 
   const extraction = query.data;
-  const extractionLogs = logsQuery.data?.results;
   let totalDownloads = 0,
     totalDownloadsAttempted = 0,
     totalDownloadErrors = 0,
@@ -139,21 +137,22 @@ export default function ExtractionDetail() {
   return (
     <>
       <div className="">
-        <Card>
-          <CardHeader>
-            <CardTitle>Extraction Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4">
-              Started at {prettyPrintDate(extraction.createdAt)}.{" "}
-              <Badge>{extraction.status}</Badge>
-            </div>
-            <div className="flex gap-4">
+        <div className="flex gap-4">
+          <Card className="w-1/2">
+            <CardHeader>
+              <CardTitle>Extraction Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4">
+                Started at {prettyPrintDate(extraction.createdAt)}.{" "}
+                <Badge>{extraction.status}</Badge>
+              </div>
+
               <div className="rounded-md border p-4 mt-2 flex items-center">
                 {extraction.dataItemsCount ? (
                   <Link
                     to={`~/datasets/courses/${extraction.id}`}
-                    className="flex items-center gap-4"
+                    className="flex items-center gap-4 w-full"
                   >
                     <div>
                       <LibraryBig className="w-4 h-4" />
@@ -172,7 +171,7 @@ export default function ExtractionDetail() {
               <div className="rounded-md border p-4 mt-2">
                 <Link
                   to={`~/catalogues/${extraction.recipe.catalogue.id}/recipes/${extraction.recipe.id}`}
-                  className="flex items-center gap-4"
+                  className="flex items-center gap-4 w-full"
                 >
                   <div>
                     <CookingPot className="w-4 h-4" />
@@ -186,186 +185,322 @@ export default function ExtractionDetail() {
                       {displayRecipeDetails(extraction.recipe)}
                     </div>
                     <div className="text-xs">
-                      {extraction.recipe.url.substring(0, 200)}...
+                      {extraction.recipe.url.substring(0, 200)}
+                      ...
                     </div>
                   </div>
                 </Link>
               </div>
-            </div>
-            {extraction.completionStats ? (
-              <div>
-                <div className="flex mt-4 gap-4">
-                  <ChartContainer config={{}} className="h-[140px] w-4/5">
-                    <BarChart
-                      margin={{
-                        left: 10,
-                        right: 0,
-                        top: 0,
-                        bottom: 10,
-                      }}
-                      data={[
-                        {
-                          activity: "Downloads",
-                          value:
-                            (totalDownloadsAttempted / totalDownloads) * 100,
-                          label: `${totalDownloadsAttempted}/${totalDownloads}`,
-                        },
-                        {
-                          activity: "Extractions",
-                          value:
-                            (totalExtractionsAttempted /
-                              totalExtractionsPossible) *
-                            100,
-                          label: `${totalExtractionsAttempted}/${totalExtractionsPossible}`,
-                        },
-                      ]}
-                      layout="vertical"
-                      barSize={32}
-                      barGap={2}
-                    >
-                      <XAxis type="number" dataKey="value" hide />
-                      <YAxis
-                        dataKey="activity"
-                        type="category"
-                        tickLine={false}
-                        tickMargin={4}
-                        axisLine={false}
-                        className="capitalize"
-                      />
-                      <Bar
-                        dataKey="value"
-                        radius={5}
-                        background={{ fill: "#949494" }}
-                      >
-                        <LabelList
-                          position="insideLeft"
-                          dataKey="label"
-                          fill="white"
-                          offset={8}
-                          fontSize={12}
+              <div className="mt-4">
+                {extraction.status == ExtractionStatus.IN_PROGRESS ? (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="destructive">Cancel extraction</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Are you absolutely sure?</DialogTitle>
+                        <DialogDescription className="pt-2">
+                          This action cannot be undone. This will cancel the
+                          ongoing extraction and all its steps.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="items-top flex space-x-2">
+                        <Checkbox
+                          id="cancel_extraction"
+                          onCheckedChange={(e) => setLockedCancel(!e)}
                         />
-                      </Bar>
-                    </BarChart>
-                  </ChartContainer>
-                </div>
-                <div className="mt-2 gap-4 text-xs text-muted-foreground">
-                  {}
-                  {totalDownloadErrors ? (
-                    <div>
-                      Download Errors: {totalDownloadErrors} /{" "}
-                      {totalDownloadsAttempted}.
-                    </div>
-                  ) : null}
-                  {totalExtractionErrors ? (
-                    <div>
-                      Extraction Errors: {totalExtractionErrors} /{" "}
-                      {totalExtractionsAttempted}.
-                    </div>
-                  ) : null}
-                  {totalCourses ? (
-                    <div>Total Courses Extracted: {totalCourses}.</div>
-                  ) : null}
-                </div>
+                        <div className="grid gap-1.5 leading-none">
+                          <label
+                            htmlFor="cancel_extraction"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            I understand the consequences
+                          </label>
+                          <Button
+                            variant="destructive"
+                            disabled={lockedCancel}
+                            onClick={onCancelExtraction}
+                            className="mt-4"
+                          >
+                            Cancel extraction
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                ) : null}
+                {extraction.status == ExtractionStatus.COMPLETE &&
+                (totalDownloadErrors || totalExtractionErrors) ? (
+                  <div className="mt-4 text-xs">
+                    <Button
+                      variant={"outline"}
+                      size={"sm"}
+                      onClick={onRetryFailed}
+                      disabled={retryFailed.isLoading}
+                    >
+                      Retry failed items
+                    </Button>
+                  </div>
+                ) : null}
+                {extraction.status != ExtractionStatus.IN_PROGRESS ? (
+                  <div className="mt-4">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="destructive">Delete extraction</Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Are you absolutely sure?</DialogTitle>
+                          <DialogDescription className="pt-2">
+                            This action cannot be undone. This will permanently
+                            delete the extraction along with the extracted data.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="items-top flex space-x-2">
+                          <Checkbox
+                            id="terms1"
+                            onCheckedChange={(e) => setLockDelete(!e)}
+                          />
+                          <div className="grid gap-1.5 leading-none">
+                            <label
+                              htmlFor="terms1"
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                              I understand the consequences
+                            </label>
+                            <p className="text-sm text-muted-foreground">
+                              Permanently delete the extraction and all its data
+                            </p>
+                            <Button
+                              variant="destructive"
+                              disabled={
+                                lockedDelete || destroyExtraction.isLoading
+                              }
+                              onClick={onDestroyExtraction}
+                              className="mt-4"
+                            >
+                              Delete extraction
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                ) : null}
               </div>
-            ) : null}
-            {extraction.status == ExtractionStatus.IN_PROGRESS ? (
-              <div className="mt-4">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="destructive">Cancel extraction</Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Are you absolutely sure?</DialogTitle>
-                      <DialogDescription className="pt-2">
-                        This action cannot be undone. This will cancel the
-                        ongoing extraction and all its steps.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="items-top flex space-x-2">
-                      <Checkbox
-                        id="cancel_extraction"
-                        onCheckedChange={(e) => setLockedCancel(!!!e)}
-                      />
-                      <div className="grid gap-1.5 leading-none">
-                        <label
-                          htmlFor="cancel_extraction"
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            </CardContent>
+          </Card>
+          {extraction.completionStats ? (
+            <Card className="w-1/2">
+              <CardHeader>
+                <CardTitle>Extraction Stats</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div>
+                  <div className="grid auto-rows-min gap-2 mt-4">
+                    <div className="flex items-baseline gap-1 text-2xl font-bold tabular-nums leading-none">
+                      {totalDownloadsAttempted}/{totalDownloads}
+                      <span className="text-sm font-normal">Downloads</span>
+                    </div>
+                    <ChartContainer
+                      config={{
+                        downloads: {
+                          label: "Downloads",
+                        },
+                      }}
+                      className="aspect-auto h-[32px] w-full"
+                    >
+                      <BarChart
+                        accessibilityLayer
+                        layout="vertical"
+                        margin={{
+                          left: 0,
+                          top: 0,
+                          right: 0,
+                          bottom: 0,
+                        }}
+                        data={[
+                          {
+                            date: "",
+                            value:
+                              (totalDownloadsAttempted / totalDownloads) * 100,
+                          },
+                        ]}
+                      >
+                        <Bar
+                          dataKey="value"
+                          fill="var(--color-downloads)"
+                          radius={4}
+                          barSize={32}
                         >
-                          I understand the consequences
-                        </label>
-                        <Button
-                          variant="destructive"
-                          disabled={lockedCancel}
-                          onClick={onCancelExtraction}
-                          className="mt-4"
+                          <LabelList
+                            position="insideLeft"
+                            dataKey="date"
+                            offset={8}
+                            fontSize={12}
+                            fill="white"
+                          />
+                        </Bar>
+                        <YAxis
+                          dataKey="date"
+                          type="category"
+                          tickCount={1}
+                          hide
+                        />
+                        <XAxis dataKey="value" type="number" hide />
+                      </BarChart>
+                    </ChartContainer>
+                  </div>
+                  <div className="grid auto-rows-min gap-2 mt-4">
+                    <div className="flex items-baseline gap-1 text-2xl font-bold tabular-nums leading-none">
+                      {totalExtractionsAttempted}/{totalExtractionsPossible}
+                      <span className="text-sm font-normal">Extractions</span>
+                    </div>
+                    <ChartContainer
+                      config={{
+                        extractions: {
+                          label: "Extractions",
+                        },
+                      }}
+                      className="aspect-auto h-[32px] w-full"
+                    >
+                      <BarChart
+                        accessibilityLayer
+                        layout="vertical"
+                        margin={{
+                          left: 0,
+                          top: 0,
+                          right: 0,
+                          bottom: 0,
+                        }}
+                        data={[
+                          {
+                            date: "",
+                            value:
+                              (totalExtractionsAttempted /
+                                totalExtractionsPossible) *
+                              100,
+                          },
+                        ]}
+                      >
+                        <Bar
+                          dataKey="value"
+                          fill="var(--color-extractions)"
+                          radius={4}
+                          barSize={32}
                         >
-                          Cancel extraction
-                        </Button>
+                          <LabelList
+                            position="insideLeft"
+                            dataKey="date"
+                            offset={8}
+                            fontSize={12}
+                            fill="white"
+                          />
+                        </Bar>
+                        <YAxis
+                          dataKey="date"
+                          type="category"
+                          tickCount={1}
+                          hide
+                        />
+                        <XAxis dataKey="value" type="number" hide />
+                      </BarChart>
+                    </ChartContainer>
+                  </div>
+                  <div className="mt-2 gap-4">
+                    {totalDownloadErrors ? (
+                      <div className="text-xs text-muted-foreground">
+                        Download Errors: {totalDownloadErrors} /{" "}
+                        {totalDownloadsAttempted}.
+                      </div>
+                    ) : null}
+                    {totalExtractionErrors ? (
+                      <div className="text-xs text-muted-foreground">
+                        Extraction Errors: {totalExtractionErrors} /{" "}
+                        {totalExtractionsAttempted}.
+                      </div>
+                    ) : null}
+                    {totalCourses ? (
+                      <div>
+                        <span className="text-xs">
+                          Total Courses Extracted:
+                        </span>{" "}
+                        <span className="text-xl">{totalCourses}</span>
+                      </div>
+                    ) : null}
+                  </div>
+                  {extraction.completionStats.costs ? (
+                    <div className="mt-4">
+                      <Accordion type="single" collapsible>
+                        <AccordionItem value="cost-breakdown">
+                          <AccordionTrigger>Cost Breakdown</AccordionTrigger>
+                          <AccordionContent>
+                            <Table>
+                              <TableHeader>
+                                <TableRow className="text-xs">
+                                  <TableHead>Call Site</TableHead>
+                                  <TableHead>Input Tokens</TableHead>
+                                  <TableHead>Output Tokens</TableHead>
+                                  <TableHead className="text-right">
+                                    Est. Cost
+                                  </TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody className="text-xs">
+                                {extraction.completionStats.costs.callSites.map(
+                                  (callSite) => (
+                                    <TableRow key={callSite.callSite}>
+                                      <TableCell>{callSite.callSite}</TableCell>
+                                      <TableCell>
+                                        {callSite.totalInputTokens}
+                                      </TableCell>
+                                      <TableCell>
+                                        {callSite.totalOutputTokens}
+                                      </TableCell>
+                                      <TableCell className="text-right">
+                                        {callSite.estimatedCost.toFixed(2)}
+                                      </TableCell>
+                                    </TableRow>
+                                  )
+                                )}
+                              </TableBody>
+                            </Table>
+                            <div className="mt-2 text-xs text-muted-foreground">
+                              <div>
+                                Total Input Tokens:{" "}
+                                {
+                                  extraction.completionStats.costs
+                                    .totalInputTokens
+                                }
+                              </div>
+                              <div>
+                                Total Output Tokens:{" "}
+                                {
+                                  extraction.completionStats.costs
+                                    .totalOutputTokens
+                                }
+                              </div>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                      <div className="mt-4">
+                        <span className="text-xs">Estimated Total Cost:</span>{" "}
+                        <span className="text-xl">
+                          $
+                          {extraction.completionStats.costs.estimatedCost.toFixed(
+                            2
+                          )}
+                        </span>
                       </div>
                     </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            ) : null}
-            {extraction.status == ExtractionStatus.COMPLETE &&
-            (totalDownloadErrors || totalExtractionErrors) ? (
-              <div className="mt-4 text-xs">
-                <Button
-                  variant={"outline"}
-                  size={"sm"}
-                  onClick={onRetryFailed}
-                  disabled={retryFailed.isLoading}
-                >
-                  Retry failed items
-                </Button>
-              </div>
-            ) : null}
-            {extraction.status != ExtractionStatus.IN_PROGRESS ? (
-              <div className="mt-4">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="destructive">Delete extraction</Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Are you absolutely sure?</DialogTitle>
-                      <DialogDescription className="pt-2">
-                        This action cannot be undone. This will permanently
-                        delete the extraction along with the extracted data.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="items-top flex space-x-2">
-                      <Checkbox
-                        id="terms1"
-                        onCheckedChange={(e) => setLockDelete(!!!e)}
-                      />
-                      <div className="grid gap-1.5 leading-none">
-                        <label
-                          htmlFor="terms1"
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          I understand the consequences
-                        </label>
-                        <p className="text-sm text-muted-foreground">
-                          Permanently delete the extraction and all its data
-                        </p>
-                        <Button
-                          variant="destructive"
-                          disabled={lockedDelete || destroyExtraction.isLoading}
-                          onClick={onDestroyExtraction}
-                          className="mt-4"
-                        >
-                          Delete extraction
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            ) : null}
-          </CardContent>
-        </Card>
+                  ) : null}
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
         <Card className="mt-4">
           <CardHeader>
             <CardTitle>Extraction Steps</CardTitle>
@@ -422,43 +557,6 @@ export default function ExtractionDetail() {
             </Table>
           </CardContent>
         </Card>
-        {extractionLogs?.length ? (
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle>Extraction Log</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-20">ID</TableHead>
-                    <TableHead>Created At</TableHead>
-                    <TableHead>Level</TableHead>
-                    <TableHead className="text-right">Message</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {extractionLogs.map((log) => (
-                    <TableRow key={`logs-${log.id}`}>
-                      <TableCell className="text-xs w-20">{log.id}</TableCell>
-                      <TableCell className="text-xs">{log.createdAt}</TableCell>
-                      <TableCell className="text-xs">{log.logLevel}</TableCell>
-                      <TableCell className="text-xs text-right">
-                        {log.log}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-                <TableCaption>
-                  Only the newest 5 log entries are displayed.{" "}
-                  <Link to={`/${extractionId}/logs`} className="underline">
-                    View full log
-                  </Link>
-                </TableCaption>
-              </Table>
-            </CardContent>
-          </Card>
-        ) : null}
       </div>
     </>
   );

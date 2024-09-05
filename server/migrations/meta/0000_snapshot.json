@@ -33,13 +33,9 @@
         "catalogue_data_extraction_id_extractions_id_fk": {
           "name": "catalogue_data_extraction_id_extractions_id_fk",
           "tableFrom": "catalogue_data",
-          "columnsFrom": [
-            "extraction_id"
-          ],
+          "columnsFrom": ["extraction_id"],
           "tableTo": "extractions",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -137,26 +133,18 @@
         "data_items_catalogue_data_id_catalogue_data_id_fk": {
           "name": "data_items_catalogue_data_id_catalogue_data_id_fk",
           "tableFrom": "data_items",
-          "columnsFrom": [
-            "catalogue_data_id"
-          ],
+          "columnsFrom": ["catalogue_data_id"],
           "tableTo": "catalogue_data",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "data_items_extraction_step_item_id_extraction_step_items_id_fk": {
           "name": "data_items_extraction_step_item_id_extraction_step_items_id_fk",
           "tableFrom": "data_items",
-          "columnsFrom": [
-            "extraction_step_item_id"
-          ],
+          "columnsFrom": ["extraction_step_item_id"],
           "tableTo": "extraction_step_items",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -210,13 +198,9 @@
         "extraction_logs_extraction_id_extractions_id_fk": {
           "name": "extraction_logs_extraction_id_extractions_id_fk",
           "tableFrom": "extraction_logs",
-          "columnsFrom": [
-            "extraction_id"
-          ],
+          "columnsFrom": ["extraction_id"],
           "tableTo": "extractions",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -304,13 +288,9 @@
         "extraction_step_items_extraction_step_id_extraction_steps_id_fk": {
           "name": "extraction_step_items_extraction_step_id_extraction_steps_id_fk",
           "tableFrom": "extraction_step_items",
-          "columnsFrom": [
-            "extraction_step_id"
-          ],
+          "columnsFrom": ["extraction_step_id"],
           "tableTo": "extraction_steps",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -377,26 +357,18 @@
         "extraction_steps_extraction_id_extractions_id_fk": {
           "name": "extraction_steps_extraction_id_extractions_id_fk",
           "tableFrom": "extraction_steps",
-          "columnsFrom": [
-            "extraction_id"
-          ],
+          "columnsFrom": ["extraction_id"],
           "tableTo": "extractions",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "extraction_steps_parent_step_id_extraction_steps_id_fk": {
           "name": "extraction_steps_parent_step_id_extraction_steps_id_fk",
           "tableFrom": "extraction_steps",
-          "columnsFrom": [
-            "parent_step_id"
-          ],
+          "columnsFrom": ["parent_step_id"],
           "tableTo": "extraction_steps",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -442,13 +414,9 @@
         "extractions_recipe_id_recipes_id_fk": {
           "name": "extractions_recipe_id_recipes_id_fk",
           "tableFrom": "extractions",
-          "columnsFrom": [
-            "recipe_id"
-          ],
+          "columnsFrom": ["recipe_id"],
           "tableTo": "recipes",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -523,13 +491,9 @@
         "recipes_catalogue_id_catalogues_id_fk": {
           "name": "recipes_catalogue_id_catalogues_id_fk",
           "tableFrom": "recipes",
-          "columnsFrom": [
-            "catalogue_id"
-          ],
+          "columnsFrom": ["catalogue_id"],
           "tableTo": "catalogues",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -626,9 +590,7 @@
       "indexes": {
         "users_email_unique": {
           "name": "users_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         }
       },

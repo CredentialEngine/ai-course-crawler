@@ -65,7 +65,10 @@ async function enqueuePages(
     crawlPage.content!,
     configuration.pagination!.urlPattern,
     configuration.pagination!.urlPatternType,
-    crawlPage.screenshot!
+    {
+      screenshot: crawlPage.screenshot!,
+      logApiCalls: { extractionId: crawlPage.crawlStep.extractionId },
+    }
   );
 
   if (!pageCount) {

@@ -1,10 +1,29 @@
 import { OpenAI } from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import db from "./data";
-import { decryptFromDb } from "./data/schema";
+import { Provider, ProviderModel, decryptFromDb } from "./data/schema";
 import { exponentialRetry } from "./utils";
+import { createModelApiCallLog } from "./data/extractions";
+
+export const ModelPrices = {
+  [ProviderModel.Gpt4o]: {
+    per1MInput: 5.0,
+    per1MOutput: 15.0,
+  },
+};
 
 export class BadToolCallResponseError extends Error {}
+
+export function estimateCost(
+  model: ProviderModel,
+  inputTokens: number,
+  outputTokens: number
+) {
+  const prices = ModelPrices[model];
+  const inputCost = (inputTokens / 1_000_000) * prices.per1MInput;
+  const outputCost = (outputTokens / 1_000_000) * prices.per1MOutput;
+  return inputCost + outputCost;
+}
 
 export async function findOpenAiApiKey() {
   const apiKey = await db.query.settings.findFirst({
@@ -28,61 +47,80 @@ export type ToolCallReturn<T extends ToolCallParameters> = {
   [key in keyof T]: unknown;
 };
 
-async function simpleToolCompletionImpl<T extends ToolCallParameters>(
-  messages: Array<ChatCompletionMessageParam>,
-  toolName: string,
-  parameters: T,
-  requiredParameters?: Array<keyof T>
-): Promise<ToolCallReturn<T> | null> {
-  const openai = await getOpenAi();
-  const chatCompletion = await openai.chat.completions.create({
-    messages,
-    model: "gpt-4o",
-    tools: [
-      {
-        type: "function",
-        function: {
-          name: toolName,
-          parameters: {
-            type: "object",
-            properties: parameters,
-            required: requiredParameters || undefined,
+export async function simpleToolCompletion<
+  T extends ToolCallParameters,
+>(options: {
+  messages: Array<ChatCompletionMessageParam>;
+  toolName: string;
+  parameters: T;
+  requiredParameters?: Array<keyof T>;
+  logApiCall?: {
+    callSite: string;
+    extractionId: number;
+  };
+}): Promise<{
+  toolCallArgs: ToolCallReturn<T> | null;
+  inputTokenCount: number;
+  outputTokenCount: number;
+}> {
+  return exponentialRetry(async () => {
+    const openai = await getOpenAi();
+    const chatCompletion = await openai.chat.completions.create({
+      messages: options.messages,
+      model: ProviderModel.Gpt4o,
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: options.toolName,
+            parameters: {
+              type: "object",
+              properties: options.parameters,
+              required: options.requiredParameters || undefined,
+            },
           },
         },
+      ],
+      tool_choice: {
+        type: "function",
+        function: {
+          name: options.toolName,
+        },
       },
-    ],
-    tool_choice: {
-      type: "function",
-      function: {
-        name: toolName,
-      },
-    },
-  });
-  if (!chatCompletion.choices[0].message.tool_calls?.length) {
-    return null;
-  }
-  const toolArgs = JSON.parse(
-    chatCompletion.choices[0].message.tool_calls[0].function.arguments
-  );
-  return toolArgs;
-}
+    });
 
-export function simpleToolCompletion<T extends ToolCallParameters>(
-  messages: Array<ChatCompletionMessageParam>,
-  toolName: string,
-  parameters: T,
-  requiredParameters?: Array<keyof T>
-): Promise<ToolCallReturn<T> | null> {
-  return exponentialRetry(
-    () =>
-      simpleToolCompletionImpl(
-        messages,
-        toolName,
-        parameters,
-        requiredParameters
-      ),
-    10
-  );
+    const inputTokenCount = chatCompletion.usage?.prompt_tokens || 0;
+    const outputTokenCount = chatCompletion.usage?.completion_tokens || 0;
+
+    if (options.logApiCall) {
+      await createModelApiCallLog(
+        options.logApiCall.extractionId,
+        Provider.OpenAI,
+        ProviderModel.Gpt4o,
+        options.logApiCall.callSite,
+        inputTokenCount,
+        outputTokenCount
+      );
+    }
+
+    if (!chatCompletion.choices[0].message.tool_calls?.length) {
+      return {
+        toolCallArgs: null,
+        inputTokenCount,
+        outputTokenCount,
+      };
+    }
+
+    const toolArgs = JSON.parse(
+      chatCompletion.choices[0].message.tool_calls[0].function.arguments
+    );
+
+    return {
+      toolCallArgs: toolArgs,
+      inputTokenCount,
+      outputTokenCount,
+    };
+  }, 10);
 }
 
 export function assertBool(obj: Record<string, unknown>, key: string) {
