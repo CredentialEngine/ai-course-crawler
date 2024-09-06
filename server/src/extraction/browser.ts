@@ -33,7 +33,7 @@ export async function getCluster() {
   await cluster.task(async ({ page, data }) => {
     const { url } = data;
     let screenshot: string | undefined;
-    await page.goto(url);
+    await page.goto(url, { timeout: 5 * 60 * 1000 });
     const content = await page.content();
     screenshot = await page.screenshot({
       type: "webp",
