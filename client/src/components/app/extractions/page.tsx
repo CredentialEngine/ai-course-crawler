@@ -1,18 +1,43 @@
-import BreadcrumbTrail from "@/components/ui/breadcrumb-trail";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/utils";
+import { useState } from "react";
 import { useParams } from "wouter";
 import { base64Img } from "./utils";
+import BreadcrumbTrail from "@/components/ui/breadcrumb-trail";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
 
 export default function CrawlPageDetail() {
-  let { extractionId, stepId, crawlPageId } = useParams();
+  const { extractionId, stepId, crawlPageId } = useParams();
   const crawlPageQuery = trpc.extractions.crawlPageDetail.useQuery(
     { crawlPageId: parseInt(crawlPageId || "") },
     { enabled: !!crawlPageId }
   );
+  const simulateExtractionQuery =
+    trpc.extractions.simulateDataExtraction.useMutation();
+  const [simulatedExtractedData, setSimulatedExtractedData] =
+    useState<
+      Awaited<ReturnType<
+        (typeof simulateExtractionQuery)["mutateAsync"]
+      > | null>
+    >(null);
   if (!crawlPageQuery.data) {
     return null;
   }
+
+  const onSimulateDataExtraction = async () => {
+    const simulatedData = await simulateExtractionQuery.mutateAsync({
+      crawlPageId: parseInt(crawlPageId || ""),
+    });
+    if (simulatedData) {
+      setSimulatedExtractedData(simulatedData);
+    }
+  };
 
   const item = crawlPageQuery.data;
 
@@ -62,15 +87,42 @@ export default function CrawlPageDetail() {
     );
   }
 
+  const formattedSimulatedData = simulatedExtractedData
+    ? JSON.stringify(simulatedExtractedData, null, 2)
+    : null;
+
   return (
     <>
       <BreadcrumbTrail items={breadCrumbs} />
+
+      {item.content ? (
+        <div>
+          <Button
+            className="mb-4"
+            onClick={onSimulateDataExtraction}
+            disabled={simulateExtractionQuery.isLoading}
+          >
+            Simulate data extraction
+          </Button>
+          {formattedSimulatedData ? (
+            <Accordion type="single" collapsible={true}>
+              <AccordionItem value="simulated_data">
+                <AccordionTrigger>Simulated Data</AccordionTrigger>
+                <AccordionContent>
+                  <pre className="text-xs">{formattedSimulatedData}</pre>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="flex items-center">
         <h1 className="text-lg font-semibold md:text-2xl">
           Extraction Step Item #{crawlPageId} - Content Preview
         </h1>
       </div>
+
       <Tabs defaultValue={defaultTab}>
         <TabsList className="w-full mb-4">{tabTriggers}</TabsList>
         <div className="border border-dashed p-4 text-xs overflow-auto">

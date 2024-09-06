@@ -19,6 +19,7 @@ import { ExtractionStatus } from "../data/schema";
 import { simplifyHtml, toMarkdown } from "../extraction/browser";
 import { retryFailedItems } from "../extraction/retryFailedItems";
 import { startExtraction } from "../extraction/startExtraction";
+import { extractCourseDataItem } from "../extraction/llm/extractCourseDataItem";
 
 export const extractionsRouter = router({
   create: publicProcedure
@@ -157,5 +158,23 @@ export const extractionsRouter = router({
         totalPages,
         results: await findExtractions(20, opts.input.page * 20 - 20),
       };
+    }),
+  simulateDataExtraction: publicProcedure
+    .input(
+      z.object({
+        crawlPageId: z.number().int().positive(),
+      })
+    )
+    .mutation(async (opts) => {
+      const crawlPage = await findPage(opts.input.crawlPageId);
+      if (!crawlPage) {
+        throw new AppError("Page not found", AppErrors.NOT_FOUND);
+      }
+      if (!crawlPage.content) {
+        return null;
+      }
+      return await extractCourseDataItem(crawlPage.url, crawlPage.content, {
+        screenshot: crawlPage.screenshot || undefined,
+      });
     }),
 });
