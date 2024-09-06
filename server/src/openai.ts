@@ -1,9 +1,9 @@
 import { OpenAI } from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import db from "./data";
+import { createModelApiCallLog } from "./data/extractions";
 import { Provider, ProviderModel, decryptFromDb } from "./data/schema";
 import { exponentialRetry } from "./utils";
-import { createModelApiCallLog } from "./data/extractions";
 
 export const ModelPrices = {
   [ProviderModel.Gpt4o]: {
@@ -13,6 +13,8 @@ export const ModelPrices = {
 };
 
 export class BadToolCallResponseError extends Error {}
+
+export class UnknownPaginationTypeError extends Error {}
 
 export function estimateCost(
   model: ProviderModel,
@@ -154,18 +156,18 @@ export function assertString(obj: Record<string, unknown>, key: string) {
   return value;
 }
 
-export function assertStringEnum(
+export function assertStringEnum<T extends string>(
   obj: Record<string, unknown>,
   key: string,
-  values: string[]
-) {
+  values: readonly T[]
+): T {
   const value = assertString(obj, key);
-  if (!values.includes(value)) {
+  if (!values.includes(value as T)) {
     throw new BadToolCallResponseError(
       `Bad tool response value for ${key}. ${JSON.stringify(obj)}`
     );
   }
-  return value;
+  return value as T;
 }
 
 export function assertNumber(

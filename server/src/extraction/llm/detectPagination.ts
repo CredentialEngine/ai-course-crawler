@@ -2,13 +2,10 @@ import {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
 } from "openai/resources/chat/completions";
-import {
-  PageType,
-  PaginationConfiguration,
-  UrlPatternType,
-} from "../../data/schema";
+import { PageType, PaginationConfiguration } from "../../data/schema";
 import {
   BadToolCallResponseError,
+  UnknownPaginationTypeError,
   assertBool,
   assertNumber,
   assertString,
@@ -19,14 +16,14 @@ import { simplifyHtml, toMarkdown } from "../browser";
 
 const pageTypeDescriptions = {
   [PageType.COURSE_LINKS_PAGE]:
-    "It has links to ALL the courses for an institution. Pagination is for pages of links to courses.",
+    "It has links to ALL the courses for an institution. IF there is pagination, it is for pages of links to courses.",
   [PageType.CATEGORY_LINKS_PAGE]:
     "It has links to program or degree pages that presumably have links/descriptions for the courses. " +
     "Those links are presumably extensive for ALL the programs/degrees in the institution." +
-    "Pagination is for pages of program/degree links.",
+    "IF there is pagination, it is for pages of program/degree links.",
   [PageType.COURSE_DETAIL_PAGE]:
     "It has names/descriptions for ALL the courses for an instution. " +
-    "Pagination is for pages of course descriptions.",
+    "IF there is pagination, it is for pages of course descriptions.",
 };
 
 export interface ExtraOptions {
@@ -34,6 +31,15 @@ export interface ExtraOptions {
   logApiCalls?: {
     extractionId: number;
   };
+}
+
+function getUrlPath(urlString: string): string {
+  try {
+    const url = new URL(urlString);
+    return url.pathname;
+  } catch {
+    return urlString.startsWith("/") ? urlString : `/${urlString}`;
+  }
 }
 
 export async function detectPagination(
@@ -48,8 +54,11 @@ Your goal is to determine whether the given website has pagination, and how that
 
 You can say the website has pagination if there are links in it to pages like page 1, page 2, page 3 etc.
 If the listings aren't paginated, you should say has_pagination is false.
-However if it does have pagination, figure out the pattern (for example, a parameter for the page number or for the items offset).
-Also, if it does have pagination, determine the total number of pages for the content.
+
+If it does have pagination, figure out the pattern (for example, a parameter for the page number or for the items offset).
+If it does have pagination, determine the total number of pages for the content.
+
+IMPORTANT: be strict! If you don't spot a pagination link, assume the page doesn't have pagination and set has_pagination to false.
 
 url_pattern_type: ONLY FILL THIS IN IF THE WEBSITE HAS PAGINATION
 
@@ -67,7 +76,8 @@ https://www.example.com/courses.php?page={page_num}
 total_pages: ONLY FILL THIS IN IF THE WEBSITE HAS PAGINATION
 
 
-For context, the page is a course catalogue index.
+For context, the page is a course catalogue index:
+
 ${pageTypeDescriptions[rootPageType]}
 
 WEBSITE CONTENT:
@@ -133,18 +143,29 @@ ${content}
     "page_num",
     "offset",
     "other",
-    "unknown",
-  ]) as UrlPatternType;
+  ]);
+  if (urlPatternType == "other") {
+    // TODO: record this
+    throw new UnknownPaginationTypeError("The pagination type is unknown.");
+  }
   const urlPattern = assertString(toolCall, "url_pattern");
   if (!urlPattern.startsWith("http")) {
     throw new BadToolCallResponseError(`Expected a URL pattern: ${urlPattern}`);
   }
-  if (urlPattern == "page_num" && !urlPattern.includes("{page_num}")) {
+  if (urlPatternType == "page_num" && !urlPattern.includes("{page_num}")) {
     throw new BadToolCallResponseError(`Couldn't find page_num: ${urlPattern}`);
   }
-  if (urlPattern == "offset" && !urlPattern.includes("{offset}")) {
+  if (urlPatternType == "offset" && !urlPattern.includes("{offset}")) {
     throw new BadToolCallResponseError(`Couldn't find offset: ${urlPattern}`);
   }
+
+  const detectedPath = getUrlPath(urlPattern);
+  if (!html.includes(detectedPath)) {
+    throw new BadToolCallResponseError(
+      `Detected path ${detectedPath} not found in HTML`
+    );
+  }
+
   const totalPages = assertNumber(toolCall, "total_pages");
   return {
     urlPatternType,
