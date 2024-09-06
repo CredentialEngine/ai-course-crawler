@@ -16,6 +16,8 @@ export interface BrowserTaskResult {
 let cluster: Cluster<BrowserTaskInput, BrowserTaskResult> | undefined;
 let clusterClosed = false;
 
+const PAGE_TIMEOUT = 5 * 60 * 1000;
+
 export async function getCluster() {
   if (clusterClosed) {
     throw new Error("Cluster has been closed");
@@ -29,11 +31,13 @@ export async function getCluster() {
     puppeteerOptions: {
       args: ["--font-render-hinting=none", "--force-gpu-mem-available-mb=4096"],
     },
+    timeout: PAGE_TIMEOUT,
   });
   await cluster.task(async ({ page, data }) => {
+    page.setDefaultTimeout(PAGE_TIMEOUT);
     const { url } = data;
     let screenshot: string | undefined;
-    await page.goto(url, { timeout: 5 * 60 * 1000 });
+    await page.goto(url, { timeout: PAGE_TIMEOUT });
     const content = await page.content();
     screenshot = await page.screenshot({
       type: "webp",
