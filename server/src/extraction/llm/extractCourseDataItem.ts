@@ -6,6 +6,25 @@ import { CourseStructuredData } from "../../appRouter";
 import { assertArray, simpleToolCompletion } from "../../openai";
 import { simplifyHtml, toMarkdown } from "../browser";
 
+const validCreditUnitTypes = [
+  "AcademicYear",
+  "CarnegieUnit",
+  "CertificateCredit",
+  "ClockHour",
+  "CompetencyCredit",
+  "ContactHour",
+  "ContinuingEducationUnit",
+  "DegreeCredit",
+  "DualCredit",
+  "QuarterHour",
+  "RequirementCredit",
+  "SecondaryDiplomaCredit",
+  "SemesterHour",
+  "TimeBasedCredit",
+  "TypeBasedCredit",
+  "UNKNOWN",
+];
+
 export interface ExtraOptions {
   screenshot?: string;
   logApiCalls?: {
@@ -31,6 +50,8 @@ Course credits (min): min credit
 Course credits (max): max credit (if the page shows a range).
   - If there is only a single credit information in the page, set it as the max.
 Course credits type: infer it from the page (ref. one of the enum values)
+  - Only infer the type if it's clearly stated in the page somewhere
+  - If you can't infer the type, set it as "UNKNOWN"
 
 PAGE URL:
 
@@ -87,29 +108,7 @@ ${content}
             },
             course_credits_type: {
               type: "string",
-              enum: [
-                "AcademicYear",
-                "CarnegieUnit",
-                "CertificateCredit",
-                "ClockHour",
-                "CompetencyCredit",
-                "ContactHour",
-                "ContinuingEducationUnit",
-                "DegreeCredit",
-                "DualCredit",
-                "QuarterHour",
-                "RequirementCredit",
-                "SecondaryDiplomaCredit",
-                "SemesterHour",
-                "TimeBasedCredit",
-                "TypeBasedCredit",
-              ],
-            },
-            requirements: {
-              type: "array",
-              items: {
-                type: "string",
-              },
+              enum: validCreditUnitTypes,
             },
           },
           required: ["course_id", "course_name", "course_description"],
@@ -131,7 +130,18 @@ ${content}
     result.toolCallArgs,
     "courses"
   );
-  return courses.filter(
-    (c) => c.course_id && c.course_name && c.course_description
-  );
+  return courses
+    .filter((c) => c.course_id && c.course_name && c.course_description)
+    .map((c) => {
+      if (c.course_credits_type?.toUpperCase()?.trim() == "UNKNOWN") {
+        c.course_credits_type = undefined;
+      }
+      if (
+        c.course_credits_type &&
+        !validCreditUnitTypes.includes(c.course_credits_type)
+      ) {
+        c.course_credits_type = undefined;
+      }
+      return c;
+    });
 }

@@ -42,6 +42,9 @@ import { findDataItems } from "./data/datasets";
 //   "Prerequisites",
 // ]);
 
+const noCreditUnitTypeDescription =
+  "This has credit value, but the type cannot be determined";
+
 function getBulkUploadTemplateRow(
   item: Awaited<ReturnType<typeof findDataItems>>["items"][number]
 ) {
@@ -64,6 +67,9 @@ function getBulkUploadTemplateRow(
       ? item.structuredData.course_credits_max
       : undefined,
     "Credit Unit Type": item.structuredData.course_credits_type,
+    "Credit Unit Type Description": item.structuredData.course_credits_type
+      ? undefined
+      : noCreditUnitTypeDescription,
   };
 }
 
