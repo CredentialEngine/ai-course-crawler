@@ -34,7 +34,7 @@ const DetectConfigurationFail = ({
   return (
     <Html lang="en">
       <Head />
-      <Preview>A recipe configuration has failed</Preview>
+      <Preview>Recipe configuration detection failed</Preview>
       <Body style={styles.main}>
         <Container style={styles.container}>
           <Text style={styles.title}>
