@@ -50,7 +50,7 @@ export default function CrawlPageDetail() {
     },
     {
       label: `Step Item #${crawlPageId}`,
-      href: `/${extractionId}/steps/${stepId}/items/${item.id}`,
+      href: `/${extractionId}/steps/${stepId}/items/${item.crawlPage.id}`,
     },
   ];
 

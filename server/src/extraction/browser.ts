@@ -83,19 +83,6 @@ export async function fetchPreview(url: string) {
   return { title, thumbnailUrl, description };
 }
 
-function isValidBase64(str: string) {
-  if (typeof str !== "string" || str.length === 0) {
-    return false;
-  }
-
-  try {
-    Buffer.from(str, "base64").toString("utf8");
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-
 export async function simplifyHtml(html: string) {
   const $ = cheerio.load(html);
   $("head").empty();
