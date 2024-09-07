@@ -189,6 +189,9 @@ export async function findPagesPaginated(
 export async function findPage(crawlPageId: number) {
   const result = await db.query.crawlPages.findFirst({
     where: (crawlPages, { eq }) => eq(crawlPages.id, crawlPageId),
+    with: {
+      crawlStep: true,
+    },
   });
   return result;
 }

@@ -1,7 +1,12 @@
 import { ExtractDataJob, ExtractDataProgress, Processor } from ".";
 import { createDataItem, findOrCreateDataset } from "../data/datasets";
 import { findPageForJob, updatePage } from "../data/extractions";
-import { ExtractionStatus, getSqliteTimestamp } from "../data/schema";
+import {
+  ExtractionStatus,
+  getSqliteTimestamp,
+  readMarkdownContent,
+  readScreenshot,
+} from "../data/schema";
 import { closeCluster } from "../extraction/browser";
 import { extractCourseDataItem } from "../extraction/llm/extractCourseDataItem";
 
@@ -33,15 +38,22 @@ const extractData: Processor<ExtractDataJob, ExtractDataProgress> = async (
 
     if (!dataset) throw new Error("Could not find or create dataset");
 
-    crawlPage.crawlStep.extraction.recipe.catalogueId;
-    const coursesData = await extractCourseDataItem(
-      crawlPage.url,
-      crawlPage.content!,
-      {
-        screenshot: crawlPage.screenshot || undefined,
-        logApiCalls: { extractionId: crawlPage.crawlStep.extractionId },
-      }
+    const content = await readMarkdownContent(
+      crawlPage.crawlStep.extractionId,
+      crawlPage.crawlStepId,
+      crawlPage.id
     );
+    const screenshot = await readScreenshot(
+      crawlPage.crawlStep.extractionId,
+      crawlPage.crawlStepId,
+      crawlPage.id
+    );
+    const coursesData = await extractCourseDataItem({
+      url: crawlPage.url,
+      content,
+      screenshot,
+      logApiCalls: { extractionId: crawlPage.crawlStep.extractionId },
+    });
     if (!coursesData) {
       throw new Error("Couldn't find course data");
     }

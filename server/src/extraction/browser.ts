@@ -2,6 +2,7 @@ import * as cheerio from "cheerio";
 import { Cluster } from "puppeteer-cluster";
 import TurndownService from "turndown";
 import { resolveAbsoluteUrl } from "../utils";
+import { SimplifiedMarkdown } from "../types";
 
 export interface BrowserTaskInput {
   url: string;
@@ -10,7 +11,7 @@ export interface BrowserTaskInput {
 export interface BrowserTaskResult {
   url: string;
   content: string;
-  screenshot?: string;
+  screenshot?: Buffer;
 }
 
 let cluster: Cluster<BrowserTaskInput, BrowserTaskResult> | undefined;
@@ -36,19 +37,13 @@ export async function getCluster() {
   await cluster.task(async ({ page, data }) => {
     page.setDefaultTimeout(PAGE_TIMEOUT);
     const { url } = data;
-    let screenshot: string | undefined;
     await page.goto(url, { timeout: PAGE_TIMEOUT });
     const content = await page.content();
-    screenshot = await page.screenshot({
+    const screenshot = await page.screenshot({
       type: "webp",
-      encoding: "base64",
       fullPage: false,
       quality: 60,
     });
-    if (!isValidBase64(screenshot)) {
-      console.log("Screenshot is not valid base 64");
-      screenshot = undefined;
-    }
     return {
       url,
       content,
@@ -158,4 +153,9 @@ export async function simplifyHtml(html: string) {
 
 export async function toMarkdown(html: string) {
   return new TurndownService().turndown(html);
+}
+
+export async function simplifiedMarkdown(html: string) {
+  const simplified = await toMarkdown(await simplifyHtml(html));
+  return simplified as SimplifiedMarkdown;
 }

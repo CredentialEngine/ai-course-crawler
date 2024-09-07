@@ -15,8 +15,12 @@ import {
   getPageCount,
   updateExtraction,
 } from "../data/extractions";
-import { ExtractionStatus } from "../data/schema";
-import { simplifyHtml, toMarkdown } from "../extraction/browser";
+import {
+  ExtractionStatus,
+  readContent,
+  readMarkdownContent,
+  readScreenshot,
+} from "../data/schema";
 import { retryFailedItems } from "../extraction/retryFailedItems";
 import { startExtraction } from "../extraction/startExtraction";
 import { extractCourseDataItem } from "../extraction/llm/extractCourseDataItem";
@@ -136,10 +140,22 @@ export const extractionsRouter = router({
         throw new AppError("Step item not found", AppErrors.NOT_FOUND);
       }
       return {
-        ...crawlPage,
-        simplifiedContent: crawlPage.content
-          ? await toMarkdown(await simplifyHtml(crawlPage.content))
-          : null,
+        crawlPage,
+        content: await readContent(
+          crawlPage.crawlStep.extractionId,
+          crawlPage.crawlStepId,
+          crawlPage.id
+        ),
+        markdownContent: await readMarkdownContent(
+          crawlPage.crawlStep.extractionId,
+          crawlPage.crawlStepId,
+          crawlPage.id
+        ),
+        screenshot: await readScreenshot(
+          crawlPage.crawlStep.extractionId,
+          crawlPage.crawlStepId,
+          crawlPage.id
+        ),
       };
     }),
   list: publicProcedure
@@ -173,8 +189,20 @@ export const extractionsRouter = router({
       if (!crawlPage.content) {
         return null;
       }
-      return await extractCourseDataItem(crawlPage.url, crawlPage.content, {
-        screenshot: crawlPage.screenshot || undefined,
+      const content = await readMarkdownContent(
+        crawlPage.crawlStep.extractionId,
+        crawlPage.crawlStepId,
+        crawlPage.id
+      );
+      const screenshot = await readScreenshot(
+        crawlPage.crawlStep.extractionId,
+        crawlPage.crawlStepId,
+        crawlPage.id
+      );
+      return await extractCourseDataItem({
+        url: crawlPage.url,
+        content,
+        screenshot,
       });
     }),
 });

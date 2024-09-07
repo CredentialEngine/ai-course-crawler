@@ -2,17 +2,23 @@ import { startRecipe } from "../data/recipes";
 import { PageType } from "../data/schema";
 import { bestOutOf } from "../utils";
 import { Queues, submitJob } from "../workers";
-import { fetchBrowserPage } from "./browser";
+import { fetchBrowserPage, simplifiedMarkdown } from "./browser";
 import { detectPageType } from "./llm/detectPageType";
 
 export async function createRecipe(url: string, catalogueId: number) {
   console.log(`Fetching ${url}`);
   const { content, screenshot } = await fetchBrowserPage(url);
+  const markdownContent = await simplifiedMarkdown(content);
   console.log(`Downloaded ${url}.`);
   console.log(`Detecting page type`);
   let pageType = await bestOutOf(
     5,
-    () => detectPageType(url, content, { screenshot }),
+    () =>
+      detectPageType({
+        url,
+        content: markdownContent,
+        screenshot: screenshot?.toString("base64"),
+      }),
     (p) => p as string
   );
   console.log(`Detected page type: ${pageType}`);

@@ -2,23 +2,14 @@ import {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
 } from "openai/resources/chat/completions";
+import { DefaultLlmPageOptions } from ".";
 import { assertBool, assertNumber, simpleToolCompletion } from "../../openai";
-import { simplifyHtml, toMarkdown } from "../browser";
-
-export interface ExtraOptions {
-  screenshot?: string;
-  logApiCalls?: {
-    extractionId: number;
-  };
-}
 
 export async function detectPageCount(
-  html: string,
+  defaultOptions: DefaultLlmPageOptions,
   urlPattern: string,
-  urlPatternType: string,
-  extraOptions?: ExtraOptions
+  urlPatternType: string
 ) {
-  const content = await toMarkdown(await simplifyHtml(html));
   const prompt = `
 You are being given information about a web page that has paginated links in its content.
 Your goal is to determine total number of pages, IF that information can be inferred from the page.
@@ -31,7 +22,7 @@ DETECTED PATTERN TYPE: ${urlPatternType}
 
 WEBSITE CONTENT:
 
-${content}
+${defaultOptions.content}
 `;
 
   const completionContent: ChatCompletionContentPart[] = [
@@ -41,10 +32,10 @@ ${content}
     },
   ];
 
-  if (extraOptions?.screenshot) {
+  if (defaultOptions?.screenshot) {
     completionContent.push({
       type: "image_url",
-      image_url: { url: `data:image/webp;base64,${extraOptions.screenshot}` },
+      image_url: { url: `data:image/webp;base64,${defaultOptions.screenshot}` },
     });
   }
 
@@ -68,10 +59,10 @@ ${content}
         type: "number",
       },
     },
-    logApiCall: extraOptions?.logApiCalls
+    logApiCall: defaultOptions?.logApiCalls
       ? {
           callSite: "detectPageCount",
-          extractionId: extraOptions.logApiCalls.extractionId,
+          extractionId: defaultOptions.logApiCalls.extractionId,
         }
       : undefined,
   });

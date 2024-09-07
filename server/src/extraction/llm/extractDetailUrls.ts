@@ -1,32 +1,17 @@
 import { ChatCompletionContentPart } from "openai/resources/chat/completions";
+import { DefaultLlmPageOptions, resolveAbsoluteUrl } from ".";
 import { PageType } from "../../data/schema";
 import { assertArray, assertString, simpleToolCompletion } from "../../openai";
-import { simplifyHtml, toMarkdown } from "../browser";
-
-export interface ExtraOptions {
-  screenshot?: string;
-  logApiCalls?: {
-    extractionId: number;
-  };
-}
-
-function resolveAbsoluteUrl(base: string, relative: string): string {
-  const baseUrl = new URL(base);
-  const absoluteUrl = new URL(relative, baseUrl);
-  return absoluteUrl.href;
-}
+import { simplifiedMarkdown } from "../browser";
 
 export default async function extractDetailUrls(
-  _url: string,
-  html: string,
-  dataType: PageType,
-  extraOptions?: ExtraOptions
+  defaultOptions: DefaultLlmPageOptions,
+  dataType: PageType
 ) {
   if (dataType == PageType.COURSE_DETAIL_PAGE) {
     throw new Error("Invalid page data type.");
   }
 
-  const content = await toMarkdown(await simplifyHtml(html));
   const descriptions = {
     [PageType.CATEGORY_LINKS_PAGE]: `
     Programs, careers, degrees, or course category pages.
@@ -97,7 +82,7 @@ export default async function extractDetailUrls(
     PAGE CONTENT
     ============
 
-    ${content}
+    ${defaultOptions.content}
   `;
 
   const completionContent: ChatCompletionContentPart[] = [
@@ -107,10 +92,10 @@ export default async function extractDetailUrls(
     },
   ];
 
-  if (extraOptions?.screenshot) {
+  if (defaultOptions?.screenshot) {
     completionContent.push({
       type: "image_url",
-      image_url: { url: `data:image/webp;base64,${extraOptions.screenshot}` },
+      image_url: { url: `data:image/webp;base64,${defaultOptions.screenshot}` },
     });
   }
 
@@ -133,9 +118,9 @@ export default async function extractDetailUrls(
         },
       },
     },
-    logApiCall: extraOptions?.logApiCalls
+    logApiCall: defaultOptions?.logApiCalls
       ? {
-          extractionId: extraOptions?.logApiCalls.extractionId,
+          extractionId: defaultOptions?.logApiCalls.extractionId,
           callSite: "extractDetailUrls",
         }
       : undefined,
@@ -152,7 +137,7 @@ export default async function extractDetailUrls(
   console.log(`Example matches is ${exampleMatches}`);
   const regexp = new RegExp(regexpStr, "g");
   const extract = async (baseUrl: string, rawContent: string) => {
-    const processedContent = await toMarkdown(await simplifyHtml(rawContent));
+    const processedContent = await simplifiedMarkdown(rawContent);
     const urls = processedContent.match(regexp) || [];
     return [
       ...new Set(
@@ -162,7 +147,7 @@ export default async function extractDetailUrls(
       ),
     ];
   };
-  const urls = content.match(regexp) || [];
+  const urls = defaultOptions.content.match(regexp) || [];
   if (!exampleMatches.every((u) => urls.find((u2) => u2 == u))) {
     throw new Error("Could not find every example");
   }

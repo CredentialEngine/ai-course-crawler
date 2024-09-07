@@ -65,13 +65,13 @@ export default function CrawlPageDetail() {
 
   let defaultTab = "raw_content";
 
-  if (item.simplifiedContent) {
+  if (item.markdownContent) {
     tabTriggers.push(
       <TabsTrigger value="simplified_content">Simplified Content</TabsTrigger>
     );
     tabContents.push(
       <TabsContent value="simplified_content">
-        <pre>{item.simplifiedContent}</pre>
+        <pre>{item.markdownContent}</pre>
       </TabsContent>
     );
   }

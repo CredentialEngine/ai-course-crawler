@@ -2,6 +2,7 @@ import {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
 } from "openai/resources/chat/completions";
+import { DefaultLlmPageOptions, resolveAbsoluteUrl } from ".";
 import { PageType, PaginationConfiguration } from "../../data/schema";
 import {
   BadToolCallResponseError,
@@ -12,7 +13,6 @@ import {
   assertStringEnum,
   simpleToolCompletion,
 } from "../../openai";
-import { simplifyHtml, toMarkdown } from "../browser";
 
 const pageTypeDescriptions = {
   [PageType.COURSE_LINKS_PAGE]:
@@ -26,13 +26,6 @@ const pageTypeDescriptions = {
     "IF there is pagination, it is for pages of course descriptions.",
 };
 
-export interface ExtraOptions {
-  screenshot?: string;
-  logApiCalls?: {
-    extractionId: number;
-  };
-}
-
 function getUrlPath(urlString: string): string {
   try {
     const url = new URL(urlString);
@@ -43,12 +36,9 @@ function getUrlPath(urlString: string): string {
 }
 
 export async function detectPagination(
-  url: string,
-  html: string,
-  rootPageType: PageType,
-  extraOptions?: ExtraOptions
+  defaultOptions: DefaultLlmPageOptions,
+  rootPageType: PageType
 ): Promise<PaginationConfiguration | undefined> {
-  const content = await toMarkdown(await simplifyHtml(html));
   const prompt = `
 Your goal is to determine whether the given website has pagination, and how that pagination works.
 
@@ -82,7 +72,7 @@ ${pageTypeDescriptions[rootPageType]}
 
 WEBSITE CONTENT:
 
-${content}
+${defaultOptions.content}
 `;
 
   const completionContent: ChatCompletionContentPart[] = [
@@ -92,10 +82,10 @@ ${content}
     },
   ];
 
-  if (extraOptions?.screenshot) {
+  if (defaultOptions?.screenshot) {
     completionContent.push({
       type: "image_url",
-      image_url: { url: `data:image/webp;base64,${extraOptions.screenshot}` },
+      image_url: { url: `data:image/webp;base64,${defaultOptions.screenshot}` },
     });
   }
 
@@ -123,9 +113,9 @@ ${content}
         type: "number",
       },
     },
-    logApiCall: extraOptions?.logApiCalls
+    logApiCall: defaultOptions?.logApiCalls
       ? {
-          extractionId: extraOptions.logApiCalls.extractionId,
+          extractionId: defaultOptions.logApiCalls.extractionId,
           callSite: "detectPagination",
         }
       : undefined,
@@ -160,7 +150,7 @@ ${content}
   }
 
   const detectedPath = getUrlPath(urlPattern);
-  if (!html.includes(detectedPath)) {
+  if (!defaultOptions.content.includes(detectedPath)) {
     throw new BadToolCallResponseError(
       `Detected path ${detectedPath} not found in HTML`
     );

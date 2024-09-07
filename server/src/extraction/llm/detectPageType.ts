@@ -2,23 +2,11 @@ import {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
 } from "openai/resources/chat/completions";
+import { DefaultLlmPageOptions } from ".";
 import { PageType } from "../../data/schema";
 import { assertStringEnum, simpleToolCompletion } from "../../openai";
-import { simplifyHtml, toMarkdown } from "../browser";
 
-export interface ExtraOptions {
-  screenshot?: string;
-  logApiCalls?: {
-    extractionId: number;
-  };
-}
-
-export async function detectPageType(
-  url: string,
-  html: string,
-  extraOptions?: ExtraOptions
-) {
-  const content = await toMarkdown(await simplifyHtml(html));
+export async function detectPageType(defaultOptions: DefaultLlmPageOptions) {
   const prompt = `
   You are an agent in a system that autonomously scrapes course data from the internet.
 
@@ -133,11 +121,11 @@ export async function detectPageType(
   - the examples are not exhaustive or meant to represent the whole universe of content out there.
     They're just examples that give you an idea of what the content looks like.
 
-  URL: ${url}
+  URL: ${defaultOptions.url}
 
   PAGE CONTENT
   ============
-  ${content}
+  ${defaultOptions.content}
 `;
 
   const pageTypes = [
@@ -154,10 +142,10 @@ export async function detectPageType(
     },
   ];
 
-  if (extraOptions?.screenshot) {
+  if (defaultOptions?.screenshot) {
     completionContent.push({
       type: "image_url",
-      image_url: { url: `data:image/webp;base64,${extraOptions.screenshot}` },
+      image_url: { url: `data:image/webp;base64,${defaultOptions.screenshot}` },
     });
   }
 
@@ -177,9 +165,9 @@ export async function detectPageType(
         enum: pageTypes,
       },
     },
-    logApiCall: extraOptions?.logApiCalls
+    logApiCall: defaultOptions?.logApiCalls
       ? {
-          extractionId: extraOptions.logApiCalls.extractionId,
+          extractionId: defaultOptions.logApiCalls.extractionId,
           callSite: "detectPageType",
         }
       : undefined,

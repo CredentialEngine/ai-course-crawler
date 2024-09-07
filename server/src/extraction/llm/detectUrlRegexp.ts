@@ -1,13 +1,13 @@
 import { ChatCompletionContentPart } from "openai/resources/chat/completions";
+import { DefaultLlmPageOptions } from ".";
 import { PageType } from "../../data/schema";
 import { assertArray, assertString, simpleToolCompletion } from "../../openai";
 import { resolveAbsoluteUrl } from "../../utils";
-import { simplifyHtml, toMarkdown } from "../browser";
+import { SimplifiedMarkdown } from "../../types";
 
 export function createUrlExtractor(regexp: RegExp) {
-  return async (baseUrl: string, html: string) => {
-    const processedContent = await toMarkdown(await simplifyHtml(html));
-    const urls = processedContent.match(regexp) || [];
+  return async (baseUrl: string, content: SimplifiedMarkdown) => {
+    const urls = content.match(regexp) || [];
     return [
       ...new Set(
         urls.map((foundUrl) => {
@@ -18,23 +18,14 @@ export function createUrlExtractor(regexp: RegExp) {
   };
 }
 
-export interface ExtraOptions {
-  screenshot?: string;
-  logApiCalls?: {
-    extractionId: number;
-  };
-}
-
 export default async function detectUrlRegexp(
-  dataType: PageType,
-  html: string,
-  extraOptions?: ExtraOptions
+  defaultOptions: DefaultLlmPageOptions,
+  dataType: PageType
 ) {
   if (dataType == PageType.COURSE_DETAIL_PAGE) {
     throw new Error("Invalid page data type.");
   }
 
-  const content = await toMarkdown(await simplifyHtml(html));
   const descriptions = {
     [PageType.CATEGORY_LINKS_PAGE]: `
     Programs, careers, degrees, or course category pages.
@@ -105,7 +96,7 @@ export default async function detectUrlRegexp(
     PAGE CONTENT
     ============
 
-    ${content}
+    ${defaultOptions.content}
   `;
 
   const completionContent: ChatCompletionContentPart[] = [
@@ -115,10 +106,10 @@ export default async function detectUrlRegexp(
     },
   ];
 
-  if (extraOptions?.screenshot) {
+  if (defaultOptions?.screenshot) {
     completionContent.push({
       type: "image_url",
-      image_url: { url: `data:image/webp;base64,${extraOptions.screenshot}` },
+      image_url: { url: `data:image/webp;base64,${defaultOptions.screenshot}` },
     });
   }
 
@@ -141,9 +132,9 @@ export default async function detectUrlRegexp(
         },
       },
     },
-    logApiCall: extraOptions?.logApiCalls
+    logApiCall: defaultOptions?.logApiCalls
       ? {
-          extractionId: extraOptions.logApiCalls.extractionId,
+          extractionId: defaultOptions.logApiCalls.extractionId,
           callSite: "detectUrlRegexp",
         }
       : undefined,
@@ -160,7 +151,7 @@ export default async function detectUrlRegexp(
   console.log(`Example matches is ${exampleMatches}`);
   const regexp = new RegExp(regexpStr, "g");
 
-  const urls = content.match(regexp) || [];
+  const urls = defaultOptions.content.match(regexp) || [];
   if (!exampleMatches.every((u) => urls.find((u2) => u2 == u))) {
     throw new Error("Could not find every example");
   }

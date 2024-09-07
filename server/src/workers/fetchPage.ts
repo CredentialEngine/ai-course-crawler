@@ -17,10 +17,18 @@ import {
   PageStatus,
   PageType,
   PaginationConfiguration,
+  readMarkdownContent,
+  readScreenshot,
   RecipeConfiguration,
   Step,
+  storeContent,
+  storeScreenshot,
 } from "../data/schema";
-import { closeCluster, fetchBrowserPage } from "../extraction/browser";
+import {
+  closeCluster,
+  fetchBrowserPage,
+  simplifiedMarkdown,
+} from "../extraction/browser";
 import { detectPageCount } from "../extraction/llm/detectPageCount";
 import { createUrlExtractor } from "../extraction/llm/detectUrlRegexp";
 
@@ -62,13 +70,22 @@ async function enqueuePages(
   console.log(`Enqueuing page fetches for page ${crawlPage.id}`);
 
   const pageCount = await detectPageCount(
-    crawlPage.content!,
-    configuration.pagination!.urlPattern,
-    configuration.pagination!.urlPatternType,
     {
-      screenshot: crawlPage.screenshot!,
+      content: await readMarkdownContent(
+        crawlPage.crawlStep.extractionId,
+        crawlPage.crawlStepId,
+        crawlPage.id
+      ),
+      screenshot: await readScreenshot(
+        crawlPage.crawlStep.extractionId,
+        crawlPage.crawlStepId,
+        crawlPage.id
+      ),
       logApiCalls: { extractionId: crawlPage.crawlStep.extractionId },
-    }
+      url: crawlPage.url,
+    },
+    configuration.pagination!.urlPattern,
+    configuration.pagination!.urlPatternType
   );
 
   if (!pageCount) {
@@ -113,7 +130,12 @@ async function processLinks(
 
   const regexp = new RegExp(configuration.linkRegexp!, "g");
   const extractor = createUrlExtractor(regexp);
-  const urls = await extractor(crawlPage.url, crawlPage.content!);
+  const content = await readMarkdownContent(
+    crawlPage.crawlStep.extractionId,
+    crawlPage.crawlStepId,
+    crawlPage.id
+  );
+  const urls = await extractor(crawlPage.url, content);
 
   const stepAndPages = await createStepAndPages({
     extractionId: crawlPage.crawlStep.extractionId,
@@ -187,11 +209,23 @@ const fetchPage: Processor<FetchPageJob, FetchPageProgress> = async (job) => {
     if (!page.content) {
       throw new Error(`Could not fetch URL ${crawlPage.url}`);
     }
-    crawlPage.content = page.content;
-    crawlPage.screenshot = page.screenshot || null;
+    const markdownContent = await simplifiedMarkdown(page.content);
+    crawlPage.content = await storeContent(
+      crawlPage.crawlStep.extractionId,
+      crawlPage.crawlStepId,
+      crawlPage.id,
+      page.content,
+      markdownContent
+    );
+    crawlPage.screenshot = await storeScreenshot(
+      crawlPage.crawlStep.extractionId,
+      crawlPage.crawlStepId,
+      crawlPage.id,
+      page.screenshot
+    );
     await updatePage(crawlPage.id, {
-      content: page.content,
-      screenshot: page.screenshot,
+      content: crawlPage.content,
+      screenshot: crawlPage.screenshot,
     });
     await processNextStep(crawlPage);
     await updatePage(crawlPage.id, {

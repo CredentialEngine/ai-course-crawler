@@ -2,9 +2,9 @@ import {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
 } from "openai/resources/chat/completions";
+import { DefaultLlmPageOptions } from ".";
 import { CourseStructuredData } from "../../appRouter";
 import { assertArray, simpleToolCompletion } from "../../openai";
-import { simplifyHtml, toMarkdown } from "../browser";
 
 const validCreditUnitTypes = [
   "AcademicYear",
@@ -25,19 +25,9 @@ const validCreditUnitTypes = [
   "UNKNOWN",
 ];
 
-export interface ExtraOptions {
-  screenshot?: string;
-  logApiCalls?: {
-    extractionId: number;
-  };
-}
-
 export async function extractCourseDataItem(
-  url: string,
-  html: string,
-  extraOptions?: ExtraOptions
+  defaultOptions: DefaultLlmPageOptions
 ) {
-  const content = await toMarkdown(await simplifyHtml(html));
   const prompt = `
 Your goal is to extract course data from this page.
 
@@ -55,11 +45,11 @@ Course credits type: infer it from the page (ref. one of the enum values)
 
 PAGE URL:
 
-${url}
+${defaultOptions.url}
 
 SIMPLIFIED PAGE CONTENT:
 
-${content}
+${defaultOptions.content}
 `;
 
   const completionContent: ChatCompletionContentPart[] = [
@@ -69,10 +59,10 @@ ${content}
     },
   ];
 
-  if (extraOptions?.screenshot) {
+  if (defaultOptions?.screenshot) {
     completionContent.push({
       type: "image_url",
-      image_url: { url: `data:image/webp;base64,${extraOptions.screenshot}` },
+      image_url: { url: `data:image/webp;base64,${defaultOptions.screenshot}` },
     });
   }
 
@@ -116,9 +106,9 @@ ${content}
       },
     },
     requiredParameters: ["courses"],
-    logApiCall: extraOptions?.logApiCalls
+    logApiCall: defaultOptions?.logApiCalls
       ? {
-          extractionId: extraOptions.logApiCalls.extractionId,
+          extractionId: defaultOptions.logApiCalls.extractionId,
           callSite: "extractCourseDataItem",
         }
       : undefined,

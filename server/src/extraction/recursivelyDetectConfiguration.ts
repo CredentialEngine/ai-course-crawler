@@ -1,7 +1,7 @@
 import { inspect } from "util";
 import { PageType, RecipeConfiguration } from "../data/schema";
 import { bestOutOf, exponentialRetry, unique } from "../utils";
-import { fetchBrowserPage } from "./browser";
+import { fetchBrowserPage, simplifiedMarkdown } from "./browser";
 import { detectPageType } from "./llm/detectPageType";
 import { detectPagination } from "./llm/detectPagination";
 import detectUrlRegexp, { createUrlExtractor } from "./llm/detectUrlRegexp";
@@ -11,12 +11,19 @@ const sample = <T>(arr: T[], sampleSize: number) =>
 
 const detectConfiguration = async (url: string) => {
   const { content, screenshot } = await fetchBrowserPage(url);
+  const markdownContent = await simplifiedMarkdown(content);
+  const encodedScreenshot = screenshot?.toString("base64");
   console.log(`Detecting page type for ${url}`);
   const pageType = await bestOutOf(
     5,
     () =>
       exponentialRetry(
-        async () => detectPageType(url, content, { screenshot }),
+        async () =>
+          detectPageType({
+            url,
+            content: markdownContent,
+            screenshot: encodedScreenshot,
+          }),
         10
       ),
     (t) => t as string
@@ -30,7 +37,11 @@ const detectConfiguration = async (url: string) => {
     5,
     () =>
       exponentialRetry(
-        async () => detectPagination(url, content, pageType, { screenshot }),
+        async () =>
+          detectPagination(
+            { url, content: markdownContent, screenshot: encodedScreenshot },
+            pageType
+          ),
         10
       ),
     (p) => inspect(p)
@@ -46,7 +57,11 @@ const detectConfiguration = async (url: string) => {
       5,
       () =>
         exponentialRetry(
-          async () => detectUrlRegexp(pageType, content, { screenshot }),
+          async () =>
+            detectUrlRegexp(
+              { url, content: markdownContent, screenshot: encodedScreenshot },
+              pageType
+            ),
           10
         ),
       (r) => r.source
@@ -54,7 +69,7 @@ const detectConfiguration = async (url: string) => {
     console.log(`Detect as ${linkRegexp}`);
   }
   return {
-    content,
+    content: markdownContent,
     linkRegexp,
     pageType,
     pagination,

@@ -8,6 +8,13 @@ import {
   unique,
 } from "drizzle-orm/sqlite-core";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { promises as fs } from "fs";
+import path from "path";
+import { gzip as syncGzip, gunzip as syncGunzip } from "zlib";
+import { promisify } from "util";
+import { SimplifiedMarkdown } from "../types";
+const gzip = promisify(syncGzip);
+const gunzip = promisify(syncGunzip);
 
 if (!process.env.ENCRYPTION_KEY)
   throw new Error("Please define an encryption key.");
@@ -127,6 +134,130 @@ export interface CompletionStats {
 
 export function getSqliteTimestamp() {
   return sql`CURRENT_TIMESTAMP`;
+}
+
+async function createStepDirectory(
+  basePath: string,
+  extractionId: number,
+  crawlStepId: number
+): Promise<string> {
+  if (!basePath) {
+    throw new Error("EXTRACTION_FILES_PATH environment variable is not set");
+  }
+
+  const dirPath = path.join(
+    basePath,
+    extractionId.toString(),
+    crawlStepId.toString()
+  );
+
+  await fs.mkdir(dirPath, { recursive: true });
+  return dirPath;
+}
+
+export async function storeContent(
+  extractionId: number,
+  crawlStepId: number,
+  crawlPageId: number,
+  content: string,
+  markdownContent: string
+): Promise<string | null> {
+  const basePath = process.env.EXTRACTION_FILES_PATH;
+  const dirPath = await createStepDirectory(
+    basePath!,
+    extractionId,
+    crawlStepId
+  );
+  const htmlFilePath = path.join(dirPath, `${crawlPageId}.html.gz`);
+  const mdFilePath = path.join(dirPath, `${crawlPageId}.md.gz`);
+
+  const gzippedHtml = await gzip(content);
+  await fs.writeFile(htmlFilePath, gzippedHtml);
+
+  const gzippedMd = await gzip(markdownContent);
+  await fs.writeFile(mdFilePath, gzippedMd);
+
+  return htmlFilePath;
+}
+
+export async function storeScreenshot(
+  extractionId: number,
+  crawlStepId: number,
+  crawlPageId: number,
+  screenshot: Buffer | undefined
+): Promise<string | null> {
+  if (!screenshot) {
+    return null;
+  }
+
+  const basePath = process.env.EXTRACTION_FILES_PATH;
+
+  try {
+    const dirPath = await createStepDirectory(
+      basePath!,
+      extractionId,
+      crawlStepId
+    );
+    const screenshotFilePath = path.join(dirPath, `${crawlPageId}.png.gz`);
+
+    const gzippedScreenshot = await gzip(screenshot);
+    await fs.writeFile(screenshotFilePath, gzippedScreenshot);
+    return screenshotFilePath;
+  } catch (error) {
+    console.error("Error storing screenshot:", error);
+    return null;
+  }
+}
+
+export async function readContent(
+  extractionId: number,
+  crawlStepId: number,
+  crawlPageId: number
+): Promise<string> {
+  const basePath = process.env.EXTRACTION_FILES_PATH;
+  const filePath = path.join(
+    basePath!,
+    extractionId.toString(),
+    crawlStepId.toString(),
+    `${crawlPageId}.html.gz`
+  );
+  const compressedContent = await fs.readFile(filePath);
+  const decompressedContent = await gunzip(compressedContent);
+  return decompressedContent.toString();
+}
+
+export async function readMarkdownContent(
+  extractionId: number,
+  crawlStepId: number,
+  crawlPageId: number
+): Promise<SimplifiedMarkdown> {
+  const basePath = process.env.EXTRACTION_FILES_PATH;
+  const filePath = path.join(
+    basePath!,
+    extractionId.toString(),
+    crawlStepId.toString(),
+    `${crawlPageId}.md.gz`
+  );
+  const compressedContent = await fs.readFile(filePath);
+  const decompressedContent = await gunzip(compressedContent);
+  return decompressedContent.toString() as SimplifiedMarkdown;
+}
+
+export async function readScreenshot(
+  extractionId: number,
+  crawlStepId: number,
+  crawlPageId: number
+): Promise<string> {
+  const basePath = process.env.EXTRACTION_FILES_PATH;
+  const filePath = path.join(
+    basePath!,
+    extractionId.toString(),
+    crawlStepId.toString(),
+    `${crawlPageId}.png.gz`
+  );
+  const compressedContent = await fs.readFile(filePath);
+  const decompressedContent = await gunzip(compressedContent);
+  return decompressedContent.toString("base64");
 }
 
 const catalogues = sqliteTable("catalogues", {
