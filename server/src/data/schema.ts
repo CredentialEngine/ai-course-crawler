@@ -274,26 +274,32 @@ const cataloguesRelations = relations(catalogues, ({ many }) => ({
   recipes: many(recipes),
 }));
 
-const recipes = sqliteTable("recipes", {
-  id: integer("id").primaryKey(),
-  isDefault: integer("is_default", { mode: "boolean" })
-    .default(false)
-    .notNull(),
-  catalogueId: integer("catalogue_id")
-    .notNull()
-    .references(() => catalogues.id, { onDelete: "cascade" }),
-  url: text("url").notNull(),
-  configuration: text("configuration", { mode: "json" })
-    .$type<RecipeConfiguration>()
-    .notNull(),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-  detectionFailureReason: text("detection_failure_reason"),
-  status: text("status", { enum: toDbEnum(RecipeDetectionStatus) })
-    .notNull()
-    .default(RecipeDetectionStatus.WAITING),
-});
+const recipes = sqliteTable(
+  "recipes",
+  {
+    id: integer("id").primaryKey(),
+    isDefault: integer("is_default", { mode: "boolean" })
+      .default(false)
+      .notNull(),
+    catalogueId: integer("catalogue_id")
+      .notNull()
+      .references(() => catalogues.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    configuration: text("configuration", { mode: "json" })
+      .$type<RecipeConfiguration>()
+      .notNull(),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    detectionFailureReason: text("detection_failure_reason"),
+    status: text("status", { enum: toDbEnum(RecipeDetectionStatus) })
+      .notNull()
+      .default(RecipeDetectionStatus.WAITING),
+  },
+  (t) => ({
+    catalogueIdx: index("recipes_catalogue_idx").on(t.catalogueId),
+  })
+);
 
 const recipesRelations = relations(recipes, ({ one, many }) => ({
   catalogue: one(catalogues, {
@@ -303,21 +309,27 @@ const recipesRelations = relations(recipes, ({ one, many }) => ({
   extractions: many(extractions),
 }));
 
-const extractions = sqliteTable("extractions", {
-  id: integer("id").primaryKey(),
-  recipeId: integer("recipe_id")
-    .notNull()
-    .references(() => recipes.id, { onDelete: "cascade" }),
-  completionStats: text("completion_stats", {
-    mode: "json",
-  }).$type<CompletionStats>(),
-  status: text("status", { enum: toDbEnum(ExtractionStatus) })
-    .notNull()
-    .default(ExtractionStatus.WAITING),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-});
+const extractions = sqliteTable(
+  "extractions",
+  {
+    id: integer("id").primaryKey(),
+    recipeId: integer("recipe_id")
+      .notNull()
+      .references(() => recipes.id, { onDelete: "cascade" }),
+    completionStats: text("completion_stats", {
+      mode: "json",
+    }).$type<CompletionStats>(),
+    status: text("status", { enum: toDbEnum(ExtractionStatus) })
+      .notNull()
+      .default(ExtractionStatus.WAITING),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => ({
+    recipeIdx: index("extractions_recipe_idx").on(t.recipeId),
+  })
+);
 
 const extractionsRelations = relations(extractions, ({ one, many }) => ({
   recipe: one(recipes, {
@@ -347,7 +359,7 @@ const modelApiCalls = sqliteTable(
       .default(sql`CURRENT_TIMESTAMP`),
   },
   (t) => ({
-    extractionIdx: index("extraction_idx").on(t.extractionId),
+    extractionIdx: index("model_api_calls_extraction_idx").on(t.extractionId),
   })
 );
 
@@ -358,19 +370,25 @@ const modelApiCallsRelations = relations(modelApiCalls, ({ one }) => ({
   }),
 }));
 
-const extractionLogs = sqliteTable("extraction_logs", {
-  id: integer("id").primaryKey(),
-  extractionId: integer("extraction_id")
-    .notNull()
-    .references(() => extractions.id, { onDelete: "cascade" }),
-  log: text("log").notNull(),
-  logLevel: text("log_level", { enum: toDbEnum(LogLevel) })
-    .notNull()
-    .default(LogLevel.INFO),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-});
+const extractionLogs = sqliteTable(
+  "extraction_logs",
+  {
+    id: integer("id").primaryKey(),
+    extractionId: integer("extraction_id")
+      .notNull()
+      .references(() => extractions.id, { onDelete: "cascade" }),
+    log: text("log").notNull(),
+    logLevel: text("log_level", { enum: toDbEnum(LogLevel) })
+      .notNull()
+      .default(LogLevel.INFO),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => ({
+    extractionIdx: index("extraction_logs_extraction_idx").on(t.extractionId),
+  })
+);
 
 const extractionLogsRelations = relations(extractionLogs, ({ one }) => ({
   extraction: one(extractions, {
@@ -379,25 +397,32 @@ const extractionLogsRelations = relations(extractionLogs, ({ one }) => ({
   }),
 }));
 
-const crawlSteps = sqliteTable("crawl_steps", {
-  id: integer("id").primaryKey(),
-  extractionId: integer("extraction_id")
-    .notNull()
-    .references(() => extractions.id, { onDelete: "cascade" }),
-  step: text("step", { enum: toDbEnum(Step) }).notNull(),
-  parentStepId: integer("parent_step_id").references(
-    (): AnySQLiteColumn => crawlSteps.id,
-    {
-      onDelete: "cascade",
-    }
-  ),
-  configuration: text("configuration", { mode: "json" })
-    .$type<RecipeConfiguration>()
-    .notNull(),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-});
+const crawlSteps = sqliteTable(
+  "crawl_steps",
+  {
+    id: integer("id").primaryKey(),
+    extractionId: integer("extraction_id")
+      .notNull()
+      .references(() => extractions.id, { onDelete: "cascade" }),
+    step: text("step", { enum: toDbEnum(Step) }).notNull(),
+    parentStepId: integer("parent_step_id").references(
+      (): AnySQLiteColumn => crawlSteps.id,
+      {
+        onDelete: "cascade",
+      }
+    ),
+    configuration: text("configuration", { mode: "json" })
+      .$type<RecipeConfiguration>()
+      .notNull(),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => ({
+    extractionIdx: index("crawl_steps_extraction_idx").on(t.extractionId),
+    parentStepIdx: index("crawl_steps_parent_step_idx").on(t.parentStepId),
+  })
+);
 
 const crawlStepsRelations = relations(crawlSteps, ({ one, many }) => ({
   extraction: one(extractions, {
@@ -433,9 +458,9 @@ const crawlPages = sqliteTable(
   },
   (t) => ({
     uniq: unique().on(t.crawlStepId, t.url),
-    statusIdx: index("status_idx").on(t.status),
-    dataTypeIdx: index("data_type_idx").on(t.dataType),
-    stepIdx: index("step_idx").on(t.crawlStepId),
+    statusIdx: index("crawl_pages_status_idx").on(t.status),
+    dataTypeIdx: index("crawl_pages_data_type_idx").on(t.dataType),
+    stepIdx: index("crawl_pages_step_idx").on(t.crawlStepId),
   })
 );
 
@@ -463,6 +488,8 @@ const datasets = sqliteTable(
   },
   (t) => ({
     uniq: unique().on(t.catalogueId, t.extractionId),
+    catalogueIdx: index("datasets_catalogue_idx").on(t.catalogueId),
+    extractionIdx: index("datasets_extraction_idx").on(t.extractionId),
   })
 );
 
@@ -474,21 +501,28 @@ const datasetsRelations = relations(datasets, ({ one, many }) => ({
   dataItems: many(dataItems),
 }));
 
-const dataItems = sqliteTable("data_items", {
-  id: integer("id").primaryKey(),
-  datasetId: integer("dataset_id")
-    .notNull()
-    .references(() => datasets.id, { onDelete: "cascade" }),
-  crawlPageId: integer("crawl_page_id").references(() => crawlPages.id, {
-    onDelete: "cascade",
-  }),
-  structuredData: text("structured_data", { mode: "json" })
-    .$type<CourseStructuredData>()
-    .notNull(),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-});
+const dataItems = sqliteTable(
+  "data_items",
+  {
+    id: integer("id").primaryKey(),
+    datasetId: integer("dataset_id")
+      .notNull()
+      .references(() => datasets.id, { onDelete: "cascade" }),
+    crawlPageId: integer("crawl_page_id").references(() => crawlPages.id, {
+      onDelete: "cascade",
+    }),
+    structuredData: text("structured_data", { mode: "json" })
+      .$type<CourseStructuredData>()
+      .notNull(),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (t) => ({
+    datasetIdx: index("data_items_dataset_idx").on(t.datasetId),
+    crawlPageIdx: index("data_items_crawl_page_idx").on(t.crawlPageId),
+  })
+);
 
 const dataItemsRelations = relations(dataItems, ({ one }) => ({
   dataset: one(datasets, {

@@ -64,6 +64,13 @@
       "when": 1725502317638,
       "tag": "0008_curly_vance_astro",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1725733734098,
+      "tag": "0009_fast_hedge_knight",
+      "breakpoints": true
     }
   ]
 }
