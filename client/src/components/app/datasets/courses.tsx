@@ -34,6 +34,24 @@ function CourseDisplayItem({ item }: CourseDisplayItemProps) {
     );
   }
 
+  const displayCredits = () => {
+    const min = structuredData.course_credits_min;
+    const max = structuredData.course_credits_max;
+    if (!min && !max) {
+      return "";
+    }
+    if (!min) {
+      return max;
+    }
+    if (!max) {
+      return min;
+    }
+    if (min === max) {
+      return max;
+    }
+    return `${min}-${max}`;
+  };
+
   return (
     <TableRow>
       <TableCell className="text-sm">{item.id}</TableCell>
@@ -44,9 +62,7 @@ function CourseDisplayItem({ item }: CourseDisplayItemProps) {
       <TableCell className="text-sm max-w-80">
         {structuredData.course_description}
       </TableCell>
-      <TableCell className="text-sm">
-        {structuredData.course_credits_min}-{structuredData.course_credits_max}
-      </TableCell>
+      <TableCell className="text-sm">{displayCredits()}</TableCell>
     </TableRow>
   );
 }
