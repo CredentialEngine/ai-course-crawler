@@ -28,15 +28,65 @@ export default async function detectUrlRegexp(
 
   const descriptions = {
     [PageType.CATEGORY_LINKS_PAGE]: `
+    CATEGORY LINKS
+
     Programs, careers, degrees, or course category pages.
     In other words, the page links to "categories" or "groups" of courses, and we'll find more detailed course
     information if we navigate to those category pages.
+
+    EXAMPLE ON HOW TO IDENTIFY THE CATEGORIES:
+
+    ...
+    Possibly links to other things (that are not categories)... (we don't want these)
+    ...
+    # Main Content
+
+    *   [Academic Skills Courses (ASC)](/catalog/course-descriptions/asc/)
+    *   [Accounting (ACCT)](/catalog/course-descriptions/acct/)
+    *   [Agricultural Economics (AGEC)](/catalog/course-descriptions/agec/)
+    *   [Agricultural Systems Management (ASM)](/catalog/course-descriptions/asm/)
+    *   [Agriculture (AGRI)](/catalog/course-descriptions/agri/)
+    *   [Allied Health (AH)](/catalog/course-descriptions/ah/)
+    *   [Animal and Range Science (ANSC)](/catalog/course-descriptions/ansc/)
+    *   [Anthropology (ANTH)](/catalog/course-descriptions/anth/)
+    *   [Architectural Drafting & Estimating Technology (ARCT)](/catalog/course-descriptions/arct/)
+    *   [Art (ART)](/catalog/course-descriptions/art/)
+    *   [Artificial Intelligence (AI)](/catalog/course-descriptions/ai/)
+    *   [Automation Management (AM)](/catalog/course-descriptions/am/)
+    *   [Automotive Collision Technology (ABOD)](/catalog/course-descriptions/abod/)
+    *   [Automotive Technology (AUTO)](/catalog/course-descriptions/auto/)
+    ...
+    Possibly links to other things (that are not categories)... (we don't want these)
+    ...
+
+    > page_type: category_links
+    > Reason: The content is mostly links to generic subjects like "Accounting" and "Art" and not to individual courses.
+
     `,
 
     [PageType.COURSE_LINKS_PAGE]: `
+    COURSE LINKS
+
     Course detail pages in an educational institution.
     Typically those links include the course identifier and/or description.
     Presumably, more information about the course will be in the destination link.
+
+    EXAMPLE ON HOW TO IDENTIFY THE COURSE LINKS:
+
+    ...
+    Possibly links to other things (that are not courses)... (we don't want these)
+    ...
+    ...
+    # Main Content
+
+    [ACCT 101 - Financial Accounting](preview_course_nopop.php?catoid=7&coid=23568)
+    [ACCT 102 - Managerial Accounting](preview_course_nopop.php?catoid=7&coid=23569)
+    [ACCT 106 - Payroll Accounting](preview_course_nopop.php?catoid=7&coid=23570)
+    [ACCT 118 - Financial Concepts for Accounting](preview_course_nopop.php?catoid=7&coid=23571)
+    [ACCT 122 - Accounting Systems Applications](preview_course_nopop.php?catoid=7&coid=23572)
+    ...
+    Possibly links to other things (that are not couses)... (we don't want these)
+    ...
     `,
   };
 
