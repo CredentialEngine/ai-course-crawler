@@ -70,6 +70,10 @@ For context, the page is a course catalogue index:
 
 ${pageTypeDescriptions[rootPageType]}
 
+URL FOR THIS PAGE:
+
+${defaultOptions.url}
+
 WEBSITE CONTENT:
 
 ${defaultOptions.content}
