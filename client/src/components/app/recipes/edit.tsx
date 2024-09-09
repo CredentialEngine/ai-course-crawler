@@ -46,8 +46,8 @@ const FormSchema = z.object({
 
 export default function EditRecipe() {
   const [lockedDelete, setLockDelete] = useState(true);
-  const [_location, navigate] = useLocation();
-  let { catalogueId, recipeId } = useParams();
+  const [, navigate] = useLocation();
+  const { catalogueId, recipeId } = useParams();
   const catalogueQuery = trpc.catalogues.detail.useQuery(
     { id: parseInt(catalogueId || "") },
     { enabled: !!catalogueId }
@@ -145,7 +145,10 @@ export default function EditRecipe() {
   const breadCrumbs = [
     { label: "Catalogues", href: "/" },
     { label: catalogueQuery.data.name, href: `/${catalogueId}` },
-    { label: "Recipe", href: `/${catalogueId}/${recipeId}` },
+    {
+      label: `Recipe #${recipe.id}`,
+      href: `/${catalogueId}/recipes/${recipeId}`,
+    },
   ];
 
   return (

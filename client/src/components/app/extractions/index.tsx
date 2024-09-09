@@ -22,18 +22,14 @@ const ExtractionListItem = (extraction: ExtractionSummary) => {
   const catalogue = extraction.recipe.catalogue;
   let totalDownloads = 0,
     totalDownloadsAttempted = 0,
-    totalDownloadErrors = 0,
     totalExtractionsPossible = 0,
-    totalExtractionsAttempted = 0,
-    totalExtractionErrors = 0;
+    totalExtractionsAttempted = 0;
   for (const step of extraction.completionStats?.steps || []) {
     totalDownloads += step.downloads.total;
     totalDownloadsAttempted += step.downloads.attempted;
-    totalDownloadErrors += step.downloads.attempted - step.downloads.succeeded;
     totalExtractionsPossible += step.downloads.succeeded;
     totalExtractionsAttempted += step.extractions.attempted;
-    totalExtractionErrors +=
-      step.extractions.attempted - step.extractions.succeeded;
+    step.extractions.attempted - step.extractions.succeeded;
   }
   return (
     <TableRow>
@@ -53,14 +49,16 @@ const ExtractionListItem = (extraction: ExtractionSummary) => {
       <TableCell className="text-xs">{extraction.status}</TableCell>
       <TableCell className="text-xs">
         {extraction.completionStats
-          ? `${Math.floor((totalDownloadsAttempted / totalDownloads) * 100)}%`
+          ? totalDownloads > 0
+            ? `${Math.floor((totalDownloadsAttempted / totalDownloads) * 100)}%`
+            : "0%"
           : "Pending"}
       </TableCell>
       <TableCell className="text-xs">
         {extraction.completionStats
-          ? `${Math.floor(
-              (totalExtractionsAttempted / totalExtractionsPossible) * 100
-            )}%`
+          ? totalExtractionsPossible > 0
+            ? `${Math.floor((totalExtractionsAttempted / totalExtractionsPossible) * 100)}%`
+            : "0%"
           : "Pending"}
       </TableCell>
       <TableCell className="text-xs">
