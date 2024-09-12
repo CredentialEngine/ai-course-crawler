@@ -1,8 +1,8 @@
 import * as cheerio from "cheerio";
 import { Cluster } from "puppeteer-cluster";
 import TurndownService from "turndown";
-import { resolveAbsoluteUrl } from "../utils";
 import { SimplifiedMarkdown } from "../types";
+import { resolveAbsoluteUrl } from "../utils";
 
 export interface BrowserTaskInput {
   url: string;
@@ -12,6 +12,7 @@ export interface BrowserTaskResult {
   url: string;
   content: string;
   screenshot?: Buffer;
+  status: number;
 }
 
 let cluster: Cluster<BrowserTaskInput, BrowserTaskResult> | undefined;
@@ -37,7 +38,10 @@ export async function getCluster() {
   await cluster.task(async ({ page, data }) => {
     page.setDefaultTimeout(PAGE_TIMEOUT);
     const { url } = data;
-    await page.goto(url, { timeout: PAGE_TIMEOUT });
+    const response = await page.goto(url, { timeout: PAGE_TIMEOUT });
+    if (!response) {
+      throw new Error(`Failed to load page ${url}`);
+    }
     const content = await page.content();
     const screenshot = await page.screenshot({
       type: "webp",
@@ -48,6 +52,7 @@ export async function getCluster() {
       url,
       content,
       screenshot,
+      status: response.status(),
     };
   });
   return cluster;

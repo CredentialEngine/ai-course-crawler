@@ -1,0 +1,1 @@
+ALTER TABLE `crawl_pages` ADD `fetch_failure_reason` text;

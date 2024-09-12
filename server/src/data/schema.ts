@@ -7,11 +7,11 @@ import {
   text,
   unique,
 } from "drizzle-orm/sqlite-core";
-import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { promises as fs } from "fs";
+import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import path from "path";
-import { gzip as syncGzip, gunzip as syncGunzip } from "zlib";
 import { promisify } from "util";
+import { gunzip as syncGunzip, gzip as syncGzip } from "zlib";
 import { SimplifiedMarkdown } from "../types";
 const gzip = promisify(syncGzip);
 const gunzip = promisify(syncGunzip);
@@ -88,6 +88,11 @@ export enum Step {
   FETCH_ROOT = "FETCH_ROOT",
   FETCH_PAGINATED = "FETCH_PAGINATED",
   FETCH_LINKS = "FETCH_LINKS",
+}
+
+export interface FetchFailureReason {
+  responseStatus?: number;
+  reason: string;
 }
 
 export interface CourseStructuredData {
@@ -450,6 +455,9 @@ const crawlPages = sqliteTable(
     url: text("url").notNull(),
     content: text("content"),
     screenshot: text("screenshot"),
+    fetchFailureReason: text("fetch_failure_reason", {
+      mode: "json",
+    }).$type<FetchFailureReason>(),
     dataType: text("data_type", { enum: toDbEnum(PageType) }),
     dataExtractionStartedAt: text("data_extraction_started_at"),
     createdAt: text("created_at")

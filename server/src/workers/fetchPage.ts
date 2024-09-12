@@ -14,6 +14,7 @@ import {
 } from "../data/extractions";
 import {
   ExtractionStatus,
+  FetchFailureReason,
   PageStatus,
   PageType,
   PaginationConfiguration,
@@ -206,6 +207,16 @@ const fetchPage: Processor<FetchPageJob, FetchPageProgress> = async (job) => {
     console.log(`Loading ${crawlPage.url} for page ${crawlPage.id}`);
     await updatePage(crawlPage.id, { status: PageStatus.IN_PROGRESS });
     const page = await fetchBrowserPage(crawlPage.url);
+    if (page.status == 404) {
+      await updatePage(crawlPage.id, {
+        status: PageStatus.ERROR,
+        fetchFailureReason: {
+          responseStatus: page.status,
+          reason: "404 Not found",
+        },
+      });
+      return;
+    }
     if (!page.content) {
       throw new Error(`Could not fetch URL ${crawlPage.url}`);
     }
@@ -232,7 +243,16 @@ const fetchPage: Processor<FetchPageJob, FetchPageProgress> = async (job) => {
       status: PageStatus.SUCCESS,
     });
   } catch (err) {
-    await updatePage(crawlPage.id, { status: PageStatus.ERROR });
+    const failureReason: FetchFailureReason = {
+      reason:
+        err instanceof Error
+          ? err.message || `Generic failure: ${err.constructor.name}`
+          : `Unknown error: ${String(err)}`,
+    };
+    await updatePage(crawlPage.id, {
+      status: PageStatus.ERROR,
+      fetchFailureReason: failureReason,
+    });
     throw err;
   }
 };
