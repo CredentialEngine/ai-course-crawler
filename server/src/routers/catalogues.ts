@@ -55,8 +55,9 @@ export const cataloguesRouter = router({
           existing: true,
         };
       }
+      const newCatalogue = await createCatalogue(name, url, thumbnailUrl);
       return {
-        id: await createCatalogue(name, url, thumbnailUrl),
+        id: newCatalogue.id,
         existing: false,
       };
     }),

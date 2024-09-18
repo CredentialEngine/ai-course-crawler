@@ -21,9 +21,9 @@ import {
   readMarkdownContent,
   readScreenshot,
 } from "../data/schema";
+import { extractCourseDataItem } from "../extraction/llm/extractCourseDataItem";
 import { retryFailedItems } from "../extraction/retryFailedItems";
 import { startExtraction } from "../extraction/startExtraction";
-import { extractCourseDataItem } from "../extraction/llm/extractCourseDataItem";
 
 export const extractionsRouter = router({
   create: publicProcedure
@@ -142,17 +142,17 @@ export const extractionsRouter = router({
       return {
         crawlPage,
         content: await readContent(
-          crawlPage.crawlStep.extractionId,
+          crawlPage.extractionId,
           crawlPage.crawlStepId,
           crawlPage.id
         ),
         markdownContent: await readMarkdownContent(
-          crawlPage.crawlStep.extractionId,
+          crawlPage.extractionId,
           crawlPage.crawlStepId,
           crawlPage.id
         ),
         screenshot: await readScreenshot(
-          crawlPage.crawlStep.extractionId,
+          crawlPage.extractionId,
           crawlPage.crawlStepId,
           crawlPage.id
         ),
@@ -190,12 +190,12 @@ export const extractionsRouter = router({
         return null;
       }
       const content = await readMarkdownContent(
-        crawlPage.crawlStep.extractionId,
+        crawlPage.extractionId,
         crawlPage.crawlStepId,
         crawlPage.id
       );
       const screenshot = await readScreenshot(
-        crawlPage.crawlStep.extractionId,
+        crawlPage.extractionId,
         crawlPage.crawlStepId,
         crawlPage.id
       );

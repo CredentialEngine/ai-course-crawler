@@ -1,12 +1,17 @@
 import { relations, sql } from "drizzle-orm";
 import {
-  AnySQLiteColumn,
+  AnyPgColumn,
+  boolean,
   index,
   integer,
-  sqliteTable,
+  jsonb,
+  pgEnum,
+  pgTable,
+  serial,
   text,
+  timestamp,
   unique,
-} from "drizzle-orm/sqlite-core";
+} from "drizzle-orm/pg-core";
 import { promises as fs } from "fs";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import path from "path";
@@ -265,39 +270,56 @@ export async function readScreenshot(
   return decompressedContent.toString("base64");
 }
 
-const catalogues = sqliteTable("catalogues", {
-  id: integer("id").primaryKey(),
+// Define enums using pgEnum
+export const pageTypeEnum = pgEnum("page_type", toDbEnum(PageType));
+export const urlPatternTypeEnum = pgEnum("url_pattern_type", [
+  "page_num",
+  "offset",
+]);
+export const logLevelEnum = pgEnum("log_level", toDbEnum(LogLevel));
+export const providerEnum = pgEnum("provider", toDbEnum(Provider));
+export const providerModelEnum = pgEnum(
+  "provider_model",
+  toDbEnum(ProviderModel)
+);
+export const extractionStatusEnum = pgEnum(
+  "extraction_status",
+  toDbEnum(ExtractionStatus)
+);
+export const pageStatusEnum = pgEnum("page_status", toDbEnum(PageStatus));
+export const recipeDetectionStatusEnum = pgEnum(
+  "recipe_detection_status",
+  toDbEnum(RecipeDetectionStatus)
+);
+export const stepEnum = pgEnum("step", toDbEnum(Step));
+
+const catalogues = pgTable("catalogues", {
+  id: serial("id").primaryKey(),
   name: text("name").notNull(),
   url: text("url").notNull().unique(),
   thumbnailUrl: text("thumbnail_url"),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 const cataloguesRelations = relations(catalogues, ({ many }) => ({
   recipes: many(recipes),
 }));
 
-const recipes = sqliteTable(
+const recipes = pgTable(
   "recipes",
   {
-    id: integer("id").primaryKey(),
-    isDefault: integer("is_default", { mode: "boolean" })
-      .default(false)
-      .notNull(),
+    id: serial("id").primaryKey(),
+    isDefault: boolean("is_default").default(false).notNull(),
     catalogueId: integer("catalogue_id")
       .notNull()
       .references(() => catalogues.id, { onDelete: "cascade" }),
     url: text("url").notNull(),
-    configuration: text("configuration", { mode: "json" })
+    configuration: jsonb("configuration")
       .$type<RecipeConfiguration>()
       .notNull(),
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
     detectionFailureReason: text("detection_failure_reason"),
-    status: text("status", { enum: toDbEnum(RecipeDetectionStatus) })
+    status: recipeDetectionStatusEnum("status")
       .notNull()
       .default(RecipeDetectionStatus.WAITING),
   },
@@ -314,22 +336,18 @@ const recipesRelations = relations(recipes, ({ one, many }) => ({
   extractions: many(extractions),
 }));
 
-const extractions = sqliteTable(
+const extractions = pgTable(
   "extractions",
   {
-    id: integer("id").primaryKey(),
+    id: serial("id").primaryKey(),
     recipeId: integer("recipe_id")
       .notNull()
       .references(() => recipes.id, { onDelete: "cascade" }),
-    completionStats: text("completion_stats", {
-      mode: "json",
-    }).$type<CompletionStats>(),
-    status: text("status", { enum: toDbEnum(ExtractionStatus) })
+    completionStats: jsonb("completion_stats").$type<CompletionStats>(),
+    status: extractionStatusEnum("status")
       .notNull()
       .default(ExtractionStatus.WAITING),
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => ({
     recipeIdx: index("extractions_recipe_idx").on(t.recipeId),
@@ -342,26 +360,25 @@ const extractionsRelations = relations(extractions, ({ one, many }) => ({
     references: [recipes.id],
   }),
   crawlSteps: many(crawlSteps),
+  crawlPages: many(crawlPages),
   dataset: many(datasets),
   logs: many(extractionLogs),
   modelApiCalls: many(modelApiCalls),
 }));
 
-const modelApiCalls = sqliteTable(
+const modelApiCalls = pgTable(
   "model_api_calls",
   {
-    id: integer("id").primaryKey(),
+    id: serial("id").primaryKey(),
     extractionId: integer("extraction_id").references(() => extractions.id, {
       onDelete: "cascade",
     }),
-    provider: text("provider", { enum: toDbEnum(Provider) }).notNull(),
-    model: text("model", { enum: toDbEnum(ProviderModel) }).notNull(),
+    provider: providerEnum("provider").notNull(),
+    model: providerModelEnum("model").notNull(),
     callSite: text("call_site").notNull(),
     input_token_count: integer("input_token_count").notNull(),
     output_token_count: integer("output_token_count").notNull(),
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => ({
     extractionIdx: index("model_api_calls_extraction_idx").on(t.extractionId),
@@ -375,20 +392,16 @@ const modelApiCallsRelations = relations(modelApiCalls, ({ one }) => ({
   }),
 }));
 
-const extractionLogs = sqliteTable(
+const extractionLogs = pgTable(
   "extraction_logs",
   {
-    id: integer("id").primaryKey(),
+    id: serial("id").primaryKey(),
     extractionId: integer("extraction_id")
       .notNull()
       .references(() => extractions.id, { onDelete: "cascade" }),
     log: text("log").notNull(),
-    logLevel: text("log_level", { enum: toDbEnum(LogLevel) })
-      .notNull()
-      .default(LogLevel.INFO),
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    logLevel: logLevelEnum("log_level").notNull().default(LogLevel.INFO),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => ({
     extractionIdx: index("extraction_logs_extraction_idx").on(t.extractionId),
@@ -402,26 +415,24 @@ const extractionLogsRelations = relations(extractionLogs, ({ one }) => ({
   }),
 }));
 
-const crawlSteps = sqliteTable(
+const crawlSteps = pgTable(
   "crawl_steps",
   {
-    id: integer("id").primaryKey(),
+    id: serial("id").primaryKey(),
     extractionId: integer("extraction_id")
       .notNull()
       .references(() => extractions.id, { onDelete: "cascade" }),
-    step: text("step", { enum: toDbEnum(Step) }).notNull(),
+    step: stepEnum("step").notNull(),
     parentStepId: integer("parent_step_id").references(
-      (): AnySQLiteColumn => crawlSteps.id,
+      (): AnyPgColumn => crawlSteps.id,
       {
         onDelete: "cascade",
       }
     ),
-    configuration: text("configuration", { mode: "json" })
+    configuration: jsonb("configuration")
       .$type<RecipeConfiguration>()
       .notNull(),
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => ({
     extractionIdx: index("crawl_steps_extraction_idx").on(t.extractionId),
@@ -442,30 +453,30 @@ const crawlStepsRelations = relations(crawlSteps, ({ one, many }) => ({
   crawlPages: many(crawlPages),
 }));
 
-const crawlPages = sqliteTable(
+const crawlPages = pgTable(
   "crawl_pages",
   {
-    id: integer("id").primaryKey(),
+    id: serial("id").primaryKey(),
+    extractionId: integer("extraction_id")
+      .notNull()
+      .references(() => extractions.id, { onDelete: "cascade" }),
     crawlStepId: integer("crawl_step_id")
       .notNull()
       .references(() => crawlSteps.id, { onDelete: "cascade" }),
-    status: text("status", { enum: toDbEnum(PageStatus) })
-      .notNull()
-      .default(PageStatus.WAITING),
+    status: pageStatusEnum("status").notNull().default(PageStatus.WAITING),
     url: text("url").notNull(),
     content: text("content"),
     screenshot: text("screenshot"),
-    fetchFailureReason: text("fetch_failure_reason", {
-      mode: "json",
-    }).$type<FetchFailureReason>(),
-    dataType: text("data_type", { enum: toDbEnum(PageType) }),
-    dataExtractionStartedAt: text("data_extraction_started_at"),
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    fetchFailureReason: jsonb(
+      "fetch_failure_reason"
+    ).$type<FetchFailureReason>(),
+    dataType: pageTypeEnum("data_type"),
+    dataExtractionStartedAt: timestamp("data_extraction_started_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => ({
-    uniq: unique().on(t.crawlStepId, t.url),
+    uniq: unique().on(t.extractionId, t.url),
+    extractionIdx: index("crawl_pages_extraction_idx").on(t.extractionId),
     statusIdx: index("crawl_pages_status_idx").on(t.status),
     dataTypeIdx: index("crawl_pages_data_type_idx").on(t.dataType),
     stepIdx: index("crawl_pages_step_idx").on(t.crawlStepId),
@@ -477,22 +488,24 @@ const crawlPageRelations = relations(crawlPages, ({ one, many }) => ({
     fields: [crawlPages.crawlStepId],
     references: [crawlSteps.id],
   }),
+  extraction: one(extractions, {
+    fields: [crawlPages.extractionId],
+    references: [extractions.id],
+  }),
   dataItems: many(dataItems),
 }));
 
-const datasets = sqliteTable(
+const datasets = pgTable(
   "datasets",
   {
-    id: integer("id").primaryKey(),
+    id: serial("id").primaryKey(),
     catalogueId: integer("catalogue_id")
       .notNull()
       .references(() => catalogues.id, { onDelete: "cascade" }),
     extractionId: integer("extraction_id")
       .notNull()
       .references(() => extractions.id, { onDelete: "cascade" }),
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => ({
     uniq: unique().on(t.catalogueId, t.extractionId),
@@ -509,22 +522,20 @@ const datasetsRelations = relations(datasets, ({ one, many }) => ({
   dataItems: many(dataItems),
 }));
 
-const dataItems = sqliteTable(
+const dataItems = pgTable(
   "data_items",
   {
-    id: integer("id").primaryKey(),
+    id: serial("id").primaryKey(),
     datasetId: integer("dataset_id")
       .notNull()
       .references(() => datasets.id, { onDelete: "cascade" }),
     crawlPageId: integer("crawl_page_id").references(() => crawlPages.id, {
       onDelete: "cascade",
     }),
-    structuredData: text("structured_data", { mode: "json" })
+    structuredData: jsonb("structured_data")
       .$type<CourseStructuredData>()
       .notNull(),
-    createdAt: text("created_at")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => ({
     datasetIdx: index("data_items_dataset_idx").on(t.datasetId),
@@ -543,26 +554,20 @@ const dataItemsRelations = relations(dataItems, ({ one }) => ({
   }),
 }));
 
-const settings = sqliteTable("settings", {
+const settings = pgTable("settings", {
   key: text("key").primaryKey().notNull().unique(),
   value: text("value").notNull(),
-  isEncrypted: integer("is_encrypted", { mode: "boolean" })
-    .default(false)
-    .notNull(),
+  isEncrypted: boolean("is_encrypted").default(false).notNull(),
   encryptedPreview: text("encrypted_preview"),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-const users = sqliteTable("users", {
-  id: integer("id").primaryKey(),
+const users = pgTable("users", {
+  id: serial("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
-  createdAt: text("created_at")
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export function encryptForDb(text: string) {

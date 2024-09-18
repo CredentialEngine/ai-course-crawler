@@ -200,15 +200,12 @@ export async function findPageForJob(crawlPageId: number) {
   const result = await db.query.crawlPages.findFirst({
     where: (crawlPages, { eq }) => eq(crawlPages.id, crawlPageId),
     with: {
-      crawlStep: {
+      extraction: {
         with: {
-          extraction: {
-            with: {
-              recipe: true,
-            },
-          },
+          recipe: true,
         },
       },
+      crawlStep: true,
     },
   });
   if (!result) {
@@ -244,6 +241,7 @@ export async function createStep({
 
 export interface CreatePageOptions {
   crawlStepId: number;
+  extractionId: number;
   url: string;
   dataType: string;
   content?: string;
@@ -253,6 +251,7 @@ export interface CreatePageOptions {
 
 export async function createPage({
   crawlStepId,
+  extractionId,
   url,
   content,
   dataType,
@@ -263,6 +262,7 @@ export async function createPage({
     .insert(crawlPages)
     .values({
       crawlStepId,
+      extractionId,
       content,
       dataType,
       url,
@@ -304,6 +304,7 @@ export async function createStepAndPages(
       .values(
         createOptions.pages.map((pageCreateOptions) => ({
           crawlStepId: step.id,
+          extractionId: createOptions.extractionId,
           url: pageCreateOptions.url,
           dataType: createOptions.pageType,
         }))
@@ -326,7 +327,7 @@ export async function getApiCallSummary(extractionId: number) {
     })
     .from(modelApiCalls)
     .where(eq(modelApiCalls.extractionId, extractionId))
-    .groupBy(modelApiCalls.callSite);
+    .groupBy(modelApiCalls.callSite, modelApiCalls.model);
 
   return result;
 }
@@ -381,7 +382,11 @@ export async function getStepStats(crawlStepId: number) {
         eq(crawlPages.dataType, PageType.COURSE_DETAIL_PAGE)
       )
     )
-    .groupBy(crawlPages.id);
+    .groupBy(
+      crawlPages.id,
+      crawlPages.status,
+      crawlPages.dataExtractionStartedAt
+    );
 }
 
 export async function findFailedAndNoDataPageIds(crawlStepId: number) {

@@ -69,8 +69,9 @@ export async function createCatalogue(
 ) {
   const result = await db
     .insert(catalogues)
-    .values({ name, url, thumbnailUrl });
-  return result.lastInsertRowid;
+    .values({ name, url, thumbnailUrl })
+    .returning();
+  return result[0];
 }
 
 export async function destroyCatalogue(id: number) {

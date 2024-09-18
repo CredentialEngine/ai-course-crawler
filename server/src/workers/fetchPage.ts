@@ -73,16 +73,16 @@ async function enqueuePages(
   const pageCount = await detectPageCount(
     {
       content: await readMarkdownContent(
-        crawlPage.crawlStep.extractionId,
+        crawlPage.extractionId,
         crawlPage.crawlStepId,
         crawlPage.id
       ),
       screenshot: await readScreenshot(
-        crawlPage.crawlStep.extractionId,
+        crawlPage.extractionId,
         crawlPage.crawlStepId,
         crawlPage.id
       ),
-      logApiCalls: { extractionId: crawlPage.crawlStep.extractionId },
+      logApiCalls: { extractionId: crawlPage.extractionId },
       url: crawlPage.url,
     },
     configuration.pagination!.urlPattern,
@@ -101,7 +101,7 @@ async function enqueuePages(
   const pageUrls = constructPaginatedUrls(updatedPagination);
 
   const stepAndPages = await createStepAndPages({
-    extractionId: crawlPage.crawlStep.extractionId,
+    extractionId: crawlPage.extractionId,
     step: Step.FETCH_PAGINATED,
     parentStepId: crawlPage.crawlStepId,
     configuration,
@@ -132,14 +132,14 @@ async function processLinks(
   const regexp = new RegExp(configuration.linkRegexp!, "g");
   const extractor = createUrlExtractor(regexp);
   const content = await readMarkdownContent(
-    crawlPage.crawlStep.extractionId,
+    crawlPage.extractionId,
     crawlPage.crawlStepId,
     crawlPage.id
   );
   const urls = await extractor(crawlPage.url, content);
 
   const stepAndPages = await createStepAndPages({
-    extractionId: crawlPage.crawlStep.extractionId,
+    extractionId: crawlPage.extractionId,
     step: Step.FETCH_LINKS,
     parentStepId: crawlPage.crawlStepId,
     configuration: configuration.links!,
@@ -190,15 +190,13 @@ const processNextStep = async (
 const fetchPage: Processor<FetchPageJob, FetchPageProgress> = async (job) => {
   const crawlPage = await findPageForJob(job.data.crawlPageId);
 
-  if (crawlPage.crawlStep.extraction.status == ExtractionStatus.CANCELLED) {
-    console.log(
-      `Extraction ${crawlPage.crawlStep.extractionId} was cancelled; aborting`
-    );
+  if (crawlPage.extraction.status == ExtractionStatus.CANCELLED) {
+    console.log(`Extraction ${crawlPage.extractionId} was cancelled; aborting`);
     return;
   }
 
   if (crawlPage.crawlStep.step == Step.FETCH_ROOT) {
-    await updateExtraction(crawlPage.crawlStep.extractionId, {
+    await updateExtraction(crawlPage.extractionId, {
       status: ExtractionStatus.IN_PROGRESS,
     });
   }
@@ -222,14 +220,14 @@ const fetchPage: Processor<FetchPageJob, FetchPageProgress> = async (job) => {
     }
     const markdownContent = await simplifiedMarkdown(page.content);
     crawlPage.content = await storeContent(
-      crawlPage.crawlStep.extractionId,
+      crawlPage.extractionId,
       crawlPage.crawlStepId,
       crawlPage.id,
       page.content,
       markdownContent
     );
     crawlPage.screenshot = await storeScreenshot(
-      crawlPage.crawlStep.extractionId,
+      crawlPage.extractionId,
       crawlPage.crawlStepId,
       crawlPage.id,
       page.screenshot

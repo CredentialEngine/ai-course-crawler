@@ -1,37 +1,18 @@
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import * as schema from "./schema";
 
-const sqliteUrl = process.env.DATABASE_URL;
+const postgresUrl = process.env.DATABASE_URL;
 
-if (!sqliteUrl) {
+if (!postgresUrl) {
   throw new Error("DATABASE_URL is not set");
 }
-const sqlite = new Database(sqliteUrl);
 
-// Ref. https://twitter.com/meln1k/status/1813314113705062774
+const pool = new Pool({
+  connectionString: postgresUrl,
+});
 
-// "enables write-ahead log so that your reads do not block writes and vice-versa."
-sqlite.pragma("journal_mode = WAL");
+const db = drizzle(pool, { schema });
 
-// "sqlite will wait 15 seconds to obtain a lock before returning SQLITE_BUSY errors,
-//  which will significantly reduce them."
-sqlite.pragma("busy_timeout = 15000");
-
-// "sqlite will sync less frequently and be more performant,
-//  still safe to use because of the enabled WAL mode"
-sqlite.pragma("synchronous = NORMAL");
-
-// "negative number means kilobytes, in this case 500MB of memory for cache."
-sqlite.pragma("cache_size = -500000");
-
-// "because of historical reasons foreign keys are disabled by default, we should manually enable them."
-sqlite.pragma("foreign_keys = true");
-
-// "moves temporary tables from disk into RAM, speeds up performance a lot."
-sqlite.pragma("temp_store = memory");
-
-const db = drizzle(sqlite, { schema });
-
-export { sqlite };
+export { pool };
 export default db;

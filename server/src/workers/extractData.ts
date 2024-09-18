@@ -20,10 +20,8 @@ const extractData: Processor<ExtractDataJob, ExtractDataProgress> = async (
 ) => {
   const crawlPage = await findPageForJob(job.data.crawlPageId);
 
-  if (crawlPage.crawlStep.extraction.status == ExtractionStatus.CANCELLED) {
-    console.log(
-      `Extraction ${crawlPage.crawlStep.extractionId} was cancelled; aborting`
-    );
+  if (crawlPage.extraction.status == ExtractionStatus.CANCELLED) {
+    console.log(`Extraction ${crawlPage.extractionId} was cancelled; aborting`);
     return;
   }
 
@@ -32,19 +30,19 @@ const extractData: Processor<ExtractDataJob, ExtractDataProgress> = async (
   });
   try {
     const dataset = await findOrCreateDataset(
-      crawlPage.crawlStep.extraction.recipe.catalogueId,
-      crawlPage.crawlStep.extractionId
+      crawlPage.extraction.recipe.catalogueId,
+      crawlPage.extractionId
     );
 
     if (!dataset) throw new Error("Could not find or create dataset");
 
     const content = await readMarkdownContent(
-      crawlPage.crawlStep.extractionId,
+      crawlPage.extractionId,
       crawlPage.crawlStepId,
       crawlPage.id
     );
     const screenshot = await readScreenshot(
-      crawlPage.crawlStep.extractionId,
+      crawlPage.extractionId,
       crawlPage.crawlStepId,
       crawlPage.id
     );
@@ -52,7 +50,7 @@ const extractData: Processor<ExtractDataJob, ExtractDataProgress> = async (
       url: crawlPage.url,
       content,
       screenshot,
-      logApiCalls: { extractionId: crawlPage.crawlStep.extractionId },
+      logApiCalls: { extractionId: crawlPage.extractionId },
     });
     if (!coursesData) {
       throw new Error("Couldn't find course data");

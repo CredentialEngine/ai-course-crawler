@@ -23,6 +23,7 @@ export async function startExtraction(catalogueId: number, recipeId: number) {
   });
   const crawlPage = await createPage({
     crawlStepId: step.id,
+    extractionId: extraction.id,
     url: recipe.url,
     dataType: recipe.configuration!.pageType,
   });

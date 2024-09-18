@@ -144,7 +144,7 @@ async function afterExtractionComplete(
       catalogueName: extraction.recipe.catalogue.name,
       url: extraction.recipe.url,
       completionStats: extraction.completionStats!,
-      createdAt: extraction.createdAt,
+      createdAt: extraction.createdAt.toISOString(),
       stale: extraction.status == ExtractionStatus.STALE,
     },
     `Extraction #${extraction.id} has finished`
