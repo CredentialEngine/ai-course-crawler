@@ -1,3 +1,4 @@
+import * as Airbrake from "@airbrake/node";
 import cors from "@fastify/cors";
 import fastifySecureSession from "@fastify/secure-session";
 import fastifyStatic from "@fastify/static";
@@ -13,12 +14,24 @@ import { appRouter, type AppRouter } from "./appRouter";
 import { streamCsv } from "./csv";
 import { findExtractionById } from "./data/extractions";
 import { findUserByEmail } from "./data/users";
+import { makeAirbrakePlugin } from "./fastifyAirbrakeNotifier";
 import fastifySessionAuth, {
   requireAuthentication,
 } from "./fastifySessionAuth";
 import { createContext } from "./trpcContext";
 
 const server = fastify();
+
+let airbrake: Airbrake.Notifier | undefined;
+
+if (process.env.AIRBRAKE_PROJECT_ID && process.env.AIRBRAKE_PROJECT_KEY) {
+  airbrake = new Airbrake.Notifier({
+    projectId: parseInt(process.env.AIRBRAKE_PROJECT_ID),
+    projectKey: process.env.AIRBRAKE_PROJECT_KEY,
+  });
+
+  server.register(makeAirbrakePlugin(airbrake));
+}
 
 const CLIENT_PATH = process.env.CLIENT_PATH;
 
@@ -68,7 +81,35 @@ server.register(async (instance) => {
       router: appRouter,
       createContext,
       onError(opts) {
-        console.log(opts.error);
+        console.error("Error in tRPC request:", {
+          path: opts.path,
+          type: opts.error.name,
+          message: opts.error.message,
+        });
+
+        if (!airbrake) {
+          return;
+        }
+
+        const url = `${opts.req.protocol}://${opts.req.headers.host}${opts.req.url}`;
+        const notice: any = {
+          error: opts.error,
+          context: {
+            userAddr: opts.req.ip,
+            userAgent: opts.req.headers["user-agent"],
+            url,
+            httpMethod: opts.req.method,
+            component: "fastify",
+            route: opts.req.routeOptions.url,
+          },
+        };
+
+        const referer = opts.req.headers.referer;
+        if (referer) {
+          notice.context.referer = referer;
+        }
+
+        airbrake.notify(notice);
       },
     } satisfies FastifyTRPCPluginOptions<AppRouter>["trpcOptions"],
   });
@@ -108,6 +149,10 @@ server.register(async (instance) => {
 
 server.get("/up", async (request, reply) => {
   return reply.send();
+});
+
+server.get("/error", async (request, reply) => {
+  throw new Error("oops");
 });
 
 export interface LoginParams {

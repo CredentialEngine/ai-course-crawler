@@ -1,25 +1,19 @@
 import {
+  createProcessor,
   DetectConfigurationJob,
   DetectConfigurationProgress,
-  Processor,
 } from ".";
 import { findRecipeById, updateRecipe } from "../data/recipes";
 import { RecipeDetectionStatus } from "../data/schema";
 import { sendEmailToAll } from "../email";
 import DetectConfigurationFail from "../emails/detectConfigurationFail";
 import DetectConfigurationSuccess from "../emails/detectConfigurationSuccess";
-import { closeCluster } from "../extraction/browser";
 import recursivelyDetectConfiguration from "../extraction/recursivelyDetectConfiguration";
 
-process.on("SIGTERM", async () => {
-  console.log("Shutting down detectConfiguration");
-  closeCluster();
-});
-
-const detectConfiguration: Processor<
+export default createProcessor<
   DetectConfigurationJob,
   DetectConfigurationProgress
-> = async (job) => {
+>(async function detectConfiguration(job) {
   const recipe = await findRecipeById(job.data.recipeId);
   if (!recipe) {
     throw new Error(`Recipe with ID ${job.data.recipeId} not found`);
@@ -63,6 +57,4 @@ const detectConfiguration: Processor<
     }
     throw err;
   }
-};
-
-export default detectConfiguration;
+});

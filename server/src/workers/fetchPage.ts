@@ -1,7 +1,7 @@
 import {
+  createProcessor,
   FetchPageJob,
   FetchPageProgress,
-  Processor,
   Queues,
   submitJob,
   submitJobs,
@@ -25,18 +25,9 @@ import {
   storeContent,
   storeScreenshot,
 } from "../data/schema";
-import {
-  closeCluster,
-  fetchBrowserPage,
-  simplifiedMarkdown,
-} from "../extraction/browser";
+import { fetchBrowserPage, simplifiedMarkdown } from "../extraction/browser";
 import { detectPageCount } from "../extraction/llm/detectPageCount";
 import { createUrlExtractor } from "../extraction/llm/detectUrlRegexp";
-
-process.on("SIGTERM", async () => {
-  console.log("Shutting down fetchPage");
-  await closeCluster();
-});
 
 const constructPaginatedUrls = (configuration: PaginationConfiguration) => {
   const urls = [];
@@ -187,72 +178,74 @@ const processNextStep = async (
   processLinks(configuration, crawlPage);
 };
 
-const fetchPage: Processor<FetchPageJob, FetchPageProgress> = async (job) => {
-  const crawlPage = await findPageForJob(job.data.crawlPageId);
+export default createProcessor<FetchPageJob, FetchPageProgress>(
+  async function fetchPage(job) {
+    const crawlPage = await findPageForJob(job.data.crawlPageId);
 
-  if (crawlPage.extraction.status == ExtractionStatus.CANCELLED) {
-    console.log(`Extraction ${crawlPage.extractionId} was cancelled; aborting`);
-    return;
-  }
-
-  if (crawlPage.crawlStep.step == Step.FETCH_ROOT) {
-    await updateExtraction(crawlPage.extractionId, {
-      status: ExtractionStatus.IN_PROGRESS,
-    });
-  }
-
-  try {
-    console.log(`Loading ${crawlPage.url} for page ${crawlPage.id}`);
-    await updatePage(crawlPage.id, { status: PageStatus.IN_PROGRESS });
-    const page = await fetchBrowserPage(crawlPage.url);
-    if (page.status == 404) {
-      await updatePage(crawlPage.id, {
-        status: PageStatus.ERROR,
-        fetchFailureReason: {
-          responseStatus: page.status,
-          reason: "404 Not found",
-        },
-      });
+    if (crawlPage.extraction.status == ExtractionStatus.CANCELLED) {
+      console.log(
+        `Extraction ${crawlPage.extractionId} was cancelled; aborting`
+      );
       return;
     }
-    if (!page.content) {
-      throw new Error(`Could not fetch URL ${crawlPage.url}`);
-    }
-    const markdownContent = await simplifiedMarkdown(page.content);
-    crawlPage.content = await storeContent(
-      crawlPage.extractionId,
-      crawlPage.crawlStepId,
-      crawlPage.id,
-      page.content,
-      markdownContent
-    );
-    crawlPage.screenshot = await storeScreenshot(
-      crawlPage.extractionId,
-      crawlPage.crawlStepId,
-      crawlPage.id,
-      page.screenshot
-    );
-    await updatePage(crawlPage.id, {
-      content: crawlPage.content,
-      screenshot: crawlPage.screenshot,
-    });
-    await processNextStep(crawlPage);
-    await updatePage(crawlPage.id, {
-      status: PageStatus.SUCCESS,
-    });
-  } catch (err) {
-    const failureReason: FetchFailureReason = {
-      reason:
-        err instanceof Error
-          ? err.message || `Generic failure: ${err.constructor.name}`
-          : `Unknown error: ${String(err)}`,
-    };
-    await updatePage(crawlPage.id, {
-      status: PageStatus.ERROR,
-      fetchFailureReason: failureReason,
-    });
-    throw err;
-  }
-};
 
-export default fetchPage;
+    if (crawlPage.crawlStep.step == Step.FETCH_ROOT) {
+      await updateExtraction(crawlPage.extractionId, {
+        status: ExtractionStatus.IN_PROGRESS,
+      });
+    }
+
+    try {
+      console.log(`Loading ${crawlPage.url} for page ${crawlPage.id}`);
+      await updatePage(crawlPage.id, { status: PageStatus.IN_PROGRESS });
+      const page = await fetchBrowserPage(crawlPage.url);
+      if (page.status == 404) {
+        await updatePage(crawlPage.id, {
+          status: PageStatus.ERROR,
+          fetchFailureReason: {
+            responseStatus: page.status,
+            reason: "404 Not found",
+          },
+        });
+        return;
+      }
+      if (!page.content) {
+        throw new Error(`Could not fetch URL ${crawlPage.url}`);
+      }
+      const markdownContent = await simplifiedMarkdown(page.content);
+      crawlPage.content = await storeContent(
+        crawlPage.extractionId,
+        crawlPage.crawlStepId,
+        crawlPage.id,
+        page.content,
+        markdownContent
+      );
+      crawlPage.screenshot = await storeScreenshot(
+        crawlPage.extractionId,
+        crawlPage.crawlStepId,
+        crawlPage.id,
+        page.screenshot
+      );
+      await updatePage(crawlPage.id, {
+        content: crawlPage.content,
+        screenshot: crawlPage.screenshot,
+      });
+      await processNextStep(crawlPage);
+      await updatePage(crawlPage.id, {
+        status: PageStatus.SUCCESS,
+      });
+    } catch (err) {
+      const failureReason: FetchFailureReason = {
+        reason:
+          err instanceof Error
+            ? err.message || `Generic failure: ${err.constructor.name}`
+            : `Unknown error: ${String(err)}`,
+      };
+      await updatePage(crawlPage.id, {
+        status: PageStatus.ERROR,
+        fetchFailureReason: failureReason,
+      });
+      throw err;
+    }
+  }
+);

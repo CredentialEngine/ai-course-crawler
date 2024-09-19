@@ -12,6 +12,10 @@ declare module "fastify" {
     logIn: (user: User) => void;
     logOut: () => void;
   }
+
+  interface FastifyReply {
+    airbrakeMetric: Airbrake.RouteMetric | undefined;
+  }
 }
 
 declare module "@fastify/secure-session" {

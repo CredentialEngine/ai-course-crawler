@@ -1,7 +1,7 @@
 import { deepEqual } from "fast-equals";
 import {
+  createProcessor,
   JobWithProgress,
-  Processor,
   Queues,
   UpdateExtractionCompletionJob,
   UpdateExtractionCompletionProgress,
@@ -23,13 +23,7 @@ import {
 } from "../data/schema";
 import { sendEmailToAll } from "../email";
 import ExtractionComplete from "../emails/extractionComplete";
-import { closeCluster } from "../extraction/browser";
 import { estimateCost } from "../openai";
-
-process.on("SIGTERM", async () => {
-  console.log("Shutting down updateExtractionCompletion");
-  await closeCluster();
-});
 
 function hoursDiff(date1: Date, date2: Date): number {
   const millisecondsInHour = 60 * 60 * 1000; // 1 hour in milliseconds
@@ -188,10 +182,10 @@ async function handleStaleExtraction(
   return afterExtractionComplete(job, extraction);
 }
 
-const updateExtractionCompletion: Processor<
+export default createProcessor<
   UpdateExtractionCompletionJob,
   UpdateExtractionCompletionProgress
-> = async (job) => {
+>(async function updateExtractionCompletion(job) {
   const extraction = await findExtractionById(job.data.extractionId);
   if (
     !extraction ||
@@ -228,6 +222,4 @@ const updateExtractionCompletion: Processor<
   console.log(`Detected changes for extraction ${extraction.id}; updating`);
   await updateExtraction(extraction.id, { completionStats });
   return;
-};
-
-export default updateExtractionCompletion;
+});
