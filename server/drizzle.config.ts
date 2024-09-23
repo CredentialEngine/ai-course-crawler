@@ -13,6 +13,9 @@ export default {
   dialect: "postgresql",
   dbCredentials: {
     url: dbUrl,
+    ssl: {
+      rejectUnauthorized: false,
+    },
   },
   verbose: true,
   strict: true,
