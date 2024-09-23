@@ -10,9 +10,6 @@ if (!postgresUrl) {
 
 const pool = new Pool({
   connectionString: postgresUrl,
-  ssl: {
-    rejectUnauthorized: false,
-  },
 });
 
 const db = drizzle(pool, { schema });
