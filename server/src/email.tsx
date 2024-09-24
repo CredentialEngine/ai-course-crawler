@@ -9,6 +9,19 @@ async function getMailer() {
   if (transporter) {
     return transporter;
   }
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+    const testAccount = await nodemailer.createTestAccount();
+    transporter = nodemailer.createTransport({
+      host: testAccount.smtp.host,
+      port: testAccount.smtp.port,
+      secure: testAccount.smtp.secure,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass,
+      },
+    });
+    return transporter;
+  }
   transporter = nodemailer.createTransport({
     host: "email-smtp.us-east-1.amazonaws.com",
     port: 465,
