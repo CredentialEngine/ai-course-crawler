@@ -372,7 +372,7 @@ export async function getStepStats(crawlStepId: number) {
       crawlPageId: crawlPages.id,
       status: crawlPages.status,
       dataExtractionStartedAt: crawlPages.dataExtractionStartedAt,
-      dataItemCount: sql<number>`COUNT(${dataItems.id})`,
+      dataItemCount: sql<number>`COUNT(${dataItems.id})::integer`,
     })
     .from(crawlPages)
     .leftJoin(dataItems, eq(dataItems.crawlPageId, crawlPages.id))
