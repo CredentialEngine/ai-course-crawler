@@ -8,6 +8,13 @@
       "when": 1726671418710,
       "tag": "0000_burly_betty_brant",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1727814665852,
+      "tag": "0001_normal_beast",
+      "breakpoints": true
     }
   ]
 }

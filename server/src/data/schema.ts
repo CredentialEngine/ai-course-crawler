@@ -109,6 +109,10 @@ export interface CourseStructuredData {
   course_credits_type?: string;
 }
 
+export type TextInclusion = {
+  [K in keyof CourseStructuredData]: { full: boolean };
+};
+
 export interface StepCompletionStats {
   downloads: {
     total: number;
@@ -535,6 +539,7 @@ const dataItems = pgTable(
     structuredData: jsonb("structured_data")
       .$type<CourseStructuredData>()
       .notNull(),
+    textInclusion: jsonb("text_inclusion").$type<TextInclusion>(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => ({

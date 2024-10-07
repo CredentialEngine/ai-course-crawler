@@ -7,12 +7,14 @@ import {
   dataItems,
   datasets,
   extractions,
+  TextInclusion,
 } from "./schema";
 
 export async function createDataItem(
   crawlPageId: number,
   datasetId: number,
-  structuredData: CourseStructuredData
+  structuredData: CourseStructuredData,
+  textInclusion: TextInclusion
 ) {
   const result = await db
     .insert(dataItems)
@@ -20,6 +22,7 @@ export async function createDataItem(
       crawlPageId,
       datasetId,
       structuredData,
+      textInclusion,
     })
     .returning();
   return result[0];
@@ -123,6 +126,7 @@ export async function findDataItems(
     .select({
       id: dataItems.id,
       structuredData: dataItems.structuredData,
+      textInclusion: dataItems.textInclusion,
       url: crawlPages.url,
     })
     .from(dataItems)

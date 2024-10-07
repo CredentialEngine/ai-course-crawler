@@ -1,6 +1,7 @@
 import { format } from "fast-csv";
 import { Transform } from "stream";
 import { findDataItems } from "./data/datasets";
+import { TextInclusion } from "./data/schema";
 
 /*
   Ref.
@@ -54,6 +55,28 @@ function getBulkUploadTemplateRow(
     item.structuredData.course_credits_max >
       item.structuredData.course_credits_min;
 
+  const textInclusion = item.textInclusion;
+  let textVerificationAverage = 0;
+  let textVerificationDetails = "";
+
+  if (textInclusion) {
+    const textVerificationFields = Object.keys(textInclusion);
+    textVerificationAverage =
+      textVerificationFields.length > 0
+        ? textVerificationFields.reduce(
+            (sum, field) =>
+              sum + (textInclusion[field as keyof TextInclusion]?.full ? 1 : 0),
+            0
+          ) / textVerificationFields.length
+        : 0;
+    textVerificationDetails = textVerificationFields
+      .map(
+        (field) =>
+          `${field}: ${textInclusion[field as keyof TextInclusion]?.full ? "Present" : "Not present"}`
+      )
+      .join("\n");
+  }
+
   return {
     "External Identifier": item.structuredData.course_id,
     "Learning Type": "Course",
@@ -70,6 +93,8 @@ function getBulkUploadTemplateRow(
     "Credit Unit Type Description": item.structuredData.course_credits_type
       ? undefined
       : noCreditUnitTypeDescription,
+    "Text Verification Average": (textVerificationAverage * 100).toFixed(2),
+    "Text Verification Details": textVerificationDetails,
   };
 }
 

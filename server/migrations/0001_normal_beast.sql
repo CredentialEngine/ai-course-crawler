@@ -1,0 +1,1 @@
+ALTER TABLE "data_items" ADD COLUMN "text_inclusion" jsonb;
