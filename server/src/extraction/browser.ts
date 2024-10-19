@@ -38,7 +38,10 @@ export async function getCluster() {
   await cluster.task(async ({ page, data }) => {
     page.setDefaultTimeout(PAGE_TIMEOUT);
     const { url } = data;
-    const response = await page.goto(url, { timeout: PAGE_TIMEOUT });
+    const response = await page.goto(url, {
+      timeout: PAGE_TIMEOUT,
+      waitUntil: "networkidle0",
+    });
     if (!response) {
       throw new Error(`Failed to load page ${url}`);
     }
@@ -103,6 +106,19 @@ export async function simplifyHtml(html: string) {
     }
     if (elm.tagName == "link") {
       $elm.remove();
+      continue;
+    }
+    // CourseDog: convert buttons to links
+    if (elm.tagName === "button" && $elm.attr("number")) {
+      const pageNum = $elm.attr("number");
+      if (pageNum !== "...") {
+        const newLink = $("<a>")
+          .attr("href", `/courses?page=${pageNum}`)
+          .text($elm.text().trim());
+        $elm.replaceWith(newLink);
+      } else {
+        $elm.remove();
+      }
       continue;
     }
     for (var attribute in elm.attribs) {
