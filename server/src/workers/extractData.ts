@@ -9,7 +9,8 @@ import {
   readScreenshot,
   TextInclusion,
 } from "../data/schema";
-import { extractCourseDataItem } from "../extraction/llm/extractCourseDataItem";
+import { extractCourseData } from "../extraction/llm/extractCourseData";
+import { focusedExtractCourseData } from "../extraction/llm/focusedExtractCourseData";
 
 function preprocessText(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9.\-_'&]/g, "");
@@ -65,7 +66,7 @@ export default createProcessor<ExtractDataJob, ExtractDataProgress>(
         crawlPage.crawlStepId,
         crawlPage.id
       );
-      const coursesData = await extractCourseDataItem({
+      const coursesData = await extractCourseData({
         url: crawlPage.url,
         content,
         screenshot,
@@ -75,11 +76,30 @@ export default createProcessor<ExtractDataJob, ExtractDataProgress>(
         throw new Error("Couldn't find course data");
       }
       const preprocessedContent = preprocessText(content);
-      for (const course of coursesData) {
-        const textInclusion = await verifyTextInclusion(
+      for (let course of coursesData) {
+        let textInclusion = await verifyTextInclusion(
           course,
           preprocessedContent
         );
+        if (!textInclusion.course_description.full) {
+          const focusedCourseData = await focusedExtractCourseData(
+            {
+              url: crawlPage.url,
+              content,
+              screenshot,
+              logApiCalls: { extractionId: crawlPage.extractionId },
+            },
+            course,
+            textInclusion
+          );
+          if (focusedCourseData) {
+            course = focusedCourseData;
+            textInclusion = await verifyTextInclusion(
+              course,
+              preprocessedContent
+            );
+          }
+        }
         await createDataItem(crawlPage.id, dataset.id, course, textInclusion);
       }
     } catch (err) {

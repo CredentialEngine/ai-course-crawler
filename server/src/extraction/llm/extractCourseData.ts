@@ -25,9 +25,17 @@ const validCreditUnitTypes = [
   "UNKNOWN",
 ];
 
-export async function extractCourseDataItem(
-  defaultOptions: DefaultLlmPageOptions
-) {
+export async function extractCourseData(options: DefaultLlmPageOptions) {
+  const additionalContext = options.additionalContext
+    ? `
+ADDITIONAL CONTEXT:
+
+${options.additionalContext.message}
+
+${(options.additionalContext.context ?? []).join("\n")}
+`
+    : "";
+
   const prompt = `
 Your goal is to extract course data from this page.
 
@@ -43,13 +51,16 @@ Course credits type: infer it from the page (ref. one of the enum values)
   - Only infer the type if it's clearly stated in the page somewhere
   - If you can't infer the type, set it as "UNKNOWN"
 
+${additionalContext}
+
 PAGE URL:
 
-${defaultOptions.url}
+${options.url}
 
 SIMPLIFIED PAGE CONTENT:
 
-${defaultOptions.content}
+${options.content}
+
 `;
 
   const completionContent: ChatCompletionContentPart[] = [
@@ -59,10 +70,10 @@ ${defaultOptions.content}
     },
   ];
 
-  if (defaultOptions?.screenshot) {
+  if (options?.screenshot) {
     completionContent.push({
       type: "image_url",
-      image_url: { url: `data:image/webp;base64,${defaultOptions.screenshot}` },
+      image_url: { url: `data:image/webp;base64,${options.screenshot}` },
     });
   }
 
@@ -106,9 +117,9 @@ ${defaultOptions.content}
       },
     },
     requiredParameters: ["courses"],
-    logApiCall: defaultOptions?.logApiCalls
+    logApiCall: options?.logApiCalls
       ? {
-          extractionId: defaultOptions.logApiCalls.extractionId,
+          extractionId: options.logApiCalls.extractionId,
           callSite: "extractCourseDataItem",
         }
       : undefined,

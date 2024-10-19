@@ -21,7 +21,7 @@ import {
   readMarkdownContent,
   readScreenshot,
 } from "../data/schema";
-import { extractCourseDataItem } from "../extraction/llm/extractCourseDataItem";
+import { extractCourseData } from "../extraction/llm/extractCourseData";
 import { retryFailedItems } from "../extraction/retryFailedItems";
 import { startExtraction } from "../extraction/startExtraction";
 
@@ -199,7 +199,7 @@ export const extractionsRouter = router({
         crawlPage.crawlStepId,
         crawlPage.id
       );
-      return await extractCourseDataItem({
+      return await extractCourseData({
         url: crawlPage.url,
         content,
         screenshot,

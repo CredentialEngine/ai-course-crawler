@@ -7,6 +7,10 @@ export interface DefaultLlmPageOptions {
   logApiCalls?: {
     extractionId: number;
   };
+  additionalContext?: {
+    message: string;
+    context?: string[];
+  };
 }
 
 export function resolveAbsoluteUrl(base: string, relative: string): string {
