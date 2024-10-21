@@ -13,7 +13,7 @@ export const settingsRouter = router({
   setOpenAIApiKey: publicProcedure
     .input(
       z.object({
-        apiKey: z.string().regex(/^sk-.{30,60}$/),
+        apiKey: z.string().regex(/^sk-.{30,200}$/),
       })
     )
     .mutation(async (opts) => {
