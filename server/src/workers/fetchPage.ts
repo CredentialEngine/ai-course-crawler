@@ -105,16 +105,11 @@ async function enqueuePages(
     pages: pageUrls.map((url) => ({ url })),
   });
 
-  // Non course detail pages get the highest priority
-  const priority =
-    configuration.pageType == PageType.COURSE_DETAIL_PAGE ? undefined : 1;
-
   await submitJobs(
     Queues.FetchPage,
     stepAndPages.pages.map((page) => ({
       data: { crawlPageId: page.id },
-      jobId: `fetchPage.${page.id}`,
-      priority,
+      options: { jobId: `fetchPage.${page.id}`, lifo: true, delay: 1500 },
     }))
   );
 }
@@ -148,18 +143,15 @@ async function processLinks(
     pages: urls.map((url) => ({ url })),
   });
 
-  // Non course detail pages get the highest priority
-  const priority =
-    configuration.links!.pageType == PageType.COURSE_DETAIL_PAGE
-      ? undefined
-      : 1;
-
   await submitJobs(
     Queues.FetchPage,
     stepAndPages.pages.map((page) => ({
       data: { crawlPageId: page.id },
-      jobId: `fetchPage.${page.id}`,
-      priority,
+      options: {
+        jobId: `fetchPage.${page.id}`,
+        lifo: true,
+        delay: 1500,
+      },
     }))
   );
 }

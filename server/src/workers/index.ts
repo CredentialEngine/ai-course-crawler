@@ -1,5 +1,11 @@
 import * as Airbrake from "@airbrake/node";
-import { Queue, RepeatOptions, SandboxedJob, Worker } from "bullmq";
+import {
+  BulkJobOptions,
+  Queue,
+  RepeatOptions,
+  SandboxedJob,
+  Worker,
+} from "bullmq";
 import { default as IORedis } from "ioredis";
 import { closeCluster } from "../extraction/browser";
 
@@ -76,8 +82,7 @@ export async function submitRepeatableJob<T, K extends T>(
 
 export interface SubmitJobsItem<K> {
   data: K;
-  jobId: string;
-  priority?: number;
+  options: BulkJobOptions & { jobId: string };
 }
 
 export async function submitJobs<T, K extends T>(
@@ -88,7 +93,7 @@ export async function submitJobs<T, K extends T>(
   const bulkJobs = jobs.map((j) => ({
     name,
     data: j.data,
-    opts: { jobId: j.jobId, priority: j.priority || 100 },
+    opts: j.options,
   }));
   return queue.addBulk(bulkJobs);
 }

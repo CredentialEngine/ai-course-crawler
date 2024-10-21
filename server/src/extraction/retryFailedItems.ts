@@ -38,7 +38,7 @@ export async function retryFailedItems(extractionId: number) {
     Queues.FetchPage,
     pageIds.map((id) => ({
       data: { crawlPageId: id },
-      jobId: `fetchPage.${id}`,
+      options: { jobId: `fetchPage.${id}` },
     }))
   );
   await submitRepeatableJob(
