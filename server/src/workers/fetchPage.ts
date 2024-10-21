@@ -91,6 +91,11 @@ async function enqueuePages(
 
   const pageUrls = constructPaginatedUrls(updatedPagination);
 
+  if (!pageUrls.length) {
+    console.log(`No paginated pages found for page ${crawlPage.id}`);
+    return;
+  }
+
   const stepAndPages = await createStepAndPages({
     extractionId: crawlPage.extractionId,
     step: Step.FETCH_PAGINATED,
@@ -128,6 +133,11 @@ async function processLinks(
     crawlPage.id
   );
   const urls = await extractor(crawlPage.url, content);
+
+  if (!urls.length) {
+    console.log(`No URLs found for page ${crawlPage.id}`);
+    return;
+  }
 
   const stepAndPages = await createStepAndPages({
     extractionId: crawlPage.extractionId,
