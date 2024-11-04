@@ -4,7 +4,7 @@ import { extractCourseData } from "./extractCourseData";
 import { focusedExtractCourseData } from "./focusedExtractCourseData";
 
 function preprocessText(text: string): string {
-  return text.toLowerCase().replace(/[^a-z0-9.\-_'&]/g, "");
+  return text.toLowerCase().replace(/[^a-z0-9.]/g, "");
 }
 
 async function verifyTextInclusion(
