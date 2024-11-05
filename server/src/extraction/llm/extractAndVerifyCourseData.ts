@@ -39,7 +39,10 @@ export async function extractAndVerifyCourseData(
   for (let course of coursesData) {
     let textInclusion = await verifyTextInclusion(course, preprocessedContent);
 
-    if (!textInclusion.course_description?.full) {
+    if (
+      !textInclusion.course_id?.full ||
+      !textInclusion.course_description?.full
+    ) {
       const focusedCourseData = await focusedExtractCourseData(
         options,
         course,
