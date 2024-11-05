@@ -5,7 +5,9 @@
     "dev:email": "email dev --dir src/emails",
     "build": "tsc",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit up && drizzle-kit migrate"
+    "db:migrate": "drizzle-kit up && drizzle-kit migrate",
+    "test": "vitest",
+    "test:html": "vitest --reporter=html"
   },
   "dependencies": {
     "@airbrake/node": "^2.1.8",
@@ -41,12 +43,14 @@
     "@types/pg": "^8.11.9",
     "@types/react": "^18.3.3",
     "@types/turndown": "^5.0.4",
+    "@vitest/ui": "^2.1.4",
     "drizzle-kit": "^0.22.7",
     "nodemon": "^3.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-email": "^2.1.6",
     "tsx": "^4.16.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vitest": "^2.1.4"
   }
 }

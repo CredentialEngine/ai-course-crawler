@@ -214,6 +214,20 @@ export async function findPageForJob(crawlPageId: number) {
   return result;
 }
 
+export async function findPageByUrl(url: string) {
+  const result = await db.query.crawlPages.findFirst({
+    where: (crawlPages, { eq }) => eq(crawlPages.url, url),
+    with: {
+      crawlStep: {
+        with: {
+          extraction: true,
+        },
+      },
+    },
+  });
+  return result;
+}
+
 export interface CreateStepOptions {
   extractionId: number;
   step: Step;
