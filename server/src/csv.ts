@@ -13,7 +13,8 @@ import { TextInclusion } from "./data/schema";
 
   Required fields:
 
-  - External Identifier = The Course number
+  - External Identifier = Course number/ID
+  - Coded Notation = Couse number/ID
   - Learning Type = Course?
   - Learning Opportunity Name = Course Name (e.g., Financial Literacy)
   - Description
@@ -28,20 +29,6 @@ import { TextInclusion } from "./data/schema";
   - ConditionProfile: Description = Entrance Requirements
 
 */
-
-// csvStream.write([
-//   "External Identifier",
-//   "Learning Type",
-//   "Learning Opportunity Name",
-//   "Description",
-//   "Subject Webpage",
-//   "Life Cycle Status Type",
-//   "Language",
-//   "Available Online At",
-//   "Credits (Min)",
-//   "Credits (Max)",
-//   "Prerequisites",
-// ]);
 
 const noCreditUnitTypeDescription =
   "This has credit value, but the type cannot be determined";
@@ -79,6 +66,7 @@ function getBulkUploadTemplateRow(
 
   return {
     "External Identifier": item.structuredData.course_id,
+    "Coded Notation": item.structuredData.course_id,
     "Learning Type": "Course",
     "Learning Opportunity Name": item.structuredData.course_name,
     Description: item.structuredData.course_description,
