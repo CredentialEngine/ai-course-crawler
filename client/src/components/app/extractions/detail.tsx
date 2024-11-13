@@ -1,3 +1,9 @@
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,14 +39,8 @@ import { CookingPot, LibraryBig, List } from "lucide-react";
 import { useState } from "react";
 import { Bar, BarChart, XAxis, YAxis } from "recharts";
 import { Link, useLocation, useParams } from "wouter";
-import { displayStepType } from "./utils";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { displayRecipeDetails } from "../recipes/util";
+import { displayStepType } from "./utils";
 
 function displayStepParent(steps: CrawlStep[], parentId: number) {
   const parent = steps.find((s) => s.id == parentId);
@@ -48,6 +48,24 @@ function displayStepParent(steps: CrawlStep[], parentId: number) {
     return parentId;
   }
   return displayStepType(parent.step);
+}
+
+function getElapsedTimeText(statsLastUpdatedAt: string, createdAt: string) {
+  const elapsedMs =
+    new Date(statsLastUpdatedAt).getTime() - new Date(createdAt).getTime();
+  const elapsedHours = Math.floor(elapsedMs / (1000 * 60 * 60));
+  const elapsedMinutes = Math.floor(
+    (elapsedMs % (1000 * 60 * 60)) / (1000 * 60)
+  );
+  const elapsedSeconds = Math.floor((elapsedMs % (1000 * 60)) / 1000);
+
+  if (elapsedHours > 0) {
+    return `${elapsedHours}hr${elapsedMinutes}mins`;
+  } else if (elapsedMinutes > 0) {
+    return `${elapsedMinutes}mins`;
+  } else {
+    return `${elapsedSeconds}s`;
+  }
 }
 
 export default function ExtractionDetail() {
@@ -134,6 +152,44 @@ export default function ExtractionDetail() {
     totalCourses += step.extractions.courses;
   }
 
+  // if we dont have a generated at, just use the current date
+  const elapsedTimeText = getElapsedTimeText(
+    extraction.completionStats?.generatedAt || new Date().toISOString(),
+    extraction.createdAt
+  );
+
+  let statusDetails = null;
+
+  if (extraction.status == ExtractionStatus.COMPLETE) {
+    statusDetails = (
+      <div>
+        Completed at {prettyPrintDate(extraction.completionStats!.generatedAt)}.
+        <div className="text-sm text-muted-foreground mt-2">
+          Took {elapsedTimeText}
+        </div>
+      </div>
+    );
+  } else if (
+    extraction.status == ExtractionStatus.CANCELLED ||
+    extraction.status == ExtractionStatus.STALE
+  ) {
+    statusDetails = (
+      <div>
+        Marked as stale on{" "}
+        {prettyPrintDate(extraction.completionStats!.generatedAt)}.
+        <div className="text-sm text-muted-foreground mt-2">
+          Ran for {elapsedTimeText}
+        </div>
+      </div>
+    );
+  } else {
+    statusDetails = (
+      <div className="text-sm text-muted-foreground mt-2">
+        Running for {elapsedTimeText}
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="">
@@ -144,8 +200,11 @@ export default function ExtractionDetail() {
             </CardHeader>
             <CardContent>
               <div className="mb-4">
-                Started at {prettyPrintDate(extraction.createdAt)}.{" "}
-                <Badge>{extraction.status}</Badge>
+                <div>
+                  Started at {prettyPrintDate(extraction.createdAt)}.{" "}
+                  <Badge>{extraction.status}</Badge>
+                </div>
+                {statusDetails}
               </div>
 
               <div className="rounded-md border p-4 mt-2 flex items-center">
