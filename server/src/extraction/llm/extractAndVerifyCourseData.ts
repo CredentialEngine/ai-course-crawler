@@ -41,7 +41,9 @@ export async function extractAndVerifyCourseData(
 
     if (
       !textInclusion.course_id?.full ||
-      !textInclusion.course_description?.full
+      !textInclusion.course_description?.full ||
+      (textInclusion.course_prerequisites &&
+        !textInclusion.course_prerequisites.full)
     ) {
       const focusedCourseData = await focusedExtractCourseData(
         options,

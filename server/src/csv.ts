@@ -83,6 +83,10 @@ function getBulkUploadTemplateRow(
       : noCreditUnitTypeDescription,
     "Text Verification Average": (textVerificationAverage * 100).toFixed(2),
     "Text Verification Details": textVerificationDetails,
+    "ConditionProfile: External Identifier": item.structuredData.course_id,
+    "ConditionProfile: Type": "Requires",
+    "ConditionProfile: Name": "Prerequisites",
+    "ConditionProfile: Description": item.structuredData.course_prerequisites,
   };
 }
 

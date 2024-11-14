@@ -62,6 +62,9 @@ function CourseDisplayItem({ item }: CourseDisplayItemProps) {
       <TableCell className="text-sm max-w-80">
         {structuredData.course_description}
       </TableCell>
+      <TableCell className="text-sm max-w-80">
+        {structuredData.course_prerequisites}
+      </TableCell>
       <TableCell className="text-sm">{displayCredits()}</TableCell>
     </TableRow>
   );
@@ -181,6 +184,7 @@ export default function DatasetCourses() {
                 <TableHead>Course ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Description</TableHead>
+                <TableHead>Prerequisites</TableHead>
                 <TableHead>Credits</TableHead>
               </TableRow>
             </TableHeader>

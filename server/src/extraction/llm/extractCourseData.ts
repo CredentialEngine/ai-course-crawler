@@ -44,6 +44,9 @@ We are looking for the following fields:
 Course identifier: code/identifier for the course (example: "AGRI 101")
 Course name: name for the course (for example "Landscape Design")
 Course description: the full description of the course
+Course prerequisites: if the text explicitly mentions any course prerequisite(s),
+  extract them as is (the full text for prerequisites, as it may contain observations).
+  Otherwise leave blank
 Course credits (min): min credit
 Course credits (max): max credit (if the page shows a range).
   - If there is only a single credit information in the page, set it as the max.
@@ -111,6 +114,9 @@ ${options.content}
               type: "string",
               enum: validCreditUnitTypes,
             },
+            course_prerequisites: {
+              type: "string",
+            },
           },
           required: ["course_id", "course_name", "course_description"],
         },
@@ -142,6 +148,9 @@ ${options.content}
         !validCreditUnitTypes.includes(c.course_credits_type)
       ) {
         c.course_credits_type = undefined;
+      }
+      if (c.course_prerequisites?.trim() == "") {
+        c.course_prerequisites = undefined;
       }
       return c;
     });

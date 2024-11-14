@@ -107,6 +107,7 @@ export interface CourseStructuredData {
   course_credits_min?: number;
   course_credits_max?: number;
   course_credits_type?: string;
+  course_prerequisites?: string;
 }
 
 export type TextInclusion = {
