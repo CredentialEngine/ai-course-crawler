@@ -38,12 +38,16 @@ export async function extractAndVerifyCourseData(
 
   for (let course of coursesData) {
     let textInclusion = await verifyTextInclusion(course, preprocessedContent);
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
 
-    if (
-      !textInclusion.course_id?.full ||
-      !textInclusion.course_description?.full ||
-      (textInclusion.course_prerequisites &&
-        !textInclusion.course_prerequisites.full)
+    // Retry focused extraction if the text inclusion is not complete for ID, description and prereqs
+    while (
+      retryCount < MAX_RETRIES &&
+      (!textInclusion.course_id?.full ||
+        !textInclusion.course_description?.full ||
+        (textInclusion.course_prerequisites &&
+          !textInclusion.course_prerequisites.full))
     ) {
       const focusedCourseData = await focusedExtractCourseData(
         options,
@@ -54,6 +58,7 @@ export async function extractAndVerifyCourseData(
         course = focusedCourseData;
         textInclusion = await verifyTextInclusion(course, preprocessedContent);
       }
+      retryCount++;
     }
 
     results.push({ course, textInclusion });

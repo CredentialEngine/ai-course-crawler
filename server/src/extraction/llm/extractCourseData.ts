@@ -6,7 +6,7 @@ import { DefaultLlmPageOptions } from ".";
 import { CourseStructuredData } from "../../appRouter";
 import { assertArray, simpleToolCompletion } from "../../openai";
 
-const validCreditUnitTypes = [
+export const validCreditUnitTypes = [
   "AcademicYear",
   "CarnegieUnit",
   "CertificateCredit",
@@ -25,6 +25,83 @@ const validCreditUnitTypes = [
   "UNKNOWN",
 ];
 
+export function processCourse(course: CourseStructuredData) {
+  const processedCourse: CourseStructuredData = {
+    course_id: course.course_id.trim(),
+    course_name: course.course_name.trim(),
+    course_description: course.course_description.trim(),
+    course_credits_min: course.course_credits_min,
+    course_credits_max: course.course_credits_max,
+    course_credits_type: course.course_credits_type?.trim(),
+    course_prerequisites: course.course_prerequisites?.trim(),
+  };
+
+  if (course.course_credits_type?.toUpperCase()?.trim() == "UNKNOWN") {
+    processedCourse.course_credits_type = undefined;
+  }
+  if (
+    course.course_credits_type &&
+    !validCreditUnitTypes.includes(course.course_credits_type)
+  ) {
+    processedCourse.course_credits_type = undefined;
+  }
+  if (!course.course_prerequisites) {
+    processedCourse.course_prerequisites = undefined;
+  }
+  if (typeof course.course_credits_min === "string") {
+    if ((course.course_credits_min as string).trim().length) {
+      processedCourse.course_credits_min = parseInt(course.course_credits_min);
+    } else {
+      processedCourse.course_credits_min = undefined;
+    }
+  }
+  if (typeof course.course_credits_max === "string") {
+    if ((course.course_credits_max as string).trim().length) {
+      processedCourse.course_credits_max = parseInt(course.course_credits_max);
+    } else {
+      processedCourse.course_credits_max = undefined;
+    }
+  }
+  return processedCourse;
+}
+
+export const basePrompt = `
+We are looking for the following fields:
+
+Course identifier: code/identifier for the course (example: "AGRI 101")
+
+Course name: name for the course (for example "Landscape Design")
+
+Course description: the full description of the course. If there are links, only extract the text.
+
+Course prerequisites: if the text explicitly mentions any course prerequisite(s) or course requirements,
+  extract them as is - the full text for prerequisites, as it may contain observations.
+  (If there are links in the text, only extract the text without links.)
+  - If it mentions course corequisites, leave blank.
+  - If it mentions mutually exclusive courses, leave blank.
+  - If it mentions courses that must be taken concurrently, leave blank.
+  - Only extract the text if it's explicitly stated that the course has prerequisites/requirements.
+  - Otherwise leave blank.
+
+Course credits (min): min credit.
+
+Course credits (max): max credit (if the page shows a range).
+  - If there is only a single credit information in the page, set it as the max.
+
+IMPORTANT:
+
+IF THERE ARE NO CLEARLY STATED COURSE CREDITS INFORMATION, LEAVE BOTH FIELDS BLANK.
+ONLY INCLUDE COURSE CREDITS INFORMATION IF IT'S EXPLICITLY STATED IN THE PAGE!
+
+Course credits type: infer it from the page.
+  - Only infer the type if it's CLEARLY stated in the page somewhere.
+  - If you can't infer the type, set it as "UNKNOWN"
+  - MUST BE either UNKNOWN or: ${validCreditUnitTypes.join(", ")}
+
+It is ok to have the course credits set to a number and the course credits type set to "UNKNOWN"
+if the content shows the credits value but doesn't mention the type.
+`;
+
 export async function extractCourseData(options: DefaultLlmPageOptions) {
   const additionalContext = options.additionalContext
     ? `
@@ -39,20 +116,7 @@ ${(options.additionalContext.context ?? []).join("\n")}
   const prompt = `
 Your goal is to extract course data from this page.
 
-We are looking for the following fields:
-
-Course identifier: code/identifier for the course (example: "AGRI 101")
-Course name: name for the course (for example "Landscape Design")
-Course description: the full description of the course
-Course prerequisites: if the text explicitly mentions any course prerequisite(s),
-  extract them as is (the full text for prerequisites, as it may contain observations).
-  Otherwise leave blank
-Course credits (min): min credit
-Course credits (max): max credit (if the page shows a range).
-  - If there is only a single credit information in the page, set it as the max.
-Course credits type: infer it from the page (ref. one of the enum values)
-  - Only infer the type if it's clearly stated in the page somewhere
-  - If you can't infer the type, set it as "UNKNOWN"
+${basePrompt}
 
 ${additionalContext}
 
@@ -139,19 +203,5 @@ ${options.content}
   );
   return courses
     .filter((c) => c.course_id && c.course_name && c.course_description)
-    .map((c) => {
-      if (c.course_credits_type?.toUpperCase()?.trim() == "UNKNOWN") {
-        c.course_credits_type = undefined;
-      }
-      if (
-        c.course_credits_type &&
-        !validCreditUnitTypes.includes(c.course_credits_type)
-      ) {
-        c.course_credits_type = undefined;
-      }
-      if (c.course_prerequisites?.trim() == "") {
-        c.course_prerequisites = undefined;
-      }
-      return c;
-    });
+    .map(processCourse);
 }

@@ -6,25 +6,11 @@ import { DefaultLlmPageOptions } from ".";
 import { CourseStructuredData } from "../../appRouter";
 import { TextInclusion } from "../../data/schema";
 import { simpleToolCompletion } from "../../openai";
-
-const validCreditUnitTypes = [
-  "AcademicYear",
-  "CarnegieUnit",
-  "CertificateCredit",
-  "ClockHour",
-  "CompetencyCredit",
-  "ContactHour",
-  "ContinuingEducationUnit",
-  "DegreeCredit",
-  "DualCredit",
-  "QuarterHour",
-  "RequirementCredit",
-  "SecondaryDiplomaCredit",
-  "SemesterHour",
-  "TimeBasedCredit",
-  "TypeBasedCredit",
-  "UNKNOWN",
-];
+import {
+  basePrompt,
+  processCourse,
+  validCreditUnitTypes,
+} from "./extractCourseData";
 
 export async function focusedExtractCourseData(
   options: DefaultLlmPageOptions,
@@ -46,20 +32,7 @@ Your extraction was:
 
 ${JSON.stringify(course)}
 
-We are looking for the following fields:
-
-Course identifier: code/identifier for the course (example: "AGRI 101")
-Course name: name for the course (for example "Landscape Design")
-Course description: the full description of the course
-Course prerequisites: if the text explicitly mentions any course prerequisite(s),
-  extract them as is (the full text for prerequisites, as it may contain observations).
-  Otherwise leave blank
-Course credits (min): min credit
-Course credits (max): max credit (if the page shows a range).
-  - If there is only a single credit information in the page, set it as the max.
-Course credits type: infer it from the page (ref. one of the enum values)
-  - Only infer the type if it's clearly stated in the page somewhere
-  - If you can't infer the type, set it as "UNKNOWN"
+${basePrompt}
 
 PAGE URL:
 
@@ -131,5 +104,9 @@ ${options.content}
         }
       : undefined,
   });
-  return (result?.toolCallArgs?.course as CourseStructuredData) || null;
+  const extractedCourse = result?.toolCallArgs?.course as CourseStructuredData;
+  if (!extractedCourse) {
+    return null;
+  }
+  return processCourse(extractedCourse);
 }
