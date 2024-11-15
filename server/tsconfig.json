@@ -14,6 +14,6 @@
     "types": ["node"],
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src", "drizzle.config.ts", "migrate.ts"],
+  "include": ["src", "tests", "drizzle.config.ts", "migrate.ts"],
   "exclude": ["node_modules", "dist"]
 }
