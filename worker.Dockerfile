@@ -24,8 +24,8 @@ RUN npm install pm2 -g
 RUN npm install pnpm -g
 
 # Build the app
-COPY server/package.json /build/server/package.json
-RUN cd /build/server && pnpm install --prod
+COPY server/package.json server/pnpm-lock.yaml /build/server/
+RUN cd /build/server && pnpm install
 
 USER pptruser
 RUN /build/server/node_modules/.bin/puppeteer browsers install chrome

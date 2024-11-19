@@ -24,10 +24,10 @@ RUN npm install pm2 -g
 RUN npm install pnpm -g
 
 # Build the app
-COPY client/package.json /build/client/package.json
-COPY server/package.json /build/server/package.json
-RUN (cd /build/client && pnpm install --prod) & \
-  (cd /build/server && pnpm install --prod) & \
+COPY client/package.json client/pnpm-lock.yaml /build/client/
+COPY server/package.json server/pnpm-lock.yaml /build/server/
+RUN (cd /build/client && pnpm install) & \
+  (cd /build/server && pnpm install) & \
   wait
 
 USER pptruser
