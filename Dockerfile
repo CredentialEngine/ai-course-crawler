@@ -26,8 +26,8 @@ RUN npm install pnpm -g
 # Build the app
 COPY client/package.json /build/client/package.json
 COPY server/package.json /build/server/package.json
-RUN (cd /build/client && pnpm install) & \
-  (cd /build/server && pnpm install) & \
+RUN (cd /build/client && pnpm install --prod) & \
+  (cd /build/server && pnpm install --prod) & \
   wait
 
 USER pptruser

@@ -25,7 +25,7 @@ RUN npm install pnpm -g
 
 # Build the app
 COPY server/package.json /build/server/package.json
-RUN cd /build/server && pnpm install
+RUN cd /build/server && pnpm install --prod
 
 USER pptruser
 RUN /build/server/node_modules/.bin/puppeteer browsers install chrome
