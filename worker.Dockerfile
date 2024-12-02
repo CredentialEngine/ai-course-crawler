@@ -28,7 +28,7 @@ COPY server/package.json server/pnpm-lock.yaml /build/server/
 RUN cd /build/server && pnpm install
 
 USER pptruser
-RUN /build/server/node_modules/.bin/puppeteer browsers install chrome
+RUN /build/server/node_modules/.bin/rebrowser-puppeteer browsers install chrome
 
 USER root
 COPY server/ /build/server

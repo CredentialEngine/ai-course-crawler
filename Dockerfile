@@ -31,7 +31,7 @@ RUN (cd /build/client && pnpm install) & \
   wait
 
 USER pptruser
-RUN /build/server/node_modules/.bin/puppeteer browsers install chrome
+RUN /build/server/node_modules/.bin/rebrowser-puppeteer browsers install chrome
 
 USER root
 COPY client/ /build/client
