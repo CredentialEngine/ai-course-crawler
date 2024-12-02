@@ -2,8 +2,8 @@ import { ChatCompletionContentPart } from "openai/resources/chat/completions";
 import { DefaultLlmPageOptions } from ".";
 import { PageType } from "../../data/schema";
 import { assertArray, assertString, simpleToolCompletion } from "../../openai";
-import { resolveAbsoluteUrl } from "../../utils";
 import { SimplifiedMarkdown } from "../../types";
+import { resolveAbsoluteUrl } from "../../utils";
 
 export function createUrlExtractor(regexp: RegExp) {
   return async (baseUrl: string, content: SimplifiedMarkdown) => {
@@ -87,6 +87,40 @@ export default async function detectUrlRegexp(
     ...
     Possibly links to other things (that are not couses)... (we don't want these)
     ...
+
+    VERY IMPORTANT NOTE (PLEASE READ):
+
+    You must find a pattern that is generic to course detail links.
+    Let's say for example that the page has 30 links and they're all like this:
+
+    /course-1?cat=ACCOUNTING&other=123
+    /course-2?cat=ACCOUNTING&other=123
+    ...
+    /course-30?cat=ACCOUNTING&other=123
+
+    Your regexp shouldn't look for /course-[number]?cat=ACCOUNTING&other=123,
+    but for /course-[number]?[any characters],
+    because in other pages there might be links like /course-1?cat=MATH&other=321
+
+    It's also NOT necessary to do something like /course-[number]?cat=[letters]&other=[numbers] in
+    the case above, because there might be multipe query string parameters in varying order which
+    would break the regexp in edge cases.
+
+    For example /course-1?other=123&cat=ACCOUNTING is also a valid course link, and your regexp
+    shouldn't break for that.
+
+    The goal is to identify a pattern that is common to course detail links, but it doesn't need to
+    be extremely strict, it shouldn't break if the query string params are in a different order for example.
+
+    Be smart about this.
+
+    TO SUM IT UP:
+
+    GOOD
+    /course-[number]?[any characters]
+
+    BAD
+    /course-[number]?cat=ACCOUNTING&other=123
     `,
   };
 
@@ -156,10 +190,12 @@ export default async function detectUrlRegexp(
     },
   ];
 
-  if (defaultOptions?.screenshot) {
+  if (defaultOptions.screenshot) {
     completionContent.push({
       type: "image_url",
-      image_url: { url: `data:image/webp;base64,${defaultOptions.screenshot}` },
+      image_url: {
+        url: `data:image/webp;base64,${defaultOptions.screenshot}`,
+      },
     });
   }
 

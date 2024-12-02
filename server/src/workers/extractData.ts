@@ -1,3 +1,4 @@
+import { inspect } from "util";
 import { createProcessor, ExtractDataJob, ExtractDataProgress } from ".";
 import { createDataItem, findOrCreateDataset } from "../data/datasets";
 import { findPageForJob, updatePage } from "../data/extractions";
@@ -53,7 +54,7 @@ export default createProcessor<ExtractDataJob, ExtractDataProgress>(
         await createDataItem(crawlPage.id, dataset.id, course, textInclusion);
       }
     } catch (err) {
-      console.log(err);
+      console.log(inspect(err));
       throw err;
     }
   }

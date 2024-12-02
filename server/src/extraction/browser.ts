@@ -4,6 +4,10 @@ import TurndownService from "turndown";
 import { SimplifiedMarkdown } from "../types";
 import { resolveAbsoluteUrl } from "../utils";
 
+import { addExtra, VanillaPuppeteer } from "puppeteer-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import rebrowserPuppeteer from "rebrowser-puppeteer";
+
 export interface BrowserTaskInput {
   url: string;
 }
@@ -11,9 +15,12 @@ export interface BrowserTaskInput {
 export interface BrowserTaskResult {
   url: string;
   content: string;
-  screenshot?: Buffer;
+  screenshot: string;
   status: number;
 }
+
+const puppeteer = addExtra(rebrowserPuppeteer as unknown as VanillaPuppeteer);
+puppeteer.use(StealthPlugin());
 
 let cluster: Cluster<BrowserTaskInput, BrowserTaskResult> | undefined;
 let clusterClosed = false;
@@ -30,6 +37,7 @@ export async function getCluster() {
   cluster = await Cluster.launch({
     concurrency: Cluster.CONCURRENCY_CONTEXT,
     maxConcurrency: 2,
+    puppeteer: puppeteer,
     puppeteerOptions: {
       args: ["--font-render-hinting=none", "--force-gpu-mem-available-mb=4096"],
     },
@@ -40,16 +48,24 @@ export async function getCluster() {
     const { url } = data;
     const response = await page.goto(url, {
       timeout: PAGE_TIMEOUT,
-      waitUntil: "networkidle0",
+      waitUntil: "networkidle2",
     });
     if (!response) {
       throw new Error(`Failed to load page ${url}`);
     }
-    const content = await page.content();
+    let content = await page.content();
+    if (content.includes("kuali-catalog")) {
+      console.log(`Kuali detected at url ${url}; waiting for selector`);
+      await page.waitForFunction(
+        `document.querySelector("#kuali-catalog-main h3") || document.querySelector("#kuali-catalog-main ul li")`
+      );
+      content = await page.content();
+    }
     const screenshot = await page.screenshot({
       type: "webp",
       fullPage: false,
       quality: 60,
+      encoding: "base64",
     });
     return {
       url,

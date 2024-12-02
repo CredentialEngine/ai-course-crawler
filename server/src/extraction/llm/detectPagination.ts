@@ -2,7 +2,7 @@ import {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
 } from "openai/resources/chat/completions";
-import { DefaultLlmPageOptions, resolveAbsoluteUrl } from ".";
+import { DefaultLlmPageOptions } from ".";
 import { PageType, PaginationConfiguration } from "../../data/schema";
 import {
   BadToolCallResponseError,
@@ -86,10 +86,12 @@ ${defaultOptions.content}
     },
   ];
 
-  if (defaultOptions?.screenshot) {
+  if (defaultOptions.screenshot) {
     completionContent.push({
       type: "image_url",
-      image_url: { url: `data:image/webp;base64,${defaultOptions.screenshot}` },
+      image_url: {
+        url: `data:image/webp;base64,${defaultOptions.screenshot}`,
+      },
     });
   }
 

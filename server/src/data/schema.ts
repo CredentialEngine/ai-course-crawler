@@ -199,7 +199,7 @@ export async function storeScreenshot(
   extractionId: number,
   crawlStepId: number,
   crawlPageId: number,
-  screenshot: Buffer | undefined
+  screenshot: string
 ): Promise<string | null> {
   if (!screenshot) {
     return null;
@@ -213,9 +213,9 @@ export async function storeScreenshot(
       extractionId,
       crawlStepId
     );
-    const screenshotFilePath = path.join(dirPath, `${crawlPageId}.png.gz`);
-
-    const gzippedScreenshot = await gzip(screenshot);
+    const screenshotFilePath = path.join(dirPath, `${crawlPageId}.webp.gz`);
+    const screenshotBuffer = Buffer.from(screenshot, "base64");
+    const gzippedScreenshot = await gzip(screenshotBuffer);
     await fs.writeFile(screenshotFilePath, gzippedScreenshot);
     return screenshotFilePath;
   } catch (error) {
@@ -268,7 +268,7 @@ export async function readScreenshot(
     basePath!,
     extractionId.toString(),
     crawlStepId.toString(),
-    `${crawlPageId}.png.gz`
+    `${crawlPageId}.webp.gz`
   );
   const compressedContent = await fs.readFile(filePath);
   const decompressedContent = await gunzip(compressedContent);

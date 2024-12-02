@@ -1,5 +1,9 @@
 import { OpenAI } from "openai";
-import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+import {
+  ChatCompletion,
+  ChatCompletionCreateParams,
+  ChatCompletionMessageParam,
+} from "openai/resources/chat/completions";
 import db from "./data";
 import { createModelApiCallLog } from "./data/extractions";
 import { Provider, ProviderModel, decryptFromDb } from "./data/schema";
@@ -67,7 +71,8 @@ export async function simpleToolCompletion<
 }> {
   return exponentialRetry(async () => {
     const openai = await getOpenAi();
-    const chatCompletion = await openai.chat.completions.create({
+    let chatCompletion: ChatCompletion;
+    const completionOptions: ChatCompletionCreateParams = {
       messages: options.messages,
       model: ProviderModel.Gpt4o,
       tools: [
@@ -89,7 +94,36 @@ export async function simpleToolCompletion<
           name: options.toolName,
         },
       },
-    });
+    };
+    try {
+      chatCompletion = await openai.chat.completions.create(completionOptions);
+    } catch (e) {
+      if (
+        e instanceof OpenAI.APIError &&
+        ["invalid_base64", "invalid_image_format"].includes(e.code || "")
+      ) {
+        console.log(
+          `OpenAI API Error: ${e.code}. Likely invalid base64 screenshot; retrying without screenshots`
+        );
+
+        const messagesWithoutScreenshots = options.messages.map((m) => ({
+          ...m,
+          content: Array.isArray(m.content)
+            ? m.content.filter((c) => c.type !== "image_url")
+            : m.content,
+        }));
+
+        const completionOptionsWithoutScreenshots = {
+          ...completionOptions,
+          messages: messagesWithoutScreenshots as ChatCompletionMessageParam[],
+        };
+        chatCompletion = await openai.chat.completions.create(
+          completionOptionsWithoutScreenshots
+        );
+      } else {
+        throw e;
+      }
+    }
 
     const inputTokenCount = chatCompletion.usage?.prompt_tokens || 0;
     const outputTokenCount = chatCompletion.usage?.completion_tokens || 0;

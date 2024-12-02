@@ -1,3 +1,4 @@
+import { inspect } from "util";
 import { expect } from "vitest";
 import { CourseStructuredData, RecipeConfiguration } from "../src/data/schema";
 import {
@@ -32,53 +33,75 @@ function matchesUrlPattern(expected: string, actual: string): boolean {
   });
 }
 
+export type RecipeConfigurationWithSampleLinks = RecipeConfiguration & {
+  sampleLinks?: string[];
+  links?: RecipeConfigurationWithSampleLinks;
+};
+
 export async function assertConfiguration(
   url: string,
-  expected: RecipeConfiguration & { sampleLinks?: string[] }
+  expected: RecipeConfigurationWithSampleLinks
 ): Promise<void> {
   const actual = await recursivelyDetectConfiguration(url);
+  console.log(inspect(actual));
 
-  console.log(actual);
-  expect(actual.pageType).toBe(expected.pageType);
+  function compareConfigurations(
+    actualConfig: any,
+    expectedConfig: any,
+    path: string = ""
+  ): void {
+    for (const key in expectedConfig) {
+      const currentPath = path ? `${path}.${key}` : key;
 
-  if (expected.pagination) {
-    expect(actual.pagination).toBeDefined();
-    if (actual.pagination) {
-      expect(actual.pagination.urlPatternType).toBe(
-        expected.pagination.urlPatternType
-      );
-      expect(actual.pagination.totalPages).toBe(expected.pagination.totalPages);
-
-      expect(
-        matchesUrlPattern(
-          expected.pagination.urlPattern,
-          actual.pagination.urlPattern
-        ),
-        `Expected URL pattern to match ${expected.pagination.urlPattern}, got ${actual.pagination.urlPattern}`
-      ).toBe(true);
+      if (key === "pageType") {
+        expect(actualConfig.pageType).toBe(expectedConfig.pageType);
+      } else if (key === "sampleLinks" && actualConfig.linkRegexp) {
+        const regexp = new RegExp(actualConfig.linkRegexp);
+        for (const link of expectedConfig.sampleLinks || []) {
+          expect(
+            regexp.test(link),
+            `Expected link ${link} to match regexp ${actualConfig.linkRegexp} at ${currentPath}`
+          ).toBe(true);
+        }
+      } else if (key === "pagination") {
+        if (expectedConfig.pagination) {
+          expect(actualConfig.pagination).toBeDefined();
+          if (actualConfig.pagination) {
+            expect(actualConfig.pagination.urlPatternType).toBe(
+              expectedConfig.pagination.urlPatternType
+            );
+            expect(actualConfig.pagination.totalPages).toBe(
+              expectedConfig.pagination.totalPages
+            );
+            expect(
+              matchesUrlPattern(
+                expectedConfig.pagination.urlPattern,
+                actualConfig.pagination.urlPattern
+              ),
+              `Expected URL pattern to match ${expectedConfig.pagination.urlPattern}, got ${actualConfig.pagination.urlPattern} at ${currentPath}`
+            ).toBe(true);
+          }
+        } else {
+          expect(actualConfig.pagination).toBeUndefined();
+        }
+      } else if (key === "links") {
+        if (expectedConfig.links) {
+          expect(actualConfig.links).toBeDefined();
+          if (actualConfig.links) {
+            compareConfigurations(
+              actualConfig.links,
+              expectedConfig.links,
+              currentPath
+            );
+          }
+        } else {
+          expect(actualConfig.links).toBeUndefined();
+        }
+      }
     }
-  } else {
-    expect(actual.pagination).toBeUndefined();
   }
 
-  if (expected.links) {
-    expect(actual.links).toBeDefined();
-    if (actual.links) {
-      expect(actual.links.pageType).toBe(expected.links.pageType);
-    }
-  } else {
-    expect(actual.links).toBeUndefined();
-  }
-
-  if (expected.sampleLinks && actual.linkRegexp) {
-    const regexp = new RegExp(actual.linkRegexp);
-    for (const link of expected.sampleLinks) {
-      expect(
-        regexp.test(link),
-        `Expected link ${link} to match regexp ${actual.linkRegexp}`
-      ).toBe(true);
-    }
-  }
+  compareConfigurations(actual, expected);
 }
 
 export async function assertExtraction(
@@ -95,7 +118,7 @@ export async function assertExtraction(
   const extraction = await extractAndVerifyCourseData({
     content: simplifiedContent,
     url: page.url,
-    screenshot: page.screenshot?.toString("base64"),
+    screenshot: page.screenshot,
   });
 
   for (const expectedCourse of expected) {

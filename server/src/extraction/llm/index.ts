@@ -3,7 +3,7 @@ import { SimplifiedMarkdown } from "../../types";
 export interface DefaultLlmPageOptions {
   content: SimplifiedMarkdown;
   url: string;
-  screenshot?: string;
+  screenshot: string;
   logApiCalls?: {
     extractionId: number;
   };

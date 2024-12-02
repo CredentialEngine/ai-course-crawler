@@ -17,7 +17,7 @@ export async function createRecipe(url: string, catalogueId: number) {
       detectPageType({
         url,
         content: markdownContent,
-        screenshot: screenshot?.toString("base64"),
+        screenshot,
       }),
     (p) => p as string
   );

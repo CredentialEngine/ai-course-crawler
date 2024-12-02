@@ -142,10 +142,12 @@ export async function detectPageType(defaultOptions: DefaultLlmPageOptions) {
     },
   ];
 
-  if (defaultOptions?.screenshot) {
+  if (defaultOptions.screenshot) {
     completionContent.push({
       type: "image_url",
-      image_url: { url: `data:image/webp;base64,${defaultOptions.screenshot}` },
+      image_url: {
+        url: `data:image/webp;base64,${defaultOptions.screenshot}`,
+      },
     });
   }
 

@@ -10,22 +10,25 @@ const sample = <T>(arr: T[], sampleSize: number) =>
   arr.sort(() => 0.5 - Math.random()).slice(0, sampleSize);
 
 const detectConfiguration = async (url: string) => {
-  const { content, screenshot } = await fetchBrowserPage(url);
+  let { content, screenshot } = await fetchBrowserPage(url);
   const markdownContent = await simplifiedMarkdown(content);
-  const encodedScreenshot = screenshot?.toString("base64");
   console.log(`Detecting page type for ${url}`);
   const pageType = await bestOutOf(
     5,
     () =>
-      exponentialRetry(
-        async () =>
-          detectPageType({
+      exponentialRetry(async () => {
+        try {
+          const pageType = await detectPageType({
             url,
             content: markdownContent,
-            screenshot: encodedScreenshot,
-          }),
-        10
-      ),
+            screenshot: screenshot,
+          });
+          return pageType;
+        } catch (e) {
+          console.log(`Error detecting page type for ${url}: ${inspect(e)}`);
+          throw e;
+        }
+      }, 10),
     (t) => t as string
   );
   console.log(`Detected as ${pageType}`);
@@ -39,7 +42,7 @@ const detectConfiguration = async (url: string) => {
       exponentialRetry(
         async () =>
           detectPagination(
-            { url, content: markdownContent, screenshot: encodedScreenshot },
+            { url, content: markdownContent, screenshot: screenshot },
             pageType
           ),
         10
@@ -59,7 +62,7 @@ const detectConfiguration = async (url: string) => {
         exponentialRetry(
           async () =>
             detectUrlRegexp(
-              { url, content: markdownContent, screenshot: encodedScreenshot },
+              { url, content: markdownContent, screenshot: screenshot },
               pageType
             ),
           10
