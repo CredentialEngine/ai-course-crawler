@@ -106,7 +106,8 @@ export async function assertConfiguration(
 
 export async function assertExtraction(
   url: string,
-  expected: CourseStructuredData[]
+  expected: CourseStructuredData[],
+  verified: boolean = false
 ) {
   const page = await fetchBrowserPage(url);
   if (!page?.content) {
@@ -115,14 +116,14 @@ export async function assertExtraction(
 
   const simplifiedContent = await simplifiedMarkdown(page.content);
 
-  const extraction = await extractAndVerifyCourseData({
+  const extractions = await extractAndVerifyCourseData({
     content: simplifiedContent,
     url: page.url,
     screenshot: page.screenshot,
   });
 
   for (const expectedCourse of expected) {
-    const extractedCourse = extraction.find((course) =>
+    const extraction = extractions.find((course) =>
       course.course.course_id
         .toLowerCase()
         .replace(/[\W\s]+/g, "")
@@ -130,13 +131,13 @@ export async function assertExtraction(
           expectedCourse.course_id.toLowerCase().replace(/[\W\s]+/g, "")
         )
     );
-    if (!extractedCourse) {
+    if (!extraction) {
       throw new Error(`Course ${expectedCourse.course_id} not found`);
     }
     for (const key in expectedCourse) {
       const expectedValue = expectedCourse[key as keyof CourseStructuredData];
       const extractedValue =
-        extractedCourse.course[key as keyof CourseStructuredData];
+        extraction.course[key as keyof CourseStructuredData];
 
       if (
         typeof expectedValue === "string" &&
@@ -147,9 +148,16 @@ export async function assertExtraction(
         );
       } else {
         if (extractedValue != expectedValue) {
-          console.log(extractedCourse.course);
+          console.log(extraction.course);
         }
         expect(extractedValue).toEqual(expectedValue);
+      }
+    }
+    if (verified) {
+      expect(extraction.textInclusion.course_id?.full).toBe(true);
+      expect(extraction.textInclusion.course_description?.full).toBe(true);
+      if (extraction.course.course_prerequisites) {
+        expect(extraction.textInclusion.course_prerequisites?.full).toBe(true);
       }
     }
   }
