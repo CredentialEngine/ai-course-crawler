@@ -50,14 +50,18 @@ export function processCourse(course: CourseStructuredData) {
   }
   if (typeof course.course_credits_min === "string") {
     if ((course.course_credits_min as string).trim().length) {
-      processedCourse.course_credits_min = parseInt(course.course_credits_min);
+      processedCourse.course_credits_min = parseFloat(
+        course.course_credits_min
+      );
     } else {
       processedCourse.course_credits_min = undefined;
     }
   }
   if (typeof course.course_credits_max === "string") {
     if ((course.course_credits_max as string).trim().length) {
-      processedCourse.course_credits_max = parseInt(course.course_credits_max);
+      processedCourse.course_credits_max = parseFloat(
+        course.course_credits_max
+      );
     } else {
       processedCourse.course_credits_max = undefined;
     }
@@ -97,6 +101,10 @@ Course credits type: infer it from the page.
   - Only infer the type if it's CLEARLY stated in the page somewhere.
   - If you can't infer the type, set it as "UNKNOWN"
   - MUST BE either UNKNOWN or: ${validCreditUnitTypes.join(", ")}
+  - Sometimes the course has 0 credits but a number of CEUs (Continuing Education Units).
+    - In that case, you can set the course credits min and max to the CEU value(s),
+      and the course credits type to "ContinuingEducationUnit"
+    - If you see "CEU" values in the page, that's the same as "ContinuingEducationUnit"
 
 It is ok to have the course credits set to a number and the course credits type set to "UNKNOWN"
 if the content shows the credits value but doesn't mention the type.

@@ -116,4 +116,31 @@ describe("ACALOG", { timeout: EXTRACTION_TIMEOUT }, () => {
       );
     });
   });
+
+  describe("Houston Community College", () => {
+    test("Course with CEUs and decimal places", async () => {
+      await assertExtraction(
+        "https://catalog.hccs.edu/preview_course_nopop.php?catoid=21&coid=38020",
+        /*
+        MDCA 1048 - Pharmacology & Administration of Medications
+Credits: 0
+
+Instruction in concepts and application of pharmacological principles. Focuses on drug classifications, principles and procedures of medication administration, mathematical systems and conversions, calculation of drug problems, and medico-legal responsibilities of the medical assistant.
+
+9.6 CEUs
+*/
+        [
+          {
+            course_id: "MDCA 1048",
+            course_name: "Pharmacology & Administration of Medications",
+            course_description:
+              "Instruction in concepts and application of pharmacological principles. Focuses on drug classifications, principles and procedures of medication administration, mathematical systems and conversions, calculation of drug problems, and medico-legal responsibilities of the medical assistant.",
+            course_credits_min: 9.6,
+            course_credits_max: 9.6,
+            course_credits_type: "ContinuingEducationUnit",
+          },
+        ]
+      );
+    });
+  });
 });
