@@ -1,16 +1,18 @@
 import { DefaultLlmPageOptions } from ".";
 import { CourseStructuredData, TextInclusion } from "../../data/schema";
+import { SimplifiedMarkdown } from "../../types";
+import { shouldChunk, splitChunks } from "../splitChunks";
 import { extractCourseData } from "./extractCourseData";
 import { focusedExtractCourseData } from "./focusedExtractCourseData";
 
-function preprocessText(text: string): string {
+export function preprocessText(text: string): string {
   return text
     .toLowerCase()
     .replace(/(?<!\!)\[([^\]]+)\]\([^)]*\)/g, "$1") // remove MD links
     .replace(/[^a-z0-9]/g, "");
 }
 
-async function verifyTextInclusion(
+async function reportTextInclusion(
   course: CourseStructuredData,
   content: string
 ): Promise<TextInclusion> {
@@ -28,23 +30,27 @@ async function verifyTextInclusion(
   return result;
 }
 
+const passesVerification = (textInclusion: TextInclusion) => {
+  return (
+    textInclusion.course_id?.full &&
+    textInclusion.course_description?.full &&
+    (textInclusion.course_prerequisites
+      ? textInclusion.course_prerequisites.full
+      : true)
+  );
+};
+
 async function verifyAndRetryExtraction(
   course: CourseStructuredData,
   options: DefaultLlmPageOptions,
   preprocessedContent: string
 ): Promise<{ course: CourseStructuredData; textInclusion: TextInclusion }> {
-  let textInclusion = await verifyTextInclusion(course, preprocessedContent);
+  let textInclusion = await reportTextInclusion(course, preprocessedContent);
   let retryCount = 0;
   const MAX_RETRIES = 3;
 
   // Retry focused extraction if the text inclusion is not complete for ID, description and prereqs
-  while (
-    retryCount < MAX_RETRIES &&
-    (!textInclusion.course_id?.full ||
-      !textInclusion.course_description?.full ||
-      (textInclusion.course_prerequisites &&
-        !textInclusion.course_prerequisites.full))
-  ) {
+  while (retryCount < MAX_RETRIES && !passesVerification(textInclusion)) {
     const focusedCourseData = await focusedExtractCourseData(
       options,
       course,
@@ -52,7 +58,7 @@ async function verifyAndRetryExtraction(
     );
     if (focusedCourseData) {
       course = focusedCourseData;
-      textInclusion = await verifyTextInclusion(course, preprocessedContent);
+      textInclusion = await reportTextInclusion(course, preprocessedContent);
     }
     retryCount++;
   }
@@ -60,24 +66,43 @@ async function verifyAndRetryExtraction(
   return { course, textInclusion };
 }
 
+async function maybeChunkContent(
+  options: DefaultLlmPageOptions
+): Promise<DefaultLlmPageOptions[]> {
+  const willChunk = await shouldChunk(options);
+  if (willChunk) {
+    const chunks = await splitChunks(options);
+    return chunks.map((chunk) => ({
+      ...options,
+      content: chunk as SimplifiedMarkdown,
+    }));
+  }
+  return [options];
+}
+
 export async function extractAndVerifyCourseData(
   options: DefaultLlmPageOptions
 ): Promise<{ course: CourseStructuredData; textInclusion: TextInclusion }[]> {
-  const coursesData = await extractCourseData(options);
-  if (!coursesData) {
-    throw new Error("Couldn't find course data");
-  }
+  const chunks = await maybeChunkContent(options);
 
-  const preprocessedContent = preprocessText(options.content);
   const results = [];
+  for (const chunkOptions of chunks) {
+    const coursesData = await extractCourseData(chunkOptions);
+    if (!coursesData) {
+      console.log("Couldn't find course data");
+      continue;
+    }
 
-  for (const course of coursesData) {
-    const verifiedExtraction = await verifyAndRetryExtraction(
-      course,
-      options,
-      preprocessedContent
-    );
-    results.push(verifiedExtraction);
+    const preprocessedContent = preprocessText(chunkOptions.content);
+
+    for (const course of coursesData) {
+      const verifiedExtraction = await verifyAndRetryExtraction(
+        course,
+        options,
+        preprocessedContent
+      );
+      results.push(verifiedExtraction);
+    }
   }
 
   return results;
