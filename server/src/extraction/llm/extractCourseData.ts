@@ -13,7 +13,6 @@ export const validCreditUnitTypes = [
   "ClockHour",
   "CompetencyCredit",
   "ContactHour",
-  "ContinuingEducationUnit",
   "DegreeCredit",
   "DualCredit",
   "QuarterHour",
@@ -25,6 +24,13 @@ export const validCreditUnitTypes = [
   "UNKNOWN",
 ];
 
+const parseCreditValue = (credit: string | number | undefined) => {
+  if (typeof credit === "string" && credit.trim().length) {
+    return parseFloat(credit);
+  }
+  return undefined;
+};
+
 export function processCourse(course: CourseStructuredData) {
   const processedCourse: CourseStructuredData = {
     course_id: course.course_id.trim(),
@@ -32,6 +38,7 @@ export function processCourse(course: CourseStructuredData) {
     course_description: course.course_description.trim(),
     course_credits_min: course.course_credits_min,
     course_credits_max: course.course_credits_max,
+    course_ceu_credits: course.course_ceu_credits,
     course_credits_type: course.course_credits_type?.trim(),
     course_prerequisites: course.course_prerequisites?.trim(),
   };
@@ -48,24 +55,16 @@ export function processCourse(course: CourseStructuredData) {
   if (!course.course_prerequisites) {
     processedCourse.course_prerequisites = undefined;
   }
-  if (typeof course.course_credits_min === "string") {
-    if ((course.course_credits_min as string).trim().length) {
-      processedCourse.course_credits_min = parseFloat(
-        course.course_credits_min
-      );
-    } else {
-      processedCourse.course_credits_min = undefined;
-    }
-  }
-  if (typeof course.course_credits_max === "string") {
-    if ((course.course_credits_max as string).trim().length) {
-      processedCourse.course_credits_max = parseFloat(
-        course.course_credits_max
-      );
-    } else {
-      processedCourse.course_credits_max = undefined;
-    }
-  }
+
+  processedCourse.course_credits_min = parseCreditValue(
+    course.course_credits_min
+  );
+  processedCourse.course_credits_max = parseCreditValue(
+    course.course_credits_max
+  );
+  processedCourse.course_ceu_credits = parseCreditValue(
+    course.course_ceu_credits
+  );
   return processedCourse;
 }
 
@@ -101,13 +100,16 @@ Course credits type: infer it from the page.
   - Only infer the type if it's CLEARLY stated in the page somewhere.
   - If you can't infer the type, set it as "UNKNOWN"
   - MUST BE either UNKNOWN or: ${validCreditUnitTypes.join(", ")}
-  - Sometimes the course has 0 credits but a number of CEUs (Continuing Education Units).
-    - In that case, you can set the course credits min and max to the CEU value(s),
-      and the course credits type to "ContinuingEducationUnit"
-    - If you see "CEU" values in the page, that's the same as "ContinuingEducationUnit"
+  - Sometimes the course has a special type of credit: CEUs (Continuing Education Units).
+    (If you see "CEU" values in the page, that's the same as Continuing Education Units)
+  - In that case, there's a separate field: course_ceu_credits.
+  - A course may have both normal credits like the types we mentioned above, and CEUs.
 
 It is ok to have the course credits set to a number and the course credits type set to "UNKNOWN"
 if the content shows the credits value but doesn't mention the type.
+
+It is ok to have CEUs and course credits type set to "UNKNOWN" if the page doesn't mention the type
+but does mention CEUs.
 `;
 
 export async function extractCourseData(options: DefaultLlmPageOptions) {
@@ -187,6 +189,9 @@ ${options.content}
               enum: validCreditUnitTypes,
             },
             course_prerequisites: {
+              type: "string",
+            },
+            course_ceu_credits: {
               type: "string",
             },
           },
