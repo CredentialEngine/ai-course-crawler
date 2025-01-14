@@ -244,7 +244,7 @@ describe("Courseleaf", { timeout: EXTRACTION_TIMEOUT }, () => {
             course_name: "Modern Physics",
             course_description:
               "An introduction to the foundations of modern physics. Topics include special and general relativity, kinetic theory of matter, electromagnetic quantization, light and energy, wave-matter duality of light, the Schredinger Equation, nuclear physics and elementary particle theory.",
-            course_prerequisites: undefined,
+            course_prerequisites: "PHYS 2326/PHYS 2126",
             course_credits_min: undefined,
             course_credits_max: undefined,
             course_credits_type: undefined,
