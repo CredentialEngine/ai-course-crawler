@@ -26,13 +26,13 @@ with the course description.
 Note you must extract data for the course EXACTLY as it is in the page, without adding or
 removing anything.
 
-Please do it correctly this time.
-
-Your extraction was:
+Your previous extraction (INCORRECT) was:
 
 ${JSON.stringify(course)}
 
 ${basePrompt}
+
+Pay attention to the page content and extract it correctly this time.
 
 PAGE URL:
 

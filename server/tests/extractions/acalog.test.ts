@@ -144,4 +144,24 @@ Instruction in concepts and application of pharmacological principles. Focuses o
       );
     });
   });
+
+  describe("Indiana State University", () => {
+    test("Course with hallucinated description", async () => {
+      await assertExtraction(
+        "https://catalog.indstate.edu/preview_course.php?catoid=60&coid=139879",
+        [
+          {
+            course_id: "SOC 220",
+            course_name: "Contemporary Social Problems",
+            course_description:
+              "Problems of social and individual maladjustment, the causes of maladjustment, and the attempted and planned efforts for the solution of these problems.",
+            course_credits_min: 3,
+            course_credits_max: 3,
+            course_credits_type: undefined,
+            course_ceu_credits: undefined,
+          },
+        ]
+      );
+    });
+  });
 });
