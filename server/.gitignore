@@ -37,3 +37,4 @@ _scratchbook.md
 *.db
 *.db-*
 .env*
+!.env.example
