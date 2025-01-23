@@ -98,7 +98,7 @@ export async function extractAndVerifyCourseData(
     for (const course of coursesData) {
       const verifiedExtraction = await verifyAndRetryExtraction(
         course,
-        options,
+        chunkOptions,
         preprocessedContent
       );
       results.push(verifiedExtraction);

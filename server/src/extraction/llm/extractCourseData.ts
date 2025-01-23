@@ -43,13 +43,13 @@ export function processCourse(course: CourseStructuredData) {
     course_prerequisites: course.course_prerequisites?.trim(),
   };
 
-  if (course.course_credits_type?.toUpperCase()?.trim() == "UNKNOWN") {
+  const creditType = course.course_credits_type?.trim();
+
+  if (!creditType) {
     processedCourse.course_credits_type = undefined;
-  }
-  if (
-    course.course_credits_type &&
-    !validCreditUnitTypes.includes(course.course_credits_type)
-  ) {
+  } else if (creditType.toUpperCase() == "UNKNOWN") {
+    processedCourse.course_credits_type = undefined;
+  } else if (!validCreditUnitTypes.includes(creditType)) {
     processedCourse.course_credits_type = undefined;
   }
   if (!course.course_prerequisites) {
