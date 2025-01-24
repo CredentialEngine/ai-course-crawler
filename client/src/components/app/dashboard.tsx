@@ -1,3 +1,4 @@
+import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -7,7 +8,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
-  Bot,
   CircleUser,
   Earth,
   LibraryBig,
@@ -30,10 +30,12 @@ export function Dashboard() {
       <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
         <div className="hidden border-r bg-muted/40 md:block">
           <div className="flex h-full max-h-screen flex-col gap-2">
-            <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-              <Link to={"/"} className="flex items-center gap-2 font-semibold">
-                <Bot className="h-6 w-6" />
-                <span className="">AI Course Crawler</span>
+            <div className="flex items-center justify-center border-b px-4 h-16 lg:px-6 bg-white">
+              <Link
+                to={"/"}
+                className="flex items-center gap-2 font-semibold h-full"
+              >
+                <img src={logo} alt="CTDL xTRA" className="h-full w-auto" />
               </Link>
             </div>
             <div className="flex-1">
@@ -63,7 +65,7 @@ export function Dashboard() {
           </div>
         </div>
         <div className="flex flex-col">
-          <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+          <header className="flex h-16 items-center gap-4 border-b bg-muted/40 px-4 lg:px-6">
             <Sheet>
               <SheetTrigger asChild>
                 <Button
@@ -78,8 +80,7 @@ export function Dashboard() {
               <SheetContent side="left" className="flex flex-col">
                 <nav className="grid gap-2 text-lg font-medium">
                   <MenuLink to={"/"} currentLocation={location} compact={true}>
-                    <Bot className="h-6 w-6" />
-                    <span className="sr-only">AI Course Crawler</span>
+                    <img src={logo} alt="CTDL xTRA" className="h-full w-auto" />
                   </MenuLink>
                   <MenuLink
                     to={"/catalogues"}

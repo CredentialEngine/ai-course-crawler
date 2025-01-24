@@ -1,16 +1,16 @@
 import {
-  Body,
-  Button,
-  CodeInline,
-  Column,
-  Container,
-  Head,
-  Html,
-  Link,
-  Preview,
-  Row,
-  Section,
-  Text,
+    Body,
+    Button,
+    CodeInline,
+    Column,
+    Container,
+    Head,
+    Html,
+    Link,
+    Preview,
+    Row,
+    Section,
+    Text,
 } from "@react-email/components";
 import { buildFrontendUrl } from "../utils";
 import * as styles from "./styles";
@@ -56,7 +56,7 @@ const DetectConfigurationFail = ({
             View recipe
           </Button>
           <Text style={styles.footer}>
-            Credential Engine - AI Course Crawler
+            Credential Engine - CTDL xTRA
           </Text>
         </Container>
       </Body>

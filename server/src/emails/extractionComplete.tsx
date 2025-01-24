@@ -1,16 +1,16 @@
 import {
-  Body,
-  Button,
-  Column,
-  Container,
-  Head,
-  Hr,
-  Html,
-  Link,
-  Preview,
-  Row,
-  Section,
-  Text,
+    Body,
+    Button,
+    Column,
+    Container,
+    Head,
+    Hr,
+    Html,
+    Link,
+    Preview,
+    Row,
+    Section,
+    Text,
 } from "@react-email/components";
 import { CompletionStats } from "../data/schema";
 import { buildFrontendUrl } from "../utils";
@@ -132,7 +132,7 @@ const ExtractionComplete = ({
             View {totalCourses} courses
           </Button>
           <Text style={styles.footer}>
-            Credential Engine - AI Course Crawler
+            Credential Engine - CTDL xTRA
           </Text>
         </Container>
       </Body>

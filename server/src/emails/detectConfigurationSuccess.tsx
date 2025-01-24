@@ -1,15 +1,15 @@
 import {
-  Body,
-  Button,
-  Column,
-  Container,
-  Head,
-  Html,
-  Link,
-  Preview,
-  Row,
-  Section,
-  Text,
+    Body,
+    Button,
+    Column,
+    Container,
+    Head,
+    Html,
+    Link,
+    Preview,
+    Row,
+    Section,
+    Text,
 } from "@react-email/components";
 import { buildFrontendUrl } from "../utils";
 import * as styles from "./styles";
@@ -60,7 +60,7 @@ const DetectConfigurationSuccess = ({
             View recipe and start extraction
           </Button>
           <Text style={styles.footer}>
-            Credential Engine - AI Course Crawler
+            Credential Engine - CTDL xTRA
           </Text>
         </Container>
       </Body>

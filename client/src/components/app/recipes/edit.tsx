@@ -8,28 +8,28 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
@@ -230,7 +230,7 @@ export default function EditRecipe() {
                     <CardContent className="text-sm">
                       <div>
                         <p className="text-red-800 font-semibold">
-                          AI Course Crawler failed to detect a valid
+                          CTDL xTRA failed to detect a valid
                           configuration for this recipe.
                         </p>
                         <p className="mt-4">

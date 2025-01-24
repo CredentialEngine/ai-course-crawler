@@ -37,7 +37,7 @@ async function getMailer() {
 async function sendMail(to: string[], subject: string, html: string) {
   const mailer = await getMailer();
   const params = {
-    from: "AI Course Crawler <do-not-reply.ai-course-crawler@credentialengineregistry.org>",
+    from: "CTDL xTRA <do-not-reply.ctdl-xtra@credentialengineregistry.org>",
     to,
     subject,
     html,
