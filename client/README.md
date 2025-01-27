@@ -1,30 +1,76 @@
-# React + TypeScript + Vite
+# xTRA Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is the frontend client for [CTDL xTRA](../README.md).
+It's built with React (Vite template) and provides the user interface for
+configuring and managing extractions.
 
-Currently, two official plugins are available:
+## Components
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Framework**: React with TypeScript and Vite
+- **Styling**: TailwindCSS with shadcn/ui components
+- **State management**: TanStack Query (React Query)
+- **API communication**: tRPC client
+- **Form handling**: React Hook Form with Zod validation
+- **Routing**: Wouter
+- **Data visualization**: Recharts
 
-## Expanding the ESLint configuration
+## Setup
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+1. Install [node.js](https://nodejs.org/en) (20+) and [pnpm](https://pnpm.io/)
 
-- Configure the top-level `parserOptions` property like this:
+2. Install dependencies:
 
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: "latest",
-    sourceType: "module",
-    project: ["./tsconfig.json", "./tsconfig.node.json"],
-    tsconfigRootDir: __dirname,
-  },
-};
+```bash
+pnpm install
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+3. Set up environment variables:
+
+```bash
+cp .env.example .env # edit your env vars in .env
+```
+
+## Development
+
+Run the development server:
+
+```bash
+pnpm run dev
+```
+
+The development server includes HMR (Hot Module Replacement) and will be
+available at `http://localhost:5173` by default.
+
+## Building
+
+Build for production:
+
+```bash
+pnpm run build
+```
+
+Preview the production build:
+
+```bash
+pnpm run preview
+```
+
+## Linting
+
+Run the linter:
+
+```bash
+pnpm run lint
+```
+
+The project uses ESLint with TypeScript support and includes rules for React
+hooks and refresh.
+
+## Type Checking
+
+The project uses TypeScript for type safety. Type checking is performed during
+the build process, but you can also run it separately using:
+
+```bash
+tsc
+```
